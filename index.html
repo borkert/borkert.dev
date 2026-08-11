@@ -1,88 +1,166 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#050506" />
-  <meta name="description" content="Borkert — full-stack engineer and design tinkerer crafting expressive, high-performance web experiences." />
-  <title>borkert.dev</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23050506'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23ff2e63'/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chris Borkert</title>
+<meta name="description" content="Selected engineering work by Chris Borkert — API tooling, agent infrastructure, web frameworks, LLM evaluation and systems.">
+<style>
+:root{
+  --ink:#075f91; --ink2:#0d79b2; --paper:#f8fbfc; --line:#2b91c5;
+  --soft:#e9f3f8; --black:#06202d; --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:15px;line-height:1.45}
+a{color:inherit;text-decoration:none;border-bottom:1px solid currentColor}
+a:hover{background:var(--ink);color:white}
+.wrap{max-width:1320px;margin:auto;padding:0 42px}
+nav{height:92px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px dashed var(--line)}
+.brand{font-weight:700;letter-spacing:.08em}
+.navlinks{display:flex;gap:32px;text-transform:uppercase;font-size:13px}
+.navlinks a{border:0}.navlinks a:hover{background:none;color:var(--ink2);text-decoration:underline}
+.hero{min-height:440px;display:grid;grid-template-columns:1.08fr .92fr;gap:56px;align-items:center;border-bottom:2px dashed var(--line)}
+.kicker{font-size:13px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:22px}
+h1{font-size:clamp(42px,6vw,84px);line-height:.95;letter-spacing:-.07em;margin:0 0 30px;font-weight:700}
+.hero p{max-width:720px;font-size:17px}
+.cta{display:flex;gap:18px;margin-top:34px;flex-wrap:wrap}
+.button{border:1px solid var(--ink);padding:11px 16px;background:white}
+.button:hover{background:var(--ink);color:white}
+.diagram{position:relative;min-height:330px;background:var(--soft);border:1px solid var(--line);overflow:hidden}
+.diagram:before,.diagram:after{content:"";position:absolute;border:1px solid var(--line);border-radius:50%}
+.diagram:before{width:310px;height:310px;right:-75px;top:-75px}
+.diagram:after{width:190px;height:190px;left:-55px;bottom:-75px}
+.node{position:absolute;border:1px solid var(--ink);background:var(--paper);padding:13px 15px;font-size:13px}
+.n1{left:34px;top:46px}.n2{right:38px;top:105px}.n3{left:90px;bottom:55px}.n4{right:80px;bottom:35px}
+.connector{position:absolute;height:1px;background:var(--ink);transform-origin:left center}
+.c1{left:140px;top:83px;width:230px;transform:rotate(9deg)}
+.c2{left:160px;top:225px;width:260px;transform:rotate(-25deg)}
+.c3{left:305px;top:145px;width:160px;transform:rotate(25deg)}
+.section{padding:70px 0;border-bottom:2px dashed var(--line)}
+.section-head{display:flex;justify-content:space-between;gap:30px;align-items:end;margin-bottom:30px}
+h2{font-size:26px;margin:0;text-transform:uppercase;letter-spacing:-.04em}
+.muted{opacity:.72;font-size:13px}
+.feature{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.panel{border:1px solid var(--line);background:white;padding:28px}
+.panel h3{font-size:23px;margin:0 0 12px}
+.panel p{margin:0 0 20px}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
+.tag{padding:5px 8px;background:var(--soft);font-size:11px;border:1px solid #a9d2e6}
+.terminal{background:var(--black);color:#bfe9ff;padding:25px;min-height:100%;overflow:auto}
+.terminal .dim{opacity:.55}.prompt{color:white}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{border:1px solid var(--line);padding:22px;background:white;min-height:190px;display:flex;flex-direction:column}
+.card h3{margin:0 0 10px;font-size:18px}.card p{font-size:13px;margin:0 0 18px;opacity:.9}.card .repo{margin-top:auto;font-size:12px}
+.timeline{display:grid;grid-template-columns:120px 1fr;gap:0;border-top:1px solid var(--line)}
+.timeline>div{padding:15px 0;border-bottom:1px solid var(--line)}
+footer{padding:35px 0 55px;display:flex;justify-content:space-between;gap:20px;font-size:12px}
+@media(max-width:850px){
+ .wrap{padding:0 20px}.hero,.feature{grid-template-columns:1fr}.hero{padding:55px 0}.diagram{min-height:230px}
+ .navlinks{gap:14px}.navlinks a:nth-child(n+3){display:none}.grid{grid-template-columns:1fr}
+ .section{padding:50px 0} h1{font-size:52px}
+}
+</style>
 </head>
 <body>
-  <!-- background layers -->
-  <div class="bg" aria-hidden="true">
-    <div class="grid"></div>
-    <div class="glow"></div>
-    <div class="vignette"></div>
+<div class="wrap">
+<nav>
+  <div class="navlinks">
+    <a href="#work">work</a><a href="#projects">projects</a><a href="https://github.com/digplan">github</a><a href="mailto:chris@borkert.dev">contact</a>
   </div>
+</nav>
 
-  <!-- fixed chrome -->
-  <header class="topbar">
-    <span class="site mono" data-reveal>BORKERT<span class="tld">.dev</span></span>
-    <div class="coord mono" id="coord" data-reveal>--,--</div>
-  </header>
-
-  <!-- parallax scene -->
-  <main class="scene">
-    <!-- headline -->
-    <section class="hero">
-      <p class="kicker mono" data-reveal style="--d:180">FULL-STACK · DESIGN · BUILD</p>
-      <h1 class="name" aria-label="borkert dot dev">
-        <span id="name">BORKERT</span><span class="tld">.dev</span>
-      </h1>
-      <p class="bio mono" data-reveal style="--d:560">I design &amp; build expressive, high-performance software for the web.</p>
-    </section>
-
-    <!-- floating depth objects -->
-    <div class="orb" data-depth="0.7" aria-hidden="true"></div>
-    <div class="ring" data-depth="0.35" aria-hidden="true">
-      <svg viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="84" fill="none" stroke="rgba(255,46,99,.35)" stroke-width="1" stroke-dasharray="3 9" />
-      </svg>
+<section class="hero">
+  <div>
+    <p>I build practical software at the intersection of <b>AI agents, APIs, developer tools and systems engineering</b> — with a bias toward simple primitives, composability and less abstraction.</p>
+    <div class="cta">
+      <a class="button" href="https://github.com/digplan">VIEW GITHUB →</a>
+      <a class="button" href="#work">SELECTED WORK ↓</a>
     </div>
+  </div>
+  <div class="diagram" aria-label="Systems diagram">
+    <div class="connector c1"></div><div class="connector c2"></div><div class="connector c3"></div>
+    <div class="node n1">API DEFINITIONS</div>
+    <div class="node n2">LLM / AGENTS</div>
+    <div class="node n3">CLI + UNIX</div>
+    <div class="node n4">APPLICATIONS</div>
+  </div>
+</section>
 
-    <article class="card card-a" data-depth="0.9">
-      <div class="card-inner">
-        <p class="card-title mono">[ PROFILE ]</p>
-        <dl class="mono">
-          <div><dt>ROLE</dt><dd>ENGINEER</dd></div>
-          <div><dt>FOCUS</dt><dd>WEB · 3D · UX</dd></div>
-          <div><dt>BASE</dt><dd>REMOTE</dd></div>
-        </dl>
-      </div>
+<section class="section" id="work">
+  <div class="section-head">
+    <h2>01 / Featured work</h2><div class="muted">APICAT · API TOOLING FOR HUMANS + AGENTS</div>
+  </div>
+  <div class="feature">
+    <div class="panel">
+      <div class="kicker">digplan / apicat</div>
+      <h3>APIs as executable definitions.</h3>
+      <p><b>apicat</b> keeps API definitions in YAML and turns them into a tiny CLI and JavaScript library. List an API, inspect it, call it, or hand the definitions to an LLM.</p>
+      <p>The idea is deliberately simple: instead of teaching an agent dozens of bespoke integrations, give it a compact, machine-readable vocabulary for making HTTP and WebSocket calls.</p>
+      <div class="tags"><span class="tag">YAML</span><span class="tag">CLI</span><span class="tag">JavaScript</span><span class="tag">HTTP</span><span class="tag">WebSocket</span><span class="tag">LLM TOOLING</span></div>
+      <a href="https://github.com/digplan/apicat">github.com/digplan/apicat →</a>
+    </div>
+    <div class="terminal">
+      <div class="dim">$ npm install -g apicat</div><br>
+      <div class="prompt">$ apic ls</div>
+      <div>httpbin.get</div><div>openai.chat</div><div>openrouter.chat</div><div>cloudflare.r2Upload</div><br>
+      <div class="prompt">$ apic openrouter.chat \<br>&nbsp;&nbsp;MODEL=openrouter/auto \<br>&nbsp;&nbsp;PROMPT="Say hello"</div><br>
+      <div class="dim">→ request built from YAML definition</div>
+      <div class="dim">→ response extracted / returned</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="projects">
+  <div class="section-head">
+    <h2>02 / Other systems</h2><div class="muted">github.com/digplan</div>
+  </div>
+  <div class="grid">
+    <article class="card">
+      <h3>VANILLA LIGHT</h3>
+      <p>A no-build, dependency-free full-stack framework: reactive browser client + HTTPS Bun server, plugin-driven backend, auth, storage and OpenAI-compatible LLM support.</p>
+      <div class="repo"><a href="https://github.com/digplan/vanilla-light">SOURCE →</a></div>
     </article>
-
-    <article class="card card-b" data-depth="0.5">
-      <div class="card-inner">
-        <p class="card-title mono">[ STACK ]</p>
-        <ul class="tags mono">
-          <li>TS</li><li>REACT</li><li>NODE</li><li>RUST</li><li>WEBGL</li>
-        </ul>
-      </div>
+    <article class="card">
+      <h3>EMDASH</h3>
+      <p>An agentic development environment for running multiple coding agents in parallel, isolated in Git worktrees, with local and remote SSH workflows.</p>
+      <div class="repo"><a href="https://github.com/digplan/emdash">SOURCE →</a></div>
     </article>
-  </main>
+    <article class="card">
+      <h3>COMPARE-LLMS</h3>
+      <p>A focused experiment around comparing LLMs — part of a broader collection of small tools for evaluating and understanding model behavior.</p>
+      <div class="repo"><a href="https://github.com/digplan/compare-llms">SOURCE →</a></div>
+    </article>
+    <article class="card">
+      <h3>BENCHFORGE</h3>
+      <p>Experiments around benchmark infrastructure and repeatable evaluation workflows for modern AI systems.</p>
+      <div class="repo"><a href="https://github.com/digplan/benchforge">SOURCE →</a></div>
+    </article>
+    <article class="card">
+      <h3>LLM-SCORER</h3>
+      <p>A small project focused on scoring model outputs — the kind of narrow primitive that can become part of a larger evaluation loop.</p>
+      <div class="repo"><a href="https://github.com/digplan/llm-scorer">SOURCE →</a></div>
+    </article>
+    <article class="card">
+      <h3>WORKFLOW</h3>
+      <p>Tooling for expressing and executing workflows — another piece of the larger interest in composable automation rather than heavyweight platforms.</p>
+      <div class="repo"><a href="https://github.com/digplan/workflow">SOURCE →</a></div>
+    </article>
+  </div>
+</section>
 
-  <!-- bottom strip -->
-  <footer class="strip mono">
-    <ul class="skills">
-      <li>DESIGN SYSTEMS</li><li>·</li><li>CREATIVE DEV</li><li>·</li><li>PERFORMANCE</li>
-    </ul>
-  </footer>
+<section class="section">
+  <div class="section-head">
+  </div>
+  <div class="timeline">
+    <div>NOW</div><div>AI agents, evaluation loops, API-driven tooling and efficient model inference.</div>
+    <div>PRINCIPLE</div><div>Use the smallest useful abstraction. Prefer known APIs, Unix primitives and inspectable state.</div>
+    <div>METHOD</div><div>Build → benchmark → evaluate → simplify → repeat.</div>
+  </div>
+</section>
 
-  <!-- link dock -->
-  <nav class="dock" aria-label="Links">
-    <a class="mono" href="https://github.com/borkert" target="_blank" rel="noopener noreferrer">GitHub</a>
-    <a class="mono" href="https://x.com/borkert" target="_blank" rel="noopener noreferrer">X</a>
-    <a class="mono" href="https://www.linkedin.com/in/borkert" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-    <a class="mono" href="mailto:hi@borkert.dev">Email Me</a>
-    <a class="mono" href="/resume.pdf" target="_blank" rel="noopener noreferrer">Résumé</a>
-  </nav>
-
-  <!-- custom cursor -->
-  <div class="cursor" id="cur-dot" aria-hidden="true"></div>
-  <div class="cursor ring" id="cur-ring" aria-hidden="true"></div>
-
-  <script src="main.js"></script>
+<footer>
+  <div><a href="https://github.com/digplan">GITHUB</a> · <a href="mailto:chris@borkert.dev">EMAIL</a></div>
+</footer>
+</div>
 </body>
 </html>
