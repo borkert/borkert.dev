@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chris Borkert — AI Systems &amp; Agentic Infrastructure</title>
-  <meta name="description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), parallel agent sandboxes (emdash), and evaluation harnesses (benchforge).">
+  <meta name="description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).">
   <meta name="author" content="Chris Borkert">
 
   <!-- Editorial Typography -->
@@ -83,27 +83,28 @@ request:
           </div>
         </article>
 
-        <!-- Emdash -->
+        <!-- Prolific -->
         <article class="system-entry">
           <div class="system-head">
-            <h3 class="system-title"><a href="https://github.com/digplan/emdash">emdash</a></h3>
-            <span class="system-meta">Agent Orchestration · Git Worktrees · SSH Sandboxes</span>
+            <h3 class="system-title"><a href="https://github.com/digplan/prolific">prolific</a></h3>
+            <span class="system-meta">Coding Agent · Bun · apicat Tooling · Terminal UI · Evaluation</span>
           </div>
           <div class="system-desc">
             <p>
-              <strong>Parallel agentic development environment.</strong> An orchestration runtime for executing multiple autonomous coding agents in parallel, isolated in dedicated Git worktrees.
+              <strong>A minimal, environment-scoped coding agent.</strong> Run by Bun and compatible with any OpenAI-compatible LLM backend (Ollama, local endpoints, or cloud providers).
             </p>
             <p>
-              When multiple agents mutate shared repositories concurrently, race conditions and context contamination occur. <em>emdash</em> uses native Git worktrees to create instant, zero-copy sandboxes for each agent trajectory. It supports both local processes and remote SSH workflows, merging verified changes back atomically via fast-forward commits.
+              All HTTP and model calls are routed through <em>apicat</em> using each environment's declarative <code>apicat.yaml</code> definitions. Features environment-specific persistence (<code>SYSTEM.md</code>, <code>MEMORY.md</code>, <code>tools.yaml</code>, <code>context.json</code>), an interactive React/Ink terminal interface with a <code>/</code> command menu, managed background jobs (<code>!cmd &amp;</code>), prompt-to-command approval caching, and integrated <code>/bench</code> task harness reporting per-task timing, TTFT, tokens/sec, and deterministic reward scripts.
             </p>
           </div>
-          <pre class="code-block"><code># Spawn an isolated agent worker in a dedicated worktree
-$ emdash spawn --branch agent/fix-streaming-parser --task "Resolve SSE memory leak"
-[emdash] Created worktree at .worktrees/fix-streaming-parser (HEAD detached)
-[emdash] Agent running tests in isolated environment...
-[emdash] Tests passed. Ready for atomic merge.</code></pre>
+          <pre class="code-block"><code># Run the minimal coding agent with environment-scoped context
+$ bun link &amp;&amp; agent --env default
+[prolific] Active environment: default (ctx 4.2k | bg 0)
+[prolific] Endpoint: http://127.0.0.1:11434 (model: qwen3:8b)
+/bench    # Runs deterministic reward evaluation suite under bench-tasks/
+/debug    # Toggles raw .http request/response logging</code></pre>
           <div class="system-links">
-            <a href="https://github.com/digplan/emdash">Source Repository →</a>
+            <a href="https://github.com/digplan/prolific">Source Repository →</a>
           </div>
         </article>
 
@@ -219,11 +220,11 @@ $ emdash spawn --branch agent/fix-streaming-parser --task "Resolve SSE memory le
 
           <li class="writing-item">
             <div class="writing-head">
-              <span class="writing-title">Git Worktrees as Deterministic Sandboxes for Parallel Coding Agents</span>
+              <span class="writing-title">Environment-Scoped Memory and Declarative Execution in Coding Agents</span>
               <span class="writing-date">2026</span>
             </div>
             <p class="writing-summary">
-              Solving state corruption and race conditions in multi-agent swarms using zero-copy OS-level Git worktrees instead of heavy VM containers.
+              Why isolating LLM guidance, conversation context, and tool definitions per environment prevents cross-task context pollution and enables repeatable agent evaluation.
             </p>
           </li>
 
@@ -277,7 +278,7 @@ $ emdash spawn --branch agent/fix-streaming-parser --task "Resolve SSE memory le
               <td class="timeline-year">NOW</td>
               <td class="timeline-content">
                 <strong>AI Systems &amp; Agent Infrastructure Research</strong>
-                <p>Building open-source tooling for declarative tool use (apicat), parallel agent sandboxing (emdash), and reproducible evaluation harnesses (benchforge).</p>
+                <p>Building open-source tooling for declarative tool use (apicat), environment-scoped coding agents (prolific), and reproducible evaluation harnesses (benchforge).</p>
               </td>
             </tr>
             <tr>
