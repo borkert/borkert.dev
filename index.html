@@ -1,167 +1,313 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Chris Borkert</title>
-<meta name="description" content="Selected engineering work by Chris Borkert — API tooling, agent infrastructure, web frameworks, LLM evaluation and systems.">
-<style>
-:root{
-  --ink:#075f91; --ink2:#0d79b2; --paper:#f8fbfc; --line:#2b91c5;
-  --soft:#e9f3f8; --black:#06202d; --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
-}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chris Borkert — AI Systems &amp; Agentic Infrastructure</title>
+  <meta name="description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), parallel agent sandboxes (emdash), and evaluation harnesses (benchforge).">
+  <meta name="author" content="Chris Borkert">
 
-*{box-sizing:border-box} html{scroll-behavior:smooth}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:15px;line-height:1.45}
-a{color:inherit;text-decoration:none;border-bottom:1px solid currentColor}
-a:hover{background:var(--ink);color:white}
-.wrap{max-width:1320px;margin:auto;padding:0 42px}
-nav{height:92px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px dashed var(--line)}
-.brand{font-weight:700;letter-spacing:.08em}
-.navlinks{display:flex;gap:32px;text-transform:uppercase;font-size:13px}
-.navlinks a{border:0}.navlinks a:hover{background:none;color:var(--ink2);text-decoration:underline}
-.hero{min-height:440px;display:grid;grid-template-columns:1.08fr .92fr;gap:56px;align-items:center;border-bottom:2px dashed var(--line)}
-.kicker{font-size:13px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:22px}
-h1{font-size:clamp(42px,6vw,84px);line-height:.95;letter-spacing:-.07em;margin:0 0 30px;font-weight:700}
-.hero p{max-width:720px;font-size:17px}
-.cta{display:flex;gap:18px;margin-top:34px;flex-wrap:wrap}
-.button{border:1px solid var(--ink);padding:11px 16px;background:white}
-.button:hover{background:var(--ink);color:white}
-.diagram{position:relative;min-height:330px;background:var(--soft);border:1px solid var(--line);overflow:hidden}
-.diagram:before,.diagram:after{content:"";position:absolute;border:1px solid var(--line);border-radius:50%}
-.diagram:before{width:310px;height:310px;right:-75px;top:-75px}
-.diagram:after{width:190px;height:190px;left:-55px;bottom:-75px}
-.node{position:absolute;border:1px solid var(--ink);background:var(--paper);padding:13px 15px;font-size:13px}
-.n1{left:34px;top:46px}.n2{right:38px;top:105px}.n3{left:90px;bottom:55px}.n4{right:80px;bottom:35px}
-.connector{position:absolute;height:1px;background:var(--ink);transform-origin:left center}
-.c1{left:140px;top:83px;width:230px;transform:rotate(9deg)}
-.c2{left:160px;top:225px;width:260px;transform:rotate(-25deg)}
-.c3{left:305px;top:145px;width:160px;transform:rotate(25deg)}
-.section{padding:70px 0;border-bottom:2px dashed var(--line)}
-.section-head{display:flex;justify-content:space-between;gap:30px;align-items:end;margin-bottom:30px}
-h2{font-size:26px;margin:0;text-transform:uppercase;letter-spacing:-.04em}
-.muted{opacity:.72;font-size:13px}
-.feature{display:grid;grid-template-columns:1fr 1fr;gap:30px}
-.panel{border:1px solid var(--line);background:white;padding:28px}
-.panel h3{font-size:23px;margin:0 0 12px}
-.panel p{margin:0 0 20px}
-.tags{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
-.tag{padding:5px 8px;background:var(--soft);font-size:11px;border:1px solid #a9d2e6}
-.terminal{background:var(--black);color:#bfe9ff;padding:25px;min-height:100%;overflow:auto}
-.terminal .dim{opacity:.55}.prompt{color:white}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.card{border:1px solid var(--line);padding:22px;background:white;min-height:190px;display:flex;flex-direction:column}
-.card h3{margin:0 0 10px;font-size:18px}.card p{font-size:13px;margin:0 0 18px;opacity:.9}.card .repo{margin-top:auto;font-size:12px}
-.timeline{display:grid;grid-template-columns:120px 1fr;gap:0;border-top:1px solid var(--line)}
-.timeline>div{padding:15px 0;border-bottom:1px solid var(--line)}
-footer{padding:35px 0 55px;display:flex;justify-content:space-between;gap:20px;font-size:12px}
-@media(max-width:850px){
- .wrap{padding:0 20px}.hero,.feature{grid-template-columns:1fr}.hero{padding:55px 0}.diagram{min-height:230px}
- .navlinks{gap:14px}.navlinks a:nth-child(n+3){display:none}.grid{grid-template-columns:1fr}
- .section{padding:50px 0} h1{font-size:52px}
-}
-</style>
+  <!-- Editorial Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="wrap">
-<nav>
-  <div class="navlinks">
-    <a href="#work">work</a><a href="#projects">projects</a><a href="https://github.com/digplan">github</a><a href="mailto:chris@borkert.dev">contact</a>
-  </div>
-</nav>
 
-<section class="hero">
-  <div>
-    <p>I build practical software at the intersection of <b>AI agents, APIs, developer tools and systems engineering</b> — with a bias toward simple primitives, composability and less abstraction.</p>
-    <div class="cta">
-      <a class="button" href="https://github.com/digplan">VIEW GITHUB →</a>
-      <a class="button" href="#work">SELECTED WORK ↓</a>
-    </div>
-  </div>
-  <div class="diagram" aria-label="Systems diagram">
-    <div class="connector c1"></div><div class="connector c2"></div><div class="connector c3"></div>
-    <div class="node n1">API DEFINITIONS</div>
-    <div class="node n2">LLM / AGENTS</div>
-    <div class="node n3">CLI + UNIX</div>
-    <div class="node n4">APPLICATIONS</div>
-  </div>
-</section>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <h1>Chris Borkert</h1>
+        <div class="header-links">
+          <a href="https://github.com/digplan">github.com/digplan</a>
+          <a href="mailto:chris@borkert.dev">chris@borkert.dev</a>
+          <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">theme</button>
+        </div>
+      </div>
 
-<section class="section" id="work">
-  <div class="section-head">
-    <h2>01 / Featured work</h2><div class="muted">APICAT · API TOOLING FOR HUMANS + AGENTS</div>
-  </div>
-  <div class="feature">
-    <div class="panel">
-      <div class="kicker">digplan / apicat</div>
-      <h3>APIs as executable definitions.</h3>
-      <p><b>apicat</b> keeps API definitions in YAML and turns them into a tiny CLI and JavaScript library. List an API, inspect it, call it, or hand the definitions to an LLM.</p>
-      <p>The idea is deliberately simple: instead of teaching an agent dozens of bespoke integrations, give it a compact, machine-readable vocabulary for making HTTP and WebSocket calls.</p>
-      <div class="tags"><span class="tag">YAML</span><span class="tag">CLI</span><span class="tag">JavaScript</span><span class="tag">HTTP</span><span class="tag">WebSocket</span><span class="tag">LLM TOOLING</span></div>
-      <a href="https://github.com/digplan/apicat">github.com/digplan/apicat →</a>
-    </div>
-    <div class="terminal">
-      <div class="dim">$ npm install -g apicat</div><br>
-      <div class="prompt">$ apic ls</div>
-      <div>httpbin.get</div><div>openai.chat</div><div>openrouter.chat</div><div>cloudflare.r2Upload</div><br>
-      <div class="prompt">$ apic openrouter.chat \<br>&nbsp;&nbsp;MODEL=openrouter/auto \<br>&nbsp;&nbsp;PROMPT="Say hello"</div><br>
-      <div class="dim">→ request built from YAML definition</div>
-      <div class="dim">→ response extracted / returned</div>
-    </div>
-  </div>
-</section>
+      <div class="bio">
+        <p>
+          I am a software engineer and researcher working on <strong>AI agent infrastructure, declarative tool protocols, deterministic sandboxes, and empirical evaluation systems</strong>.
+        </p>
+        <p>
+          My work emphasizes simple primitives, inspectable state machines, and Unix-style composability over heavyweight framework abstractions.
+        </p>
+      </div>
 
-<section class="section" id="projects">
-  <div class="section-head">
-    <h2>02 / Other systems</h2><div class="muted">github.com/digplan</div>
-  </div>
-  <div class="grid">
-    <article class="card">
-      <h3>VANILLA LIGHT</h3>
-      <p>A no-build, dependency-free full-stack framework: reactive browser client + HTTPS Bun server, plugin-driven backend, auth, storage and OpenAI-compatible LLM support.</p>
-      <div class="repo"><a href="https://github.com/digplan/vanilla-light">SOURCE →</a></div>
-    </article>
-    <article class="card">
-      <h3>EMDASH</h3>
-      <p>An agentic development environment for running multiple coding agents in parallel, isolated in Git worktrees, with local and remote SSH workflows.</p>
-      <div class="repo"><a href="https://github.com/digplan/emdash">SOURCE →</a></div>
-    </article>
-    <article class="card">
-      <h3>COMPARE-LLMS</h3>
-      <p>A focused experiment around comparing LLMs — part of a broader collection of small tools for evaluating and understanding model behavior.</p>
-      <div class="repo"><a href="https://github.com/digplan/compare-llms">SOURCE →</a></div>
-    </article>
-    <article class="card">
-      <h3>BENCHFORGE</h3>
-      <p>Experiments around benchmark infrastructure and repeatable evaluation workflows for modern AI systems.</p>
-      <div class="repo"><a href="https://github.com/digplan/benchforge">SOURCE →</a></div>
-    </article>
-    <article class="card">
-      <h3>LLM-SCORER</h3>
-      <p>A small project focused on scoring model outputs — the kind of narrow primitive that can become part of a larger evaluation loop.</p>
-      <div class="repo"><a href="https://github.com/digplan/llm-scorer">SOURCE →</a></div>
-    </article>
-    <article class="card">
-      <h3>WORKFLOW</h3>
-      <p>Tooling for expressing and executing workflows — another piece of the larger interest in composable automation rather than heavyweight platforms.</p>
-      <div class="repo"><a href="https://github.com/digplan/workflow">SOURCE →</a></div>
-    </article>
-  </div>
-</section>
+      <nav class="toc" aria-label="Table of Contents">
+        <span>Contents:</span>
+        <a href="#systems">01. Systems &amp; Software</a>
+        <a href="#writing">02. Research Notes</a>
+        <a href="#principles">03. Principles</a>
+        <a href="#background">04. Background</a>
+      </nav>
+    </header>
 
-<section class="section">
-  <div class="section-head">
-  </div>
-  <div class="timeline">
-    <div>NOW</div><div>AI agents, evaluation loops, API-driven tooling and efficient model inference.</div>
-    <div>PRINCIPLE</div><div>Use the smallest useful abstraction. Prefer known APIs, Unix primitives and inspectable state.</div>
-    <div>METHOD</div><div>Build → benchmark → evaluate → simplify → repeat.</div>
-  </div>
-</section>
+    <main>
+      <!-- Section 1: Systems & Software -->
+      <section id="systems">
+        <h2>01. Systems &amp; Software</h2>
 
-<footer>
-  <div><a href="https://github.com/digplan">GITHUB</a> · <a href="mailto:chris@borkert.dev">EMAIL</a></div>
-</footer>
-</div>
+        <!-- Apicat -->
+        <article class="system-entry">
+          <div class="system-head">
+            <h3 class="system-title"><a href="https://github.com/digplan/apicat">apicat</a></h3>
+            <span class="system-meta">YAML · CLI · JavaScript/TypeScript · LLM Tooling</span>
+          </div>
+          <div class="system-desc">
+            <p>
+              <strong>APIs as executable definitions.</strong> Keeps API specifications in concise, human-readable YAML and compiles them into a tiny CLI and TypeScript library.
+            </p>
+            <p>
+              Instead of teaching language models dozens of bespoke SDK wrappers, <em>apicat</em> gives agents a compact, machine-readable vocabulary for making HTTP and WebSocket calls. This minimizes context token usage, eliminates boilerplate code generation, and allows agents to reason over inspectable interface definitions.
+            </p>
+          </div>
+          <pre class="code-block"><code># apicat definition: openai.chat.yaml
+name: openai.chat
+description: Standard completion endpoint for reasoning agents
+request:
+  method: POST
+  url: https://api.openai.com/v1/chat/completions
+  headers:
+    Authorization: "Bearer ${OPENAI_API_KEY}"
+  body:
+    model: "${MODEL:-gpt-4o}"
+    messages: "${MESSAGES}"
+    temperature: 0.2</code></pre>
+          <div class="code-caption">Example declarative YAML definition used by both humans and LLM tool runtimes.</div>
+          <div class="system-links">
+            <a href="https://github.com/digplan/apicat">Source Repository →</a>
+            <a href="https://www.npmjs.com/package/apicat">npm package →</a>
+          </div>
+        </article>
+
+        <!-- Emdash -->
+        <article class="system-entry">
+          <div class="system-head">
+            <h3 class="system-title"><a href="https://github.com/digplan/emdash">emdash</a></h3>
+            <span class="system-meta">Agent Orchestration · Git Worktrees · SSH Sandboxes</span>
+          </div>
+          <div class="system-desc">
+            <p>
+              <strong>Parallel agentic development environment.</strong> An orchestration runtime for executing multiple autonomous coding agents in parallel, isolated in dedicated Git worktrees.
+            </p>
+            <p>
+              When multiple agents mutate shared repositories concurrently, race conditions and context contamination occur. <em>emdash</em> uses native Git worktrees to create instant, zero-copy sandboxes for each agent trajectory. It supports both local processes and remote SSH workflows, merging verified changes back atomically via fast-forward commits.
+            </p>
+          </div>
+          <pre class="code-block"><code># Spawn an isolated agent worker in a dedicated worktree
+$ emdash spawn --branch agent/fix-streaming-parser --task "Resolve SSE memory leak"
+[emdash] Created worktree at .worktrees/fix-streaming-parser (HEAD detached)
+[emdash] Agent running tests in isolated environment...
+[emdash] Tests passed. Ready for atomic merge.</code></pre>
+          <div class="system-links">
+            <a href="https://github.com/digplan/emdash">Source Repository →</a>
+          </div>
+        </article>
+
+        <!-- Benchforge -->
+        <article class="system-entry">
+          <div class="system-head">
+            <h3 class="system-title"><a href="https://github.com/digplan/benchforge">benchforge</a></h3>
+            <span class="system-meta">Evaluation Harness · Benchmark Infrastructure · Pass@K</span>
+          </div>
+          <div class="system-desc">
+            <p>
+              <strong>Benchmark infrastructure and repeatable evaluation workflows for AI systems.</strong>
+            </p>
+            <p>
+              Provides standardized harness orchestration for measuring model performance across coding, reasoning, and tool-use tasks. Enforces deterministic execution verifiers (compiler assertions, test suite exit codes) to ground evaluation metrics in observable reality rather than purely subjective ratings.
+            </p>
+          </div>
+          <div class="system-links">
+            <a href="https://github.com/digplan/benchforge">Source Repository →</a>
+          </div>
+        </article>
+
+        <!-- LLM-Scorer -->
+        <article class="system-entry">
+          <div class="system-head">
+            <h3 class="system-title"><a href="https://github.com/digplan/llm-scorer">llm-scorer</a></h3>
+            <span class="system-meta">Automated Judges · Multi-metric Grading · Calibration</span>
+          </div>
+          <div class="system-desc">
+            <p>
+              <strong>Primitives for scoring model outputs and validating reasoning steps.</strong>
+            </p>
+            <p>
+              A narrow, composable library designed for LLM-as-a-judge pipelines. Implements confidence scoring, position-bias permutation testing, and rubrics for step-by-step chain-of-thought verification.
+            </p>
+          </div>
+          <div class="system-links">
+            <a href="https://github.com/digplan/llm-scorer">Source Repository →</a>
+          </div>
+        </article>
+
+        <!-- Compare-LLMs -->
+        <article class="system-entry">
+          <div class="system-head">
+            <h3 class="system-title"><a href="https://github.com/digplan/compare-llms">compare-llms</a></h3>
+            <span class="system-meta">Model Probing · Divergence Analysis · Evaluation</span>
+          </div>
+          <div class="system-desc">
+            <p>
+              <strong>Tools for empirical model comparison and reasoning divergence.</strong>
+            </p>
+            <p>
+              A focused experiment and visual interface for comparing model outputs, analyzing chain-of-thought branching paths, and evaluating how different architectures handle edge cases in structured extraction and code generation.
+            </p>
+          </div>
+          <div class="system-links">
+            <a href="https://github.com/digplan/compare-llms">Source Repository →</a>
+          </div>
+        </article>
+
+        <!-- Vanilla Light -->
+        <article class="system-entry">
+          <div class="system-head">
+            <h3 class="system-title"><a href="https://github.com/digplan/vanilla-light">vanilla-light</a></h3>
+            <span class="system-meta">No-Build Full-Stack · Bun · Reactive Client</span>
+          </div>
+          <div class="system-desc">
+            <p>
+              <strong>A no-build, dependency-free full-stack web framework.</strong>
+            </p>
+            <p>
+              Reactive browser client paired with an HTTPS Bun server, plugin-driven backend architecture, auth, file storage, and built-in OpenAI-compatible LLM inference primitives. Designed without bundlers or heavy build steps to maximize operational transparency.
+            </p>
+          </div>
+          <div class="system-links">
+            <a href="https://github.com/digplan/vanilla-light">Source Repository →</a>
+          </div>
+        </article>
+
+        <!-- Workflow -->
+        <article class="system-entry">
+          <div class="system-head">
+            <h3 class="system-title"><a href="https://github.com/digplan/workflow">workflow</a></h3>
+            <span class="system-meta">Graph Execution · Unix Pipes · Minimalist Automation</span>
+          </div>
+          <div class="system-desc">
+            <p>
+              <strong>Tooling for expressing and executing composable workflows.</strong>
+            </p>
+            <p>
+              Emphasizes clean Unix-style pipelining and inspectable intermediate states over opaque, monolithic orchestration platforms.
+            </p>
+          </div>
+          <div class="system-links">
+            <a href="https://github.com/digplan/workflow">Source Repository →</a>
+          </div>
+        </article>
+      </section>
+
+      <!-- Section 2: Research Notes & Writing -->
+      <section id="writing">
+        <h2>02. Research Notes &amp; Writing</h2>
+        <ul class="writing-list">
+          <li class="writing-item">
+            <div class="writing-head">
+              <span class="writing-title">The Case for Declarative API Schemas in Agentic Systems</span>
+              <span class="writing-date">2026</span>
+            </div>
+            <p class="writing-summary">
+              Why machine-readable YAML definitions beat bespoke SDK wrappers and heavy framework abstractions by providing models with a compact, deterministic tool vocabulary.
+            </p>
+          </li>
+
+          <li class="writing-item">
+            <div class="writing-head">
+              <span class="writing-title">Git Worktrees as Deterministic Sandboxes for Parallel Coding Agents</span>
+              <span class="writing-date">2026</span>
+            </div>
+            <p class="writing-summary">
+              Solving state corruption and race conditions in multi-agent swarms using zero-copy OS-level Git worktrees instead of heavy VM containers.
+            </p>
+          </li>
+
+          <li class="writing-item">
+            <div class="writing-head">
+              <span class="writing-title">Calibrating Automated LLM Judges with Verifiable Execution Feedback</span>
+              <span class="writing-date">2025</span>
+            </div>
+            <p class="writing-summary">
+              Mitigating position and self-preference bias in synthetic evaluation harnesses by anchoring model ratings to deterministic compiler and test suite artifacts.
+            </p>
+          </li>
+
+          <li class="writing-item">
+            <div class="writing-head">
+              <span class="writing-title">Minimalist AI Systems: Composing Unix Primitives with Foundation Models</span>
+              <span class="writing-date">2025</span>
+            </div>
+            <p class="writing-summary">
+              Why standard POSIX streams, plain text files, and simple HTTP endpoints provide a more resilient foundation for agent tooling than complex multi-layered frameworks.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Section 3: Principles -->
+      <section id="principles">
+        <h2>03. Working Principles</h2>
+        <ol class="principles-list">
+          <li>
+            <strong>Ground all reasoning in verifiable execution.</strong>
+            Language models generate plausible text; compilers, linters, and unit test suites provide ground truth. Agent reasoning loops must always be verified against deterministic runtime feedback.
+          </li>
+          <li>
+            <strong>Use the smallest useful abstraction.</strong>
+            Frameworks accumulate technical debt and obscure failure modes. Prefer declarative schemas, known APIs, Unix primitives, and inspectable intermediate states.
+          </li>
+          <li>
+            <strong>Empirical benchmarking before optimization.</strong>
+            Never tune prompts or agent architectures based on intuition alone. Build automated evaluation loops, measure baseline variance, and iterate methodically.
+          </li>
+        </ol>
+      </section>
+
+      <!-- Section 4: Background -->
+      <section id="background">
+        <h2>04. Background &amp; Timeline</h2>
+        <table class="timeline-table">
+          <tbody>
+            <tr>
+              <td class="timeline-year">NOW</td>
+              <td class="timeline-content">
+                <strong>AI Systems &amp; Agent Infrastructure Research</strong>
+                <p>Building open-source tooling for declarative tool use (apicat), parallel agent sandboxing (emdash), and reproducible evaluation harnesses (benchforge).</p>
+              </td>
+            </tr>
+            <tr>
+              <td class="timeline-year">PREVIOUS</td>
+              <td class="timeline-content">
+                <strong>Systems Engineering &amp; Developer Tooling</strong>
+                <p>Focused on API tooling, minimal web frameworks (vanilla-light), distributed automation pipelines, and model evaluation utilities.</p>
+              </td>
+            </tr>
+            <tr>
+              <td class="timeline-year">METHOD</td>
+              <td class="timeline-content">
+                <strong>Build → Benchmark → Evaluate → Simplify → Repeat.</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <footer>
+      <div>
+        <span>Chris Borkert</span> · <span><a href="https://github.com/digplan">github.com/digplan</a></span> · <span><a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+      </div>
+      <div>
+        <span>borkert.dev</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="main.js"></script>
 </body>
 </html>
