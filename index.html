@@ -6,6 +6,27 @@
   <title>Chris Borkert — AI Systems &amp; Agentic Infrastructure</title>
   <meta name="description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).">
   <meta name="author" content="Chris Borkert">
+  <link rel="canonical" href="https://borkert.dev/">
+
+  <!-- Machine-Readable & Content Negotiation Discoverability -->
+  <link rel="alternate" type="text/markdown" title="Markdown Content" href="/index.md">
+  <link rel="alternate" type="text/markdown" title="LLMs.txt" href="/llms.txt">
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+
+  <!-- Open Graph & Social -->
+  <meta property="og:title" content="Chris Borkert — AI Systems &amp; Agentic Infrastructure">
+  <meta property="og:description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).">
+  <meta property="og:url" content="https://borkert.dev/">
+  <meta property="og:type" content="profile">
+  <meta property="og:site_name" content="borkert.dev">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Chris Borkert — AI Systems &amp; Agentic Infrastructure">
+  <meta name="twitter:description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
 
   <!-- Editorial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,8 +34,148 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
+
+  <!-- JSON-LD Structured Data for AI Agents & Search Engines -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": "https://borkert.dev/#person",
+        "name": "Chris Borkert",
+        "url": "https://borkert.dev",
+        "email": "mailto:chris@borkert.dev",
+        "jobTitle": "Software Engineer & AI Systems Researcher",
+        "description": "Software engineer and researcher working on AI agent infrastructure, declarative tool protocols, deterministic sandboxes, and empirical evaluation systems.",
+        "sameAs": [
+          "https://github.com/digplan",
+          "https://www.npmjs.com/~digplan"
+        ],
+        "knowsAbout": [
+          "AI Agent Infrastructure",
+          "Declarative Tool Protocols",
+          "Deterministic Sandboxes",
+          "Model Evaluation Harnesses",
+          "LLM-as-a-Judge Calibration",
+          "TypeScript",
+          "Bun",
+          "Systems Engineering"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://borkert.dev/#website",
+        "url": "https://borkert.dev/",
+        "name": "Chris Borkert — AI Systems & Agentic Infrastructure",
+        "description": "Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).",
+        "publisher": {
+          "@id": "https://borkert.dev/#person"
+        },
+        "author": {
+          "@id": "https://borkert.dev/#person"
+        },
+        "inLanguage": "en"
+      },
+      {
+        "@type": "ProfilePage",
+        "@id": "https://borkert.dev/#profilepage",
+        "url": "https://borkert.dev/",
+        "name": "Chris Borkert — AI Systems & Agentic Infrastructure",
+        "mainEntity": {
+          "@id": "https://borkert.dev/#person"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://borkert.dev/#apicat",
+        "name": "apicat",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "description": "APIs as executable definitions. Keeps API specifications in concise, human-readable YAML and compiles them into a tiny CLI and TypeScript library.",
+        "url": "https://github.com/digplan/apicat",
+        "author": {
+          "@id": "https://borkert.dev/#person"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://borkert.dev/#prolific",
+        "name": "prolific",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "description": "A minimal, environment-scoped coding agent run by Bun and compatible with OpenAI-compatible LLM backends.",
+        "url": "https://github.com/digplan/prolific",
+        "author": {
+          "@id": "https://borkert.dev/#person"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://borkert.dev/#benchforge",
+        "name": "benchforge",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "description": "Benchmark infrastructure and repeatable evaluation workflows for AI systems.",
+        "url": "https://github.com/digplan/benchforge",
+        "author": {
+          "@id": "https://borkert.dev/#person"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://borkert.dev/#llm-scorer",
+        "name": "llm-scorer",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "description": "Primitives for scoring model outputs and validating reasoning steps.",
+        "url": "https://github.com/digplan/llm-scorer",
+        "author": {
+          "@id": "https://borkert.dev/#person"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://borkert.dev/#compare-llms",
+        "name": "compare-llms",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "description": "Tools for empirical model comparison and reasoning divergence.",
+        "url": "https://github.com/digplan/compare-llms",
+        "author": {
+          "@id": "https://borkert.dev/#person"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://borkert.dev/#vanilla-light",
+        "name": "vanilla-light",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "description": "A no-build, dependency-free full-stack web framework with reactive client and Bun HTTPS server.",
+        "url": "https://github.com/digplan/vanilla-light",
+        "author": {
+          "@id": "https://borkert.dev/#person"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://borkert.dev/#workflow",
+        "name": "workflow",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "description": "Tooling for expressing and executing composable workflows via Unix pipes.",
+        "url": "https://github.com/digplan/workflow",
+        "author": {
+          "@id": "https://borkert.dev/#person"
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to main content</a>
 
   <div class="container">
     <header>
@@ -45,7 +206,7 @@
       </nav>
     </header>
 
-    <main>
+    <main id="main">
       <!-- Section 1: Systems & Software -->
       <section id="systems">
         <h2>01. Systems &amp; Software</h2>

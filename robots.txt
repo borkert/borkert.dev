@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Canonical Sitemaps & Machine-Readable Declarations
+Sitemap: https://borkert.dev/sitemap.xml
+# LLMs Index
+# https://borkert.dev/llms.txt
+# https://borkert.dev/llms-full.txt

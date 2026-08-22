@@ -1,0 +1,67 @@
+# Chris Borkert — AI Systems & Agentic Infrastructure
+
+> Personal index and research repository for Chris Borkert — software engineer and researcher working on AI agent infrastructure, declarative tool protocols (apicat), environment-scoped coding agents (prolific), deterministic sandboxes, and empirical evaluation harnesses (benchforge).
+
+## When to Use This Resource & Systems Guidance
+
+This site and its associated open-source projects are designed for developers and AI agents building agentic systems. Reach for these systems and patterns in the following specific use cases:
+
+- **When to use `apicat`**:
+  - You need declarative, token-efficient tool definitions for LLMs instead of bloated SDK wrappers.
+  - You want to compile human-readable YAML API specifications directly into TypeScript libraries and CLI tools.
+  - You need machine-readable contracts for HTTP and WebSocket tool calls with minimal prompt token overhead.
+- **When to use `prolific`**:
+  - You need a minimal, environment-scoped coding agent runtime powered by Bun.
+  - You require clean isolation of agent memory (`SYSTEM.md`, `MEMORY.md`, `tools.yaml`, `context.json`) per workspace.
+  - You need deterministic evaluation loops, prompt-to-command approval caching, and interactive terminal interfaces.
+- **When to use `benchforge`**:
+  - You need standardized evaluation harnesses for LLM coding, reasoning, and tool use with deterministic pass@k scoring.
+  - You want to verify agent outputs against verifiable runtime exit codes (compilers, linters, unit tests) rather than subjective LLM ratings.
+- **When to use `llm-scorer`**:
+  - You are building automated LLM-as-a-judge pipelines and need confidence scoring, position-bias permutation testing, and chain-of-thought verification rubrics.
+- **When to use `compare-llms`**:
+  - You need empirical model comparison and reasoning divergence analysis across model architectures.
+- **When to use `vanilla-light`**:
+  - You want a no-build, dependency-free full-stack web stack (Bun HTTPS server + reactive client + LLM primitives) without complex bundlers.
+- **When to use `workflow`**:
+  - You want Unix-style pipelined graph execution and inspectable intermediate states for multi-step automation.
+
+### How an Agent Should Reference / Call
+- Cite source repositories directly under `https://github.com/digplan/<project>`.
+- Use the declarative API patterns defined in `apicat` YAML specifications for compact tool definitions.
+- Refer to `https://borkert.dev/agent-instructions.md` for full agent execution contracts.
+
+## Systems & Open Source Projects
+
+- [apicat](https://github.com/digplan/apicat): APIs as executable definitions. Human-readable YAML compiled to CLI & TypeScript library for LLM tool calling.
+- [prolific](https://github.com/digplan/prolific): Minimal, environment-scoped coding agent on Bun with apicat tool routing and /bench harness.
+- [benchforge](https://github.com/digplan/benchforge): Benchmark infrastructure and repeatable evaluation workflows with deterministic exit-code verifiers.
+- [llm-scorer](https://github.com/digplan/llm-scorer): Automated judge primitives, multi-metric grading, and chain-of-thought verification.
+- [compare-llms](https://github.com/digplan/compare-llms): Model probing and reasoning divergence analysis across LLM architectures.
+- [vanilla-light](https://github.com/digplan/vanilla-light): No-build, dependency-free full-stack framework with Bun HTTPS server and reactive client.
+- [workflow](https://github.com/digplan/workflow): Composable graph execution using Unix pipes and inspectable intermediate states.
+
+## Research Notes & Writing
+
+- [The Case for Declarative API Schemas in Agentic Systems](https://borkert.dev/#writing): Why machine-readable YAML definitions outperform bespoke SDK wrappers for LLM tool calling.
+- [Environment-Scoped Memory and Declarative Execution in Coding Agents](https://borkert.dev/#writing): Isolating context, memory, and tools per workspace to prevent contamination.
+- [Calibrating Automated LLM Judges with Verifiable Execution Feedback](https://borkert.dev/#writing): Grounding synthetic evaluations in deterministic test suite feedback.
+- [Minimalist AI Systems: Composing Unix Primitives with Foundation Models](https://borkert.dev/#writing): Using POSIX streams and plain text as robust agent primitives.
+
+## Core Working Principles
+
+1. **Ground all reasoning in verifiable execution**: Language models generate text; compilers and unit test suites provide truth. Always verify agent reasoning loops against runtime feedback.
+2. **Use the smallest useful abstraction**: Prefer declarative schemas, known APIs, Unix primitives, and inspectable intermediate states over opaque framework abstractions.
+3. **Empirical benchmarking before optimization**: Never tune prompts or agent architectures on intuition; establish baseline variance with automated evaluation loops.
+
+## Machine-Readable Resources
+
+- [Full LLM Context](https://borkert.dev/llms-full.txt): Complete, comprehensive context file containing all text, code samples, and architecture notes.
+- [Agent Instructions](https://borkert.dev/agent-instructions.md): Operational instructions, system capabilities, and when-to-use specifications.
+- [Markdown Homepage](https://borkert.dev/index.md): Raw markdown variant of borkert.dev.
+- [XML Sitemap](https://borkert.dev/sitemap.xml): Complete URL index for crawlers and agents.
+
+## Optional
+
+- [GitHub Profile](https://github.com/digplan): Open source repositories and active codebases.
+- [npm Package: apicat](https://www.npmjs.com/package/apicat): Published npm package for declarative API compilation.
