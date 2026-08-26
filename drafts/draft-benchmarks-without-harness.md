@@ -28,7 +28,23 @@ The core thesis of this post is straightforward:
 
 ---
 
-## What a Harness Actually Does
+## The Three Vectors of AI Evaluation
+
+To make sense of any benchmark result, you have to untangle three independent variables:
+
+```
+[ Vector 1: Provider + Model ]   ×   [ Vector 2: Benchmark Dataset ]   ×   [ Vector 3: Agent Harness ]
+• OpenRouter / Gemini 3.7 Flash      • Exercism Python (140 tasks)          • Aider (Diff + pytest)
+• OpenRouter / GLM-5.2               • HumanEval+ (164 tasks)               • EvalPlus (AST Fuzzer)
+• OpenRouter / DeepSeek Flash        • MBPP+ (378 tasks)                    • Cline / OpenCode / SWE-agent
+• (Local: Ollama / vLLM)*            • SWE-bench Lite (300 tasks)           • Claude Code / Antigravity
+```
+
+*(Note: In this post, we evaluate hosted frontier models on OpenRouter to keep network latency and rate limits identical. In a follow-up post, we will run this exact matrix against local models served via Ollama and vLLM).*
+
+---
+
+## What an Agent Harness Actually Does
 
 When someone tweets that Model A beats Model B by 4%, they usually link to a leaderboard table. What they almost never link to is the repository that orchestrated the run.
 
