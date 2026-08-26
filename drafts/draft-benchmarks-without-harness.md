@@ -82,6 +82,68 @@ On Aider, the runner gives the model two tries: if the initial patch fails `pyte
 
 ---
 
+---
+
+## The Four Request-Response Loop Architectures
+
+The reason scores diverge across harnesses is that they orchestrate the model through completely different interaction loops:
+
+### Loop 1: Open-Loop Zero-Shot (EvalPlus, LiveBench)
+*The model gets a single prompt and must handle all reasoning, edge-case simulation, and syntax emission in one shot with zero feedback:*
+
+```mermaid
+flowchart LR
+    A["Task Prompt"] --> B["LLM Generation"]
+    B --> C["AST Code Extractor"]
+    C --> D["Sandbox Test Runner"]
+    D --> E["Single Pass / Fail ($pass@1$)"]
+```
+
+---
+
+### Loop 2: Test-Driven Feedback Loop (Aider Interactive Diff)
+*The model proposes a localized edit. If the compiler fails, the harness feeds the traceback back to the model for a second pass:*
+
+```mermaid
+flowchart TD
+    A["Repo Exercise"] --> B["LLM Emits SEARCH/REPLACE Diff"]
+    B --> C["Harness Applies Patch"]
+    C --> D["Run pytest Compiler"]
+    D -- "Pass (100%)" --> E["Git Commit & Success"]
+    D -- "Fail" --> F["Feed Compiler Traceback to LLM"]
+    F --> G["LLM Turn 2 Patch"]
+    G --> C
+```
+
+---
+
+### Loop 3: Autonomous Tool-Use Loop (SWE-agent, Cline, OpenHands)
+*The model orchestrates a free-form loop of shell commands, file reads, and grep searches inside a persistent Linux sandbox:*
+
+```mermaid
+flowchart TD
+    A["Issue Description"] --> B["LLM Chooses Tool Call"]
+    B --> C["Sandbox Executes Tool: bash / view / edit"]
+    C --> D["Feed stdout / stderr back into Context"]
+    D --> E{"Resolved?"}
+    E -- "No" --> B
+    E -- "Yes" --> F["Submit Repo Patch"]
+```
+
+---
+
+### Loop 4: Multi-Stage Hierarchical Pipeline (Agentless, Moatless)
+*Replaces the open-ended autonomous loop with a structured, deterministic multi-phase pipeline:*
+
+```mermaid
+flowchart LR
+    A["Repo Issue"] --> B["Phase 1: Localize Faulty Files & Lines"]
+    B --> C["Phase 2: Generate Surgical Patch"]
+    C --> D["Phase 3: Run Reproduction Verifier"]
+```
+
+---
+
 ## Four Benchmarks, Four Different Execution Harnesses
 
 To see how rank ordering behaves across different execution paradigms, we evaluated our cohort across four distinct combinations of benchmark datasets and execution harnesses:
