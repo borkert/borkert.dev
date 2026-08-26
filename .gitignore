@@ -1,0 +1,14 @@
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+*.tmp
+
+# Benchmarks secrets, heavy traces, and transient test directories
+benchmarks/.env
+benchmarks/traces/
+benchmarks/tmp.*
+benchmarks/results/evalplus/evalplus_results/
+benchmarks/results/bigcodebench/bcb_results/
+__pycache__/

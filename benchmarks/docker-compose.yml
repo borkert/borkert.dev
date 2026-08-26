@@ -1,0 +1,80 @@
+services:
+  evalplus:
+    build:
+      context: .
+      dockerfile: containers/evalplus.Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./results/evalplus:/workspace/results
+      - ./traces/evalplus:/workspace/traces
+      - ./results/evalplus:/workspace
+
+  aider:
+    build:
+      context: .
+      dockerfile: containers/aider.Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./results/aider:/workspace/results
+      - ./traces/aider:/workspace/traces
+
+  bigcodebench:
+    build:
+      context: .
+      dockerfile: containers/bigcodebench.Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./results/bigcodebench:/workspace/results
+      - ./traces/bigcodebench:/workspace/traces
+      - ./results/bigcodebench:/workspace
+
+  livebench:
+    build:
+      context: .
+      dockerfile: containers/livebench.Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./results/livebench:/workspace/results
+      - ./traces/livebench:/workspace/traces
+
+  # ==================================================================
+  # Agentic Benchmarks (Optional / Local Model Eval)
+  # Run on-demand with: docker compose run --rm <service> <model>
+  # ==================================================================
+  taubench:
+    profiles: ["agentic", "optional"]
+    build:
+      context: .
+      dockerfile: containers/taubench.Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./results/taubench:/workspace/results
+      - ./traces/taubench:/workspace/traces
+
+  swebench-lite:
+    profiles: ["agentic", "optional"]
+    build:
+      context: .
+      dockerfile: containers/swebench-lite.Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./results/swebench:/workspace/results
+      - ./traces/swebench:/workspace/traces
+
+  terminalbench:
+    profiles: ["agentic", "optional"]
+    build:
+      context: .
+      dockerfile: containers/terminalbench.Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./results/terminalbench:/workspace/results
+      - ./traces/terminalbench:/workspace/traces

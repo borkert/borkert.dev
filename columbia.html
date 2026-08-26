@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <title>Columbia Pictures - Three.js Spotlight Experience</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #030509;
+      font-family: 'Montserrat', sans-serif;
+      color: #e2e8f0;
+    }
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Cinematic Columbia Overlay */
+    .cinematic-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 32px 40px;
+    }
+
+    .brand-header {
+      text-align: center;
+      transition: opacity 0.8s ease;
+    }
+
+    .brand-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 5vw, 3.8rem);
+      font-weight: 900;
+      letter-spacing: 0.35em;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(255, 215, 120, 0.4), 0 2px 10px rgba(0, 0, 0, 0.9);
+      background: linear-gradient(180deg, #ffffff 20%, #e2c07b 70%, #99752d 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+      margin-left: 0.35em;
+    }
+
+    .brand-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(0.65rem, 1.2vw, 0.9rem);
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      color: #9cb3d5;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      margin-left: 0.5em;
+    }
+
+    .controls-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      pointer-events: auto;
+    }
+
+    .presets-bar {
+      display: flex;
+      gap: 10px;
+      background: rgba(10, 15, 25, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 40px;
+      padding: 6px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .preset-btn {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .preset-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .preset-btn.active {
+      color: #111827;
+      background: linear-gradient(135deg, #fce09b 0%, #dfa84a 100%);
+      box-shadow: 0 0 16px rgba(239, 185, 87, 0.5);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .action-btn {
+      background: rgba(10, 15, 25, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Loading Screen */
+    #loader {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #030509;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    #loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .spinner {
+      width: 54px;
+      height: 54px;
+      border: 3px solid rgba(239, 185, 87, 0.2);
+      border-top: 3px solid #f2c46d;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 24px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loader-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.3em;
+      color: #f2c46d;
+      margin-bottom: 8px;
+    }
+
+    .loader-status {
+      font-size: 0.85rem;
+      color: #64748b;
+      letter-spacing: 0.1em;
+    }
+
+    /* Lil-GUI Custom Styling */
+    .lil-gui {
+      --background-color: rgba(10, 14, 24, 0.8) !important;
+      --text-color: #e2e8f0 !important;
+      --title-background-color: rgba(20, 27, 45, 0.9) !important;
+      --widget-color: rgba(30, 41, 67, 0.85) !important;
+      --hover-color: rgba(50, 68, 108, 0.9) !important;
+      --focus-color: #dfa84a !important;
+      --number-color: #fce09b !important;
+      --string-color: #6ee7b7 !important;
+      font-family: 'Montserrat', sans-serif !important;
+      border-radius: 12px !important;
+      overflow: hidden !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      margin-top: 20px !important;
+      margin-right: 20px !important;
+      z-index: 50 !important;
+    }
+
+    /* Hint banner */
+    .hint-banner {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: rgba(255, 255, 255, 0.45);
+      text-transform: uppercase;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+  </style>
+
+  <!-- Import Maps for modern Three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Loading State -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <div class="loader-title">COLUMBIA PICTURES</div>
+    <div class="loader-status" id="loader-status">Initializing WebGL Spotlight Scene...</div>
+  </div>
+
+  <!-- Cinematic Overlay UI -->
+  <div class="cinematic-overlay">
+    <header class="brand-header">
+      <h1 class="brand-title">COLUMBIA</h1>
+      <p class="brand-subtitle">A SONY PICTURES ENTERTAINMENT COMPANY</p>
+    </header>
+
+    <div class="hint-banner" id="hint">Drag to Rotate • Scroll to Zoom • Right-Click to Pan</div>
+
+    <div class="controls-bottom">
+      <div class="presets-bar">
+        <button class="preset-btn active" data-preset="columbia">Iconic Columbia</button>
+        <button class="preset-btn" data-preset="spotlight">Studio Spotlight</button>
+        <button class="preset-btn" data-preset="midnight">Midnight Dramatic</button>
+        <button class="preset-btn" data-preset="golden">Golden Hour</button>
+      </div>
+
+      <div class="action-buttons">
+        <button class="action-btn" id="btn-camera-view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="12 8 8 12 12 16 12 8"/><line x1="16" y1="12" x2="12" y2="12"/></svg>
+          Cinematic Orbit
+        </button>
+        <button class="action-btn" id="btn-snapshot">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Snapshot 4K
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Three.js Application Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+    import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+    // Application state
+    let renderer, scene, camera, controls, composer;
+    let bloomPass;
+    let spotLight, spotLightHelper, spotLightShadowHelper;
+    let torchLight, torchFlaresGroup, flameMesh, emberParticles;
+    let volumetricConeMesh;
+    let statueGroup, pedestalGroup;
+    let dustParticles;
+    let clock = new THREE.Clock();
+
+    const params = {
+      // Spotlight params (Three.js spotlight demo style)
+      spotIntensity: 180,
+      spotColor: '#ffffff',
+      spotAngle: Math.PI / 5.2,
+      spotPenumbra: 0.85,
+      spotDecay: 1.8,
+      spotDistance: 35,
+      spotOrbit: true,
+      spotOrbitSpeed: 0.6,
+      spotHeight: 7.2,
+      spotRadius: 4.2,
+      
+      // Torch params
+      torchIntensity: 35,
+      torchColor: '#ffa834',
+      torchFlicker: true,
+      torchEmbers: true,
+      
+      // Volumetric beam
+      volumetricBeam: true,
+      beamOpacity: 0.45,
+      
+      // Post processing
+      bloomEnabled: true,
+      bloomStrength: 0.8,
+      bloomRadius: 0.5,
+      bloomThreshold: 0.35,
+      exposure: 1.05,
+      
+      // Helpers
+      helpers: false,
+      autoRotateCamera: false
+    };
+
+    const container = document.getElementById('canvas-container');
+    const loaderElement = document.getElementById('loader');
+    const loaderStatus = document.getElementById('loader-status');
+
+    init();
+
+    function init() {
+      // 1. Setup Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = params.exposure;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // 2. Setup Scene & Camera
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x020408);
+      scene.fog = new THREE.FogExp2(0x020408, 0.035);
+
+      camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 2.5, 7.5);
+
+      // 3. Orbit Controls
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.minDistance = 2.5;
+      controls.maxDistance = 16;
+      controls.maxPolarAngle = Math.PI / 2 - 0.02; // Don't go under floor
+      controls.target.set(0, 1.85, 0);
+      controls.update();
+
+      // 4. Setup Lighting
+      setupLighting();
+
+      // 5. Setup Floor & Pedestal
+      setupEnvironment();
+
+      // 6. Setup Volumetric Light Cone
+      setupVolumetricSpotlight();
+
+      // 7. Setup Dust Particles
+      setupAtmosphericDust();
+
+      // 8. Load Model & Torch Assembly
+      loadStatueAndTorch();
+
+      // 9. Post Processing Pipeline (Bloom & Glow)
+      setupPostProcessing();
+
+      // 10. Setup GUI & UI Listeners
+      setupGUI();
+      setupUI();
+
+      // Window resize
+      window.addEventListener('resize', onWindowResize);
+
+      // Start Animation Loop
+      renderer.setAnimationLoop(animate);
+    }
+
+    function setupLighting() {
+      // Ambient Fill
+      const ambientLight = new THREE.HemisphereLight(0x2a3852, 0x070b14, 0.45);
+      scene.add(ambientLight);
+
+      // Subtle Rim / Fill Light from back
+      const rimLight = new THREE.DirectionalLight(0x4d74b0, 0.9);
+      rimLight.position.set(-5, 6, -6);
+      scene.add(rimLight);
+
+      // Main Three.js Spotlight (Demo Core)
+      spotLight = new THREE.SpotLight(new THREE.Color(params.spotColor), params.spotIntensity);
+      spotLight.position.set(2.8, params.spotHeight, 2.8);
+      spotLight.angle = params.spotAngle;
+      spotLight.penumbra = params.spotPenumbra;
+      spotLight.decay = params.spotDecay;
+      spotLight.distance = params.spotDistance;
+      spotLight.castShadow = true;
+
+      // High Quality Shadows
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.near = 1;
+      spotLight.shadow.camera.far = 25;
+      spotLight.shadow.bias = -0.0008;
+      spotLight.shadow.focus = 1;
+
+      // Spotlight target
+      const spotTarget = new THREE.Object3D();
+      spotTarget.position.set(0, 1.4, 0);
+      scene.add(spotTarget);
+      spotLight.target = spotTarget;
+
+      scene.add(spotLight);
+
+      // Light Helpers
+      spotLightHelper = new THREE.SpotLightHelper(spotLight);
+      spotLightHelper.visible = params.helpers;
+      scene.add(spotLightHelper);
+
+      spotLightShadowHelper = new THREE.CameraHelper(spotLight.shadow.camera);
+      spotLightShadowHelper.visible = params.helpers;
+      scene.add(spotLightShadowHelper);
+    }
+
+    function setupEnvironment() {
+      // 1. Dark Glossy Studio Floor (Obsidian Marble Style with soft reflections)
+      const floorGeo = new THREE.PlaneGeometry(30, 30);
+      
+      // Procedural canvas noise texture for floor micro-roughness
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#10141c';
+      ctx.fillRect(0, 0, 512, 512);
+      
+      // Radial floor vignette
+      const grad = ctx.createRadialGradient(256, 256, 50, 256, 256, 256);
+      grad.addColorStop(0, 'rgba(35, 45, 65, 0.4)');
+      grad.addColorStop(1, 'rgba(5, 7, 12, 0.9)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      const floorTexture = new THREE.CanvasTexture(canvas);
+      floorTexture.colorSpace = THREE.SRGBColorSpace;
+
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x090d14,
+        roughness: 0.22,
+        metalness: 0.15,
+        map: floorTexture
+      });
+
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -0.01;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // 2. Classical Multi-Tier Neoclassical Pedestal
+      pedestalGroup = new THREE.Group();
+
+      const marbleMat = new THREE.MeshStandardMaterial({
+        color: 0xe8e2d5,
+        roughness: 0.38,
+        metalness: 0.05
+      });
+
+      const darkPlinthMat = new THREE.MeshStandardMaterial({
+        color: 0x5a544d,
+        roughness: 0.45,
+        metalness: 0.1
+      });
+
+      // Bottom Base Plinth (Stepped Tier 1)
+      const base1Geo = new THREE.BoxGeometry(2.4, 0.18, 2.4);
+      const base1 = new THREE.Mesh(base1Geo, darkPlinthMat);
+      base1.position.y = 0.09;
+      base1.receiveShadow = true;
+      base1.castShadow = true;
+      pedestalGroup.add(base1);
+
+      // Stepped Tier 2
+      const base2Geo = new THREE.BoxGeometry(2.1, 0.15, 2.1);
+      const base2 = new THREE.Mesh(base2Geo, marbleMat);
+      base2.position.y = 0.25;
+      base2.receiveShadow = true;
+      base2.castShadow = true;
+      pedestalGroup.add(base2);
+
+      // Main Dado / Pedestal Column
+      const dadoGeo = new THREE.CylinderGeometry(0.85, 0.92, 0.8, 32);
+      const dado = new THREE.Mesh(dadoGeo, marbleMat);
+      dado.position.y = 0.72;
+      dado.receiveShadow = true;
+      dado.castShadow = true;
+      pedestalGroup.add(dado);
+
+      // Top Cornice / Capital
+      const capGeo = new THREE.CylinderGeometry(1.02, 0.88, 0.16, 32);
+      const cap = new THREE.Mesh(capGeo, marbleMat);
+      cap.position.y = 1.18;
+      cap.receiveShadow = true;
+      cap.castShadow = true;
+      pedestalGroup.add(cap);
+
+      // Inscribed Classical Ring
+      const ringGeo = new THREE.TorusGeometry(0.88, 0.03, 16, 48);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0xc49b45, metalness: 0.8, roughness: 0.3 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 1.1;
+      pedestalGroup.add(ring);
+
+      scene.add(pedestalGroup);
+    }
+
+    function setupVolumetricSpotlight() {
+      // 3D Volumetric Spotlight Cone Shader Mesh
+      const coneHeight = 12;
+      const coneRadius = coneHeight * Math.tan(params.spotAngle);
+      const coneGeo = new THREE.CylinderGeometry(0.1, coneRadius, coneHeight, 32, 1, true);
+      coneGeo.translate(0, -coneHeight / 2, 0);
+      coneGeo.rotateX(-Math.PI / 2);
+
+      const coneShaderMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uColor: { value: new THREE.Color(0xffffff) },
+          uOpacity: { value: params.beamOpacity }
+        },
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vWorldPosition;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 worldPos = modelMatrix * vec4(position, 1.0);
+            vWorldPosition = worldPos.xyz;
+            gl_Position = projectionMatrix * viewMatrix * worldPos;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uColor;
+          uniform float uOpacity;
+          varying vec3 vNormal;
+          varying vec3 vWorldPosition;
+          void main() {
+            float viewAngle = abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
+            float intensity = pow(1.0 - viewAngle, 2.2) * uOpacity;
+            gl_FragColor = vec4(uColor, intensity * 0.45);
+          }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+
+      volumetricConeMesh = new THREE.Mesh(coneGeo, coneShaderMat);
+      volumetricConeMesh.position.copy(spotLight.position);
+      volumetricConeMesh.lookAt(spotLight.target.position);
+      scene.add(volumetricConeMesh);
+    }
+
+    function setupAtmosphericDust() {
+      // Floating dust particles catching spotlight
+      const particleCount = 450;
+      const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      const scales = new Float32Array(particleCount);
+
+      for (let i = 0; i < particleCount; i++) {
+        positions[i * 3 + 0] = (Math.random() - 0.5) * 8;
+        positions[i * 3 + 1] = Math.random() * 6;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 8;
+        scales[i] = Math.random() * 0.03 + 0.01;
+      }
+
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+
+      const mat = new THREE.PointsMaterial({
+        color: 0xffeedd,
+        size: 0.04,
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending
+      });
+
+      dustParticles = new THREE.Points(geo, mat);
+      scene.add(dustParticles);
+    }
+
+    function loadStatueAndTorch() {
+      statueGroup = new THREE.Group();
+      loaderStatus.innerText = 'Loading Classical Statue Mesh...';
+
+      // Load Stanford Lucy PLY mesh
+      const loader = new PLYLoader();
+      
+      const tryLoad = (url, isFallback = false) => {
+        loader.load(
+          url,
+          (geometry) => {
+            geometry.scale(0.0028, 0.0028, 0.0028);
+            geometry.computeVertexNormals();
+
+            // Classical Marble / Alabaster Material
+            const statueMat = new THREE.MeshStandardMaterial({
+              color: 0xf5eedc,
+              roughness: 0.28,
+              metalness: 0.02,
+              bumpScale: 0.05
+            });
+
+            const statueMesh = new THREE.Mesh(geometry, statueMat);
+            statueMesh.rotation.y = -Math.PI / 2;
+            statueMesh.position.set(0, 1.25, 0);
+            statueMesh.castShadow = true;
+            statueMesh.receiveShadow = true;
+            statueGroup.add(statueMesh);
+
+            // Add Royal Blue Draped Sash
+            addRoyalBlueSash();
+
+            // Add Majestic Torch Assembly to Statue Hand
+            addTorchAssembly();
+
+            scene.add(statueGroup);
+            finishLoading();
+          },
+          (xhr) => {
+            if (xhr.lengthComputable) {
+              const pct = Math.round((xhr.loaded / xhr.total) * 100);
+              loaderStatus.innerText = `Loading Assets (${pct}%)...`;
+            }
+          },
+          (err) => {
+            if (!isFallback) {
+              console.warn('Local PLY load failed, attempting CDN fallback...', err);
+              tryLoad('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/ply/binary/Lucy100k.ply', true);
+            } else {
+              console.warn('CDN PLY load failed, creating procedural Torch Lady figure.', err);
+              buildProceduralTorchLady();
+              finishLoading();
+            }
+          }
+        );
+      };
+
+      tryLoad('models/Lucy100k.ply');
+    }
+
+    function addRoyalBlueSash() {
+      // Columbia signature royal blue sash draping across the shoulder
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.35, 3.15, 0.15),
+        new THREE.Vector3(-0.25, 2.75, 0.32),
+        new THREE.Vector3(0.1, 2.3, 0.35),
+        new THREE.Vector3(0.38, 1.8, 0.28),
+        new THREE.Vector3(0.48, 1.35, 0.18)
+      ]);
+
+      const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.14, 12, false);
+      const sashMat = new THREE.MeshStandardMaterial({
+        color: 0x1642a8,
+        roughness: 0.55,
+        metalness: 0.1
+      });
+
+      const sashMesh = new THREE.Mesh(tubeGeo, sashMat);
+      sashMesh.castShadow = true;
+      sashMesh.receiveShadow = true;
+      statueGroup.add(sashMesh);
+    }
+
+    function addTorchAssembly() {
+      // Torch position relative to raised arm
+      const torchPos = new THREE.Vector3(0.58, 3.82, 0.22);
+
+      torchFlaresGroup = new THREE.Group();
+      torchFlaresGroup.position.copy(torchPos);
+
+      // 1. Ornate Gilded Torch Handle & Cup
+      const handleGeo = new THREE.CylinderGeometry(0.035, 0.02, 0.45, 16);
+      const cupGeo = new THREE.CylinderGeometry(0.12, 0.04, 0.16, 16);
+      cupGeo.translate(0, 0.26, 0);
+
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xffd269,
+        metalness: 0.95,
+        roughness: 0.2
+      });
+
+      const handle = new THREE.Mesh(handleGeo, goldMat);
+      handle.castShadow = true;
+      torchFlaresGroup.add(handle);
+
+      const cup = new THREE.Mesh(cupGeo, goldMat);
+      cup.castShadow = true;
+      torchFlaresGroup.add(cup);
+
+      // 2. Animated Torch Flame (Layered Glowing Emissive Spheres & Cone)
+      const flameGeo = new THREE.ConeGeometry(0.12, 0.38, 16);
+      flameGeo.translate(0, 0.46, 0);
+
+      const flameMat = new THREE.MeshBasicMaterial({
+        color: 0xffe073,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending
+      });
+
+      flameMesh = new THREE.Mesh(flameGeo, flameMat);
+      torchFlaresGroup.add(flameMesh);
+
+      // Inner intense core
+      const coreGeo = new THREE.SphereGeometry(0.08, 16, 16);
+      coreGeo.translate(0, 0.36, 0);
+      const coreMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 1.0,
+        blending: THREE.AdditiveBlending
+      });
+      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      torchFlaresGroup.add(coreMesh);
+
+      // 3. Torch PointLight (Illuminates woman's face & drapery)
+      torchLight = new THREE.PointLight(new THREE.Color(params.torchColor), params.torchIntensity, 6, 2);
+      torchLight.position.set(0, 0.42, 0);
+      torchLight.castShadow = true;
+      torchLight.shadow.bias = -0.002;
+      torchLight.shadow.mapSize.width = 1024;
+      torchLight.shadow.mapSize.height = 1024;
+      torchFlaresGroup.add(torchLight);
+
+      // 4. Volumetric Sunburst / Starburst Lens Flare Rays
+      const sunburstTexture = createSunburstTexture();
+      const spriteMat = new THREE.SpriteMaterial({
+        map: sunburstTexture,
+        color: 0xffd073,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending
+      });
+
+      const flareSprite = new THREE.Sprite(spriteMat);
+      flareSprite.position.set(0, 0.42, 0);
+      flareSprite.scale.set(2.8, 2.8, 1.0);
+      torchFlaresGroup.add(flareSprite);
+
+      // 5. Rising Spark / Ember Particles
+      setupEmbers(torchFlaresGroup);
+
+      statueGroup.add(torchFlaresGroup);
+    }
+
+    function setupEmbers(parent) {
+      const count = 60;
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      const life = new Float32Array(count);
+
+      for (let i = 0; i < count; i++) {
+        pos[i * 3 + 0] = (Math.random() - 0.5) * 0.15;
+        pos[i * 3 + 1] = 0.4 + Math.random() * 0.8;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 0.15;
+        life[i] = Math.random();
+      }
+
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('life', new THREE.BufferAttribute(life, 1));
+
+      const emberMat = new THREE.PointsMaterial({
+        color: 0xffb738,
+        size: 0.035,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending
+      });
+
+      emberParticles = new THREE.Points(geo, emberMat);
+      parent.add(emberParticles);
+    }
+
+    function createSunburstTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const cx = 128, cy = 128;
+
+      // Glow gradient
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 120);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      grad.addColorStop(0.15, 'rgba(255, 220, 120, 0.8)');
+      grad.addColorStop(0.5, 'rgba(255, 140, 30, 0.25)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 256, 256);
+
+      // Starburst rays
+      ctx.strokeStyle = 'rgba(255, 235, 180, 0.35)';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 16; i++) {
+        const angle = (i / 16) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(angle) * 120, cy + Math.sin(angle) * 120);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function buildProceduralTorchLady() {
+      const marbleMat = new THREE.MeshStandardMaterial({ color: 0xf5eedc, roughness: 0.3, metalness: 0.05 });
+      
+      const bodyGeo = new THREE.CylinderGeometry(0.28, 0.55, 2.1, 24);
+      const body = new THREE.Mesh(bodyGeo, marbleMat);
+      body.position.set(0, 2.3, 0);
+      body.castShadow = true;
+      body.receiveShadow = true;
+      statueGroup.add(body);
+
+      const headGeo = new THREE.SphereGeometry(0.18, 20, 20);
+      const head = new THREE.Mesh(headGeo, marbleMat);
+      head.position.set(0, 3.45, 0);
+      head.castShadow = true;
+      statueGroup.add(head);
+
+      const armGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.9, 12);
+      armGeo.rotateZ(-Math.PI / 4);
+      const arm = new THREE.Mesh(armGeo, marbleMat);
+      arm.position.set(0.35, 3.5, 0.1);
+      arm.castShadow = true;
+      statueGroup.add(arm);
+
+      addRoyalBlueSash();
+      addTorchAssembly();
+      scene.add(statueGroup);
+    }
+
+    function setupPostProcessing() {
+      composer = new EffectComposer(renderer);
+
+      const renderPass = new RenderPass(scene, camera);
+      composer.addPass(renderPass);
+
+      // UnrealBloom for dramatic glowing torch flame and spotlight halo
+      bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        params.bloomStrength,
+        params.bloomRadius,
+        params.bloomThreshold
+      );
+      composer.addPass(bloomPass);
+
+      const outputPass = new OutputPass();
+      composer.addPass(outputPass);
+    }
+
+    function finishLoading() {
+      setTimeout(() => {
+        loaderElement.classList.add('hidden');
+        animateCameraIntro();
+      }, 400);
+    }
+
+    function animateCameraIntro() {
+      const startTime = performance.now();
+      const startPos = new THREE.Vector3(0, 0.8, 9.5);
+      const endPos = new THREE.Vector3(0, 2.4, 6.2);
+      camera.position.copy(startPos);
+
+      function step(now) {
+        const elapsed = (now - startTime) / 2200;
+        if (elapsed < 1) {
+          const t = easeOutCubic(elapsed);
+          camera.position.lerpVectors(startPos, endPos, t);
+          controls.target.set(0, 1.85, 0);
+          controls.update();
+          requestAnimationFrame(step);
+        } else {
+          camera.position.copy(endPos);
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function setupGUI() {
+      const gui = new GUI({ title: 'Studio Spotlight & FX' });
+
+      const spotFolder = gui.addFolder('Three.js Spotlight');
+      spotFolder.add(params, 'spotIntensity', 0, 400, 1).name('Intensity').onChange(v => spotLight.intensity = v);
+      spotFolder.addColor(params, 'spotColor').name('Light Color').onChange(c => {
+        spotLight.color.set(c);
+        if (volumetricConeMesh) volumetricConeMesh.material.uniforms.uColor.value.set(c);
+      });
+      spotFolder.add(params, 'spotAngle', 0.1, Math.PI / 3, 0.01).name('Cone Angle').onChange(v => {
+        spotLight.angle = v;
+        if (spotLightHelper) spotLightHelper.update();
+      });
+      spotFolder.add(params, 'spotPenumbra', 0, 1, 0.02).name('Penumbra').onChange(v => spotLight.penumbra = v);
+      spotFolder.add(params, 'spotDecay', 1, 3, 0.1).name('Decay').onChange(v => spotLight.decay = v);
+      spotFolder.add(params, 'spotOrbit').name('Orbiting Light');
+      spotFolder.add(params, 'spotOrbitSpeed', 0.1, 2.0, 0.1).name('Orbit Speed');
+      spotFolder.add(params, 'helpers').name('Show Helpers').onChange(v => {
+        spotLightHelper.visible = v;
+        spotLightShadowHelper.visible = v;
+      });
+
+      const torchFolder = gui.addFolder('Columbia Torch');
+      torchFolder.add(params, 'torchIntensity', 0, 100, 1).name('Torch Brightness').onChange(v => {
+        if (torchLight) torchLight.intensity = v;
+      });
+      torchFolder.addColor(params, 'torchColor').name('Flame Tint').onChange(c => {
+        if (torchLight) torchLight.color.set(c);
+      });
+      torchFolder.add(params, 'torchFlicker').name('Realistic Flicker');
+
+      const fxFolder = gui.addFolder('Cinematic FX');
+      fxFolder.add(params, 'volumetricBeam').name('Volumetric Cone').onChange(v => {
+        if (volumetricConeMesh) volumetricConeMesh.visible = v;
+      });
+      fxFolder.add(params, 'beamOpacity', 0.0, 1.0, 0.05).name('Beam Density').onChange(v => {
+        if (volumetricConeMesh) volumetricConeMesh.material.uniforms.uOpacity.value = v;
+      });
+      fxFolder.add(params, 'bloomStrength', 0, 2.5, 0.05).name('Bloom Glow').onChange(v => bloomPass.strength = v);
+      fxFolder.add(params, 'exposure', 0.2, 2.5, 0.05).name('Tone Exposure').onChange(v => renderer.toneMappingExposure = v);
+
+      gui.close();
+    }
+
+    function setupUI() {
+      const presetButtons = document.querySelectorAll('.preset-btn');
+      presetButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          presetButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          applyPreset(btn.dataset.preset);
+        });
+      });
+
+      const cameraBtn = document.getElementById('btn-camera-view');
+      cameraBtn.addEventListener('click', () => {
+        params.autoRotateCamera = !params.autoRotateCamera;
+        controls.autoRotate = params.autoRotateCamera;
+        controls.autoRotateSpeed = 1.2;
+        cameraBtn.style.background = params.autoRotateCamera ? 'rgba(239, 185, 87, 0.3)' : '';
+      });
+
+      const snapshotBtn = document.getElementById('btn-snapshot');
+      snapshotBtn.addEventListener('click', () => {
+        const helpersState = spotLightHelper.visible;
+        spotLightHelper.visible = false;
+        spotLightShadowHelper.visible = false;
+        
+        composer.render();
+        const dataUrl = renderer.domElement.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'columbia-pictures-threejs-spotlight.png';
+        link.href = dataUrl;
+        link.click();
+
+        spotLightHelper.visible = helpersState;
+        spotLightShadowHelper.visible = helpersState;
+      });
+
+      const hint = document.getElementById('hint');
+      window.addEventListener('pointerdown', () => {
+        if (hint) hint.style.opacity = '0';
+      }, { once: true });
+    }
+
+    function applyPreset(preset) {
+      if (preset === 'columbia') {
+        params.spotIntensity = 180;
+        params.spotColor = '#ffffff';
+        params.spotOrbit = true;
+        params.torchIntensity = 35;
+        params.bloomStrength = 0.8;
+        params.exposure = 1.05;
+      } else if (preset === 'spotlight') {
+        params.spotIntensity = 240;
+        params.spotColor = '#f0f5ff';
+        params.spotOrbit = true;
+        params.torchIntensity = 10;
+        params.bloomStrength = 0.4;
+        params.exposure = 0.95;
+      } else if (preset === 'midnight') {
+        params.spotIntensity = 120;
+        params.spotColor = '#6894d8';
+        params.spotOrbit = false;
+        spotLight.position.set(0, 7.5, 3.5);
+        params.torchIntensity = 60;
+        params.bloomStrength = 1.2;
+        params.exposure = 1.1;
+      } else if (preset === 'golden') {
+        params.spotIntensity = 200;
+        params.spotColor = '#ffdf99';
+        params.torchIntensity = 45;
+        params.bloomStrength = 0.9;
+        params.exposure = 1.2;
+      }
+
+      spotLight.intensity = params.spotIntensity;
+      spotLight.color.set(params.spotColor);
+      if (volumetricConeMesh) volumetricConeMesh.material.uniforms.uColor.value.set(params.spotColor);
+      if (torchLight) torchLight.intensity = params.torchIntensity;
+      bloomPass.strength = params.bloomStrength;
+      renderer.toneMappingExposure = params.exposure;
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      const delta = clock.getDelta();
+      const time = performance.now() * 0.001;
+
+      // 1. Orbiting Spotlight Motion
+      if (params.spotOrbit) {
+        const orbitTime = time * params.spotOrbitSpeed;
+        spotLight.position.x = Math.cos(orbitTime) * params.spotRadius;
+        spotLight.position.z = Math.sin(orbitTime) * params.spotRadius;
+        spotLight.position.y = params.spotHeight;
+      }
+
+      // Update Volumetric Cone alignment with Spotlight
+      if (volumetricConeMesh && volumetricConeMesh.visible) {
+        volumetricConeMesh.position.copy(spotLight.position);
+        volumetricConeMesh.lookAt(spotLight.target.position);
+      }
+
+      // 2. Torch Flame Flicker Animation
+      if (flameMesh && params.torchFlicker) {
+        const flicker = Math.sin(time * 18.0) * 0.08 + Math.cos(time * 31.0) * 0.05 + 1.0;
+        flameMesh.scale.set(flicker, flicker * 1.1, flicker);
+        if (torchLight) {
+          torchLight.intensity = params.torchIntensity * (0.9 + Math.random() * 0.2);
+        }
+      }
+
+      // 3. Update Ember Particles
+      if (emberParticles && params.torchEmbers) {
+        const positions = emberParticles.geometry.attributes.position.array;
+        const count = positions.length / 3;
+        for (let i = 0; i < count; i++) {
+          positions[i * 3 + 1] += delta * (0.4 + Math.sin(i + time) * 0.1);
+          positions[i * 3 + 0] += Math.sin(time * 3 + i) * 0.003;
+          if (positions[i * 3 + 1] > 1.4) {
+            positions[i * 3 + 1] = 0.4;
+            positions[i * 3 + 0] = (Math.random() - 0.5) * 0.12;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 0.12;
+          }
+        }
+        emberParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // 4. Update Atmospheric Dust Motion
+      if (dustParticles) {
+        const dPos = dustParticles.geometry.attributes.position.array;
+        const dCount = dPos.length / 3;
+        for (let i = 0; i < dCount; i++) {
+          dPos[i * 3 + 1] += Math.sin(time * 0.5 + i) * 0.002;
+          dPos[i * 3 + 0] += Math.cos(time * 0.3 + i) * 0.001;
+        }
+        dustParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // 5. Update Helpers
+      if (params.helpers) {
+        spotLightHelper.update();
+      }
+
+      // 6. Controls Update
+      controls.update();
+
+      // 7. Render with Post Processing Composer
+      if (params.bloomEnabled) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
+    }
+  </script>
+</body>
+</html>
