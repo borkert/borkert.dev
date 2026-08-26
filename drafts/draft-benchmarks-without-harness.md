@@ -66,16 +66,16 @@ On Aider, the runner gives the model two tries: if the initial patch fails `pyte
 
 ---
 
-## Four Harnesses, Four Different Failure Modes
+## Four Benchmarks, Four Different Execution Harnesses
 
-To see how rank ordering behaves in practice, we set up four open-source benchmarks in isolated Docker containers:
+To see how rank ordering behaves across different execution paradigms, we evaluated our cohort across four distinct combinations of benchmark datasets and execution harnesses:
 
-| Benchmark | Harness Type | What It Actually Stresses | Where Models Break |
+| Benchmark Dataset | Execution Harness / Runner | What the Harness Stresses | Where Models Break |
 | :--- | :--- | :--- | :--- |
-| **[LiveBench](https://github.com/livebench/livebench)** | Rotating questions, zero-shot | Reasoning breadth, math without tools | Distribution shift / memorization |
-| **[Aider Bench](https://github.com/Aider-AI/aider)** | Repo-level diff editing with `pytest` | Edit contract compliance, error recovery | Malformed diff fences / syntax drift |
-| **[EvalPlus](https://github.com/evalplus/evalplus)** | Fuzzed unit tests on isolated functions | Boundary condition correctness | Lazy assumptions on edge cases |
-| **[BigCodeBench](https://github.com/bigcode-project/bigcode-bench)** | Docker sandbox with 139+ Python packages | Real library composition (`pandas`, `numpy`) | Hallucinating package methods |
+| **[Exercism Python](https://exercism.org)** (140 exercises) | **Aider Interactive Diff Runner** (`pytest` feedback loop) | Diff format adherence, error recovery | Malformed search/replace fences |
+| **[HumanEval+ & MBPP+](https://evalplus.github.io)** (542 tasks) | **EvalPlus Fuzzer Runner** (AST extraction, 80x test fuzzing) | Zero-shot boundary correctness | Edge cases (empty lists, recursion) |
+| **[BigCodeBench](https://bigcode-bench.github.io)** (1,140 tasks) | **Docker Package Sandbox** (139+ Python dependencies) | Real library syntax composition | Hallucinated library parameters |
+| **[LiveBench](https://livebench.ai)** (~1,000 tasks) | **Zero-Shot Evaluation Runner** (Ground truth grading) | Uncontaminated reasoning breadth | Memorization drift / math without tools |
 
 ---
 
@@ -85,20 +85,20 @@ To see how rank ordering behaves in practice, we set up four open-source benchma
 
 Here are the empirical results from our runs across the test cohort:
 
-### 1. The Model × Harness Matrix
+### 1. The Model × Benchmark × Harness Matrix
 
-A benchmark score is not an intrinsic scalar; it is the output of an interaction between model weights and a specific execution harness:
+A benchmark score is not an intrinsic property of model weights. It is the output of an interaction between the model, the task dataset, and the execution harness:
 
-| Model | Harness Architecture | Output / Edit Protocol | Verification Mechanism | Attempt Budget | Empirical Pass Rate |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **`google/gemini-3.7-flash`** | **EvalPlus (HumanEval+)** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **72.6%** (119/164) |
-| **`google/gemini-3.7-flash`** | **EvalPlus (MBPP+)** | Zero-Shot Function AST | Extended Contract Fuzzing | $pass@1$ (0 retries) | **71.4%** (270/378) |
-| **`google/gemini-3.7-flash`** | **Aider Bench** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **99.3%** (139/140) |
-| **`z-ai/glm-5.2`** | **EvalPlus (HumanEval+)** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **54.9%** (90/164) |
-| **`z-ai/glm-5.2`** | **EvalPlus (MBPP+)** | Zero-Shot Function AST | Extended Contract Fuzzing | $pass@1$ (0 retries) | **65.3%** (247/378) |
-| **`z-ai/glm-5.2`** | **Aider Bench** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **91.4%** (128/140) |
-| **`deepseek/deepseek-v4-flash-0731`** | **EvalPlus (HumanEval+)** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **67.7%** (111/164) |
-| **`deepseek/deepseek-v4-flash-0731`** | **Aider Bench** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **71.4%** (20/28) |
+| Model | Benchmark Dataset | Evaluation Harness / Scaffold | Output / Edit Protocol | Verification Mechanism | Attempt Budget | Empirical Pass Rate |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`google/gemini-3.7-flash`** | **HumanEval+** (164 tasks) | **EvalPlus Fuzzer Runner** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **72.6%** (119/164) |
+| **`google/gemini-3.7-flash`** | **MBPP+** (378 tasks) | **EvalPlus Fuzzer Runner** | Zero-Shot Function AST | Extended Contract Fuzzing | $pass@1$ (0 retries) | **71.4%** (270/378) |
+| **`google/gemini-3.7-flash`** | **Exercism** (140 tasks) | **Aider Interactive Diff Runner** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **99.3%** (139/140) |
+| **`z-ai/glm-5.2`** | **HumanEval+** (164 tasks) | **EvalPlus Fuzzer Runner** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **54.9%** (90/164) |
+| **`z-ai/glm-5.2`** | **MBPP+** (378 tasks) | **EvalPlus Fuzzer Runner** | Zero-Shot Function AST | Extended Contract Fuzzing | $pass@1$ (0 retries) | **65.3%** (247/378) |
+| **`z-ai/glm-5.2`** | **Exercism** (140 tasks) | **Aider Interactive Diff Runner** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **91.4%** (128/140) |
+| **`deepseek/deepseek-v4-flash-0731`** | **HumanEval+** (164 tasks) | **EvalPlus Fuzzer Runner** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **67.7%** (111/164) |
+| **`deepseek/deepseek-v4-flash-0731`** | **Exercism** (140 tasks) | **Aider Interactive Diff Runner** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **71.4%** (20/28) |
 
 ### 2. Separate Harness Comparisons: Model vs. Model
 
