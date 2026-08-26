@@ -81,15 +81,27 @@ To see how rank ordering behaves in practice, we set up four open-source benchma
 
 Here are the empirical results from our runs across the test cohort:
 
-### 1. Multi-Harness Accuracy Matrix
+### 1. The Model × Harness Matrix
 
-| Model | EvalPlus (HumanEval+) | EvalPlus (MBPP+) | Aider Bench (Diff Edit %) | Failure Mode Observed in Traces |
-| :--- | :--- | :--- | :--- | :--- |
-| **`google/gemini-3.7-flash`** | **72.6%** (119/164) | **71.4%** (270/378) | **99.3%** (139/140) | Rarely fails diff fences; near-flawless Search/Replace compliance. |
-| **`z-ai/glm-5.2`** | **54.9%** (90/164) | **65.3%** (247/378) | **91.4%** (128/140) | Occasional edge-case boundary misses; strong diff formatting recovery. |
-| **`deepseek/deepseek-v4-flash-0731`** | **67.7%** (111/164) | *Evaluating* | *Evaluating* | Fast generation; high zero-shot contract accuracy on functional tasks. |
+A benchmark score is not an intrinsic scalar; it is the output of an interaction between model weights and a specific execution harness:
 
-Notice the contrast: **Gemini 3.7 Flash** jumps from **72.6%** on pure functional boundary testing (EvalPlus) to an extraordinary **99.3%** on Aider's multi-file git refactoring harness. Why? Because when given a localized Search/Replace diff prompt and live test execution feedback, its reasoning loop excels at pinpoint code modification.
+| Model | Harness Architecture | Output / Edit Protocol | Verification Mechanism | Attempt Budget | Empirical Pass Rate |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`google/gemini-3.7-flash`** | **EvalPlus (HumanEval+)** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **72.6%** (119/164) |
+| **`google/gemini-3.7-flash`** | **EvalPlus (MBPP+)** | Zero-Shot Function AST | Extended Contract Fuzzing | $pass@1$ (0 retries) | **71.4%** (270/378) |
+| **`google/gemini-3.7-flash`** | **Aider Bench** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **99.3%** (139/140) |
+| **`z-ai/glm-5.2`** | **EvalPlus (HumanEval+)** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **54.9%** (90/164) |
+| **`z-ai/glm-5.2`** | **EvalPlus (MBPP+)** | Zero-Shot Function AST | Extended Contract Fuzzing | $pass@1$ (0 retries) | **65.3%** (247/378) |
+| **`z-ai/glm-5.2`** | **Aider Bench** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **91.4%** (128/140) |
+| **`deepseek/deepseek-v4-flash-0731`** | **EvalPlus (HumanEval+)** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **67.7%** (111/164) |
+| **`deepseek/deepseek-v4-flash-0731`** | **Aider Bench** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **71.4%** (20/28) |
+
+### Why Grouping by Harness Matters
+
+Look at what happens when you compare models across harnesses:
+1. **The Rank Inversion**: On **EvalPlus (Zero-Shot Fuzzer)**, DeepSeek Flash beats GLM-5.2 by **+12.8%** (67.7% vs. 54.9%). But on **Aider (Interactive Git Agent)**, GLM-5.2 beats DeepSeek Flash by **+20.0%** (91.4% vs. 71.4%). If you don't name the harness, you cannot declare a winner.
+2. **The Feedback Multiplier**: GLM-5.2 gains **+36.5 percentage points** when moving from zero-shot fuzzed contracts to an interactive harness with compiler feedback.
+3. **The Format Floor**: Gemini 3.7 Flash rarely violates diff fence grammar, translating into a near-perfect **99.3%** in repo-level editing.
 
 ### 2. Actual Measured Token & Cost Ledger
 
