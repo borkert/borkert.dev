@@ -20,7 +20,11 @@ Depending on where you look, you get two completely irreconcilable stories:
 
 So which leaderboard is lying?
 
-Neither of them. Both benchmarks probably ran exactly what they claimed. The reason the results point in opposite directions is that we keep treating a "benchmark score" as an intrinsic property of a model, when it's almost entirely an artifact of the evaluation harness.
+Neither of them. Both benchmarks probably ran exactly what they claimed. The reason the results point in opposite directions is that we keep treating a "benchmark score" as an intrinsic property of a model.
+
+The core thesis of this post is straightforward:
+1. **There is no such thing as "General Coding Ability."** Coding is not a single scalar metric. It is a cluster of distinct cognitive behaviors—zero-shot boundary simulation, multi-file AST navigation, diff syntax compliance, and compiler error recovery.
+2. **You are never benchmarking a model in isolation—you are always benchmarking the $\text{Model} \times \text{Harness}$ pairing.** The prompt scaffolding, edit protocol, and verification feedback loop provide half of the cognitive system. Change the harness, and you change the winner.
 
 ---
 
@@ -203,14 +207,22 @@ When you inspect the trace logs:
 
 ---
 
-## What to Do Instead of Trusting Leaderboards
+---
 
+## The Takeaway: Stop Measuring Models in a Vacuum
+
+The next time a new model drops and conflicting leaderboards trigger online debates, remember the two core rules of evaluation:
+
+1. **There is no such thing as "General Coding Ability."** A model that excels at single-shot boundary testing (like DeepSeek Flash on EvalPlus) can be outperformed by 20 points in an interactive IDE loop by a model with better compiler error-recovery (like GLM-5.2 on Aider).
+2. **You are never benchmarking a model in isolation—you are always benchmarking the $\text{Model} \times \text{Harness}$ pairing.** The prompt scaffolding, edit protocol, and verification loop provide half of the cognitive system.
+
+Before you choose a model for your team or production stack:
 1. **Ask for the harness repository first.** If someone shares a benchmark chart without the runner script, prompt template, and attempt budget, treat it as marketing material.
-2. **Match the harness to your real workload.** If you're building an autonomous coding assistant, LiveBench multiple-choice scores tell you almost nothing. You need an environment that runs real compiler exit codes and diff parsers.
-3. **Run your own deterministic test battery.** With open endpoints and containers, running a 4-benchmark battery across 3 models costs about a dollar and takes a few hours of background runtime.
+2. **Match the harness to your real workload.** If you are building an interactive coding assistant, single-shot multiple-choice benchmarks tell you nothing. You need an environment that tests real diff parsers and compiler feedback loops.
+3. **Run your own deterministic test battery.** With open endpoints and containers, evaluating a multi-model cohort costs less than $3.00 and takes a couple of hours.
 
-The next time a new model drops and the leaderboards disagree, don't ask which model is better. Ask what the harness was measuring.
+Don't ask which model is universally better. Ask which model fits your harness.
 
 ---
 
-*The full containerized evaluation rig and runner scripts are open-source in the [borkert.dev repository](https://github.com/digplan/borkert.dev).*
+*The full containerized evaluation rig, container definitions, and runner scripts are open-source in the [borkert.dev repository](https://github.com/digplan/borkert.dev).*
