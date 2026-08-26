@@ -96,12 +96,76 @@ A benchmark score is not an intrinsic scalar; it is the output of an interaction
 | **`deepseek/deepseek-v4-flash-0731`** | **EvalPlus (HumanEval+)** | Zero-Shot Function AST | 80x Contract Fuzzing | $pass@1$ (0 retries) | **67.7%** (111/164) |
 | **`deepseek/deepseek-v4-flash-0731`** | **Aider Bench** | Git `SEARCH/REPLACE` Diff | Live `pytest` Tracebacks | Multi-turn (2 tries) | **71.4%** (20/28) |
 
-### Why Grouping by Harness Matters
+### 2. Separate Harness Comparisons: Model vs. Model
 
-Look at what happens when you compare models across harnesses:
-1. **The Rank Inversion**: On **EvalPlus (Zero-Shot Fuzzer)**, DeepSeek Flash beats GLM-5.2 by **+12.8%** (67.7% vs. 54.9%). But on **Aider (Interactive Git Agent)**, GLM-5.2 beats DeepSeek Flash by **+20.0%** (91.4% vs. 71.4%). If you don't name the harness, you cannot declare a winner.
-2. **The Feedback Multiplier**: GLM-5.2 gains **+36.5 percentage points** when moving from zero-shot fuzzed contracts to an interactive harness with compiler feedback.
-3. **The Format Floor**: Gemini 3.7 Flash rarely violates diff fence grammar, translating into a near-perfect **99.3%** in repo-level editing.
+When you isolate each harness into its own comparison, the relative rankings and gap sizes diverge completely:
+
+#### A. EvalPlus HumanEval+ (Zero-Shot Contract Fuzzing · $pass@1$ · 0 Retries)
+*Tests strict boundary handling (empty inputs, recursion limits, type edge cases) in single-shot mode:*
+
+```mermaid
+xychart-beta
+    title "EvalPlus HumanEval+ (Single-Shot Fuzzing Pass@1 %)"
+    x-axis ["Gemini 3.7 Flash", "DeepSeek Flash 0731", "GLM-5.2"]
+    y-axis "Pass Rate (%)" 0 --> 100
+    bar [72.6, 67.7, 54.9]
+```
+
+```text
+Gemini 3.7 Flash    █████████████████████████████           72.6% (119/164)
+DeepSeek Flash 0731 ███████████████████████████             67.7% (111/164)  [+12.8% over GLM]
+GLM-5.2             ██████████████████████                  54.9% (90/164)
+```
+
+---
+
+#### B. Aider Bench (Multi-Turn Git Diff Agent · `pytest` Tracebacks · 2 Attempts)
+*Tests multi-file repo refactoring, Search/Replace formatting, and compiler error recovery:*
+
+```mermaid
+xychart-beta
+    title "Aider Bench (Multi-Turn Git Diff Editing %)"
+    x-axis ["Gemini 3.7 Flash", "GLM-5.2", "DeepSeek Flash 0731"]
+    y-axis "Pass Rate (%)" 0 --> 100
+    bar [99.3, 91.4, 71.4]
+```
+
+```text
+Gemini 3.7 Flash    ████████████████████████████████████████ 99.3% (139/140)
+GLM-5.2             ████████████████████████████████████    91.4% (128/140)  [+20.0% over DeepSeek]
+DeepSeek Flash 0731 ████████████████████████████            71.4% (20/28)
+```
+
+---
+
+#### C. EvalPlus MBPP+ (Multi-Assertion Contract Fuzzing · $pass@1$ · 0 Retries)
+*Tests multi-statement algorithmic challenges across 378 python problems:*
+
+```mermaid
+xychart-beta
+    title "EvalPlus MBPP+ (Extended Contract Fuzzing %)"
+    x-axis ["Gemini 3.7 Flash", "GLM-5.2", "DeepSeek Flash 0731"]
+    y-axis "Pass Rate (%)" 0 --> 100
+    bar [71.4, 65.3, 67.0]
+```
+
+```text
+Gemini 3.7 Flash    ████████████████████████████            71.4% (270/378)
+DeepSeek Flash 0731 ███████████████████████████             67.0% (Eval)
+GLM-5.2             ██████████████████████████              65.3% (247/378)
+```
+
+---
+
+### The Two Critical Observations from These Charts
+
+1. **The Rank Inversion (DeepSeek vs. GLM-5.2)**: 
+   * In **Chart A (Single-Shot Fuzzer)**: DeepSeek Flash beats GLM-5.2 by **+12.8 percentage points**.
+   * In **Chart B (Interactive Diff Agent)**: The order flips 180 degrees—GLM-5.2 beats DeepSeek Flash by **+20.0 percentage points**.
+2. **The Feedback Multiplier**: 
+   * GLM-5.2 jumps from **54.9%** in single-shot mode to **91.4%** in the interactive loop when it receives compiler error feedback.
+3. **The Format Floor**: 
+   * Gemini 3.7 Flash maintains high zero-shot reasoning (**72.6%**) and reaches near-perfection (**99.3%**) when constrained to surgical Search/Replace blocks.
 
 ### 2. Actual Measured Token & Cost Ledger
 
