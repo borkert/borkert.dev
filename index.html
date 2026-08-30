@@ -3,26 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chris Borkert — AI Systems &amp; Agentic Infrastructure</title>
-  <meta name="description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).">
+  <title>Chris Borkert — AI Systems &amp; Agent Infrastructure</title>
+  <meta name="description" content="Chris Borkert — Working principles and writing on AI agent infrastructure, declarative tool protocols, and empirical evaluation.">
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/">
 
-  <!-- Machine-Readable & Content Negotiation Discoverability -->
+  <!-- Machine-Readable Discoverability -->
   <link rel="alternate" type="text/markdown" title="Markdown Content" href="/index.md">
   <link rel="alternate" type="text/markdown" title="LLMs.txt" href="/llms.txt">
   <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
 
-  <!-- Open Graph & Social -->
-  <meta property="og:title" content="Chris Borkert — AI Systems &amp; Agentic Infrastructure">
-  <meta property="og:description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).">
+  <!-- Open Graph -->
+  <meta property="og:title" content="Chris Borkert — AI Systems &amp; Agent Infrastructure">
+  <meta property="og:description" content="Working principles and writing on AI agent infrastructure, declarative tool protocols, and empirical evaluation.">
   <meta property="og:url" content="https://borkert.dev/">
-  <meta property="og:type" content="profile">
-  <meta property="og:site_name" content="borkert.dev">
-  <meta property="og:locale" content="en_US">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Chris Borkert — AI Systems &amp; Agentic Infrastructure">
-  <meta name="twitter:description" content="Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).">
+  <meta property="og:type" content="website">
 
   <!-- Theme Color -->
   <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -35,141 +30,16 @@
 
   <link rel="stylesheet" href="styles.css">
 
-  <!-- JSON-LD Structured Data for AI Agents & Search Engines -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Person",
-        "@id": "https://borkert.dev/#person",
-        "name": "Chris Borkert",
-        "url": "https://borkert.dev",
-        "email": "mailto:chris@borkert.dev",
-        "jobTitle": "Software Engineer & AI Systems Researcher",
-        "description": "Software engineer and researcher working on AI agent infrastructure, declarative tool protocols, deterministic sandboxes, and empirical evaluation systems.",
-        "sameAs": [
-          "https://github.com/digplan",
-          "https://www.npmjs.com/~digplan"
-        ],
-        "knowsAbout": [
-          "AI Agent Infrastructure",
-          "Declarative Tool Protocols",
-          "Deterministic Sandboxes",
-          "Model Evaluation Harnesses",
-          "LLM-as-a-Judge Calibration",
-          "TypeScript",
-          "Bun",
-          "Systems Engineering"
-        ]
-      },
-      {
-        "@type": "WebSite",
-        "@id": "https://borkert.dev/#website",
-        "url": "https://borkert.dev/",
-        "name": "Chris Borkert — AI Systems & Agentic Infrastructure",
-        "description": "Selected systems and research engineering by Chris Borkert — declarative tool protocols (apicat), environment-scoped coding agents (prolific), and evaluation harnesses (benchforge).",
-        "publisher": {
-          "@id": "https://borkert.dev/#person"
-        },
-        "author": {
-          "@id": "https://borkert.dev/#person"
-        },
-        "inLanguage": "en"
-      },
-      {
-        "@type": "ProfilePage",
-        "@id": "https://borkert.dev/#profilepage",
-        "url": "https://borkert.dev/",
-        "name": "Chris Borkert — AI Systems & Agentic Infrastructure",
-        "mainEntity": {
-          "@id": "https://borkert.dev/#person"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://borkert.dev/#apicat",
-        "name": "apicat",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Cross-platform",
-        "description": "APIs as executable definitions. Keeps API specifications in concise, human-readable YAML and compiles them into a tiny CLI and TypeScript library.",
-        "url": "https://github.com/digplan/apicat",
-        "author": {
-          "@id": "https://borkert.dev/#person"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://borkert.dev/#prolific",
-        "name": "prolific",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Cross-platform",
-        "description": "A minimal, environment-scoped coding agent run by Bun and compatible with OpenAI-compatible LLM backends.",
-        "url": "https://github.com/digplan/prolific",
-        "author": {
-          "@id": "https://borkert.dev/#person"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://borkert.dev/#benchforge",
-        "name": "benchforge",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Cross-platform",
-        "description": "Benchmark infrastructure and repeatable evaluation workflows for AI systems.",
-        "url": "https://github.com/digplan/benchforge",
-        "author": {
-          "@id": "https://borkert.dev/#person"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://borkert.dev/#llm-scorer",
-        "name": "llm-scorer",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Cross-platform",
-        "description": "Primitives for scoring model outputs and validating reasoning steps.",
-        "url": "https://github.com/digplan/llm-scorer",
-        "author": {
-          "@id": "https://borkert.dev/#person"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://borkert.dev/#compare-llms",
-        "name": "compare-llms",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Cross-platform",
-        "description": "Tools for empirical model comparison and reasoning divergence.",
-        "url": "https://github.com/digplan/compare-llms",
-        "author": {
-          "@id": "https://borkert.dev/#person"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://borkert.dev/#vanilla-light",
-        "name": "vanilla-light",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Cross-platform",
-        "description": "A no-build, dependency-free full-stack web framework with reactive client and Bun HTTPS server.",
-        "url": "https://github.com/digplan/vanilla-light",
-        "author": {
-          "@id": "https://borkert.dev/#person"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://borkert.dev/#workflow",
-        "name": "workflow",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Cross-platform",
-        "description": "Tooling for expressing and executing composable workflows via Unix pipes.",
-        "url": "https://github.com/digplan/workflow",
-        "author": {
-          "@id": "https://borkert.dev/#person"
-        }
-      }
+    "@type": "Person",
+    "name": "Chris Borkert",
+    "url": "https://borkert.dev",
+    "email": "mailto:chris@borkert.dev",
+    "jobTitle": "Software Engineer & AI Systems Researcher",
+    "sameAs": [
+      "https://github.com/digplan"
     ]
   }
   </script>
@@ -190,230 +60,21 @@
 
       <div class="bio">
         <p>
-          I am a software engineer and researcher working on <strong>AI agent infrastructure, declarative tool protocols, deterministic sandboxes, and empirical evaluation systems</strong>.
-        </p>
-        <p>
-          My work emphasizes simple primitives, inspectable state machines, and Unix-style composability over heavyweight framework abstractions.
+          Software engineer and researcher. Building open-source tools for declarative tool protocols (<a href="https://github.com/digplan/apicat">apicat</a>), environment-scoped coding agents (<a href="https://github.com/digplan/prolific">prolific</a>), and deterministic evaluation harnesses (<a href="https://github.com/digplan/benchforge">benchforge</a>).
         </p>
       </div>
 
       <nav class="toc" aria-label="Table of Contents">
         <span>Contents:</span>
-        <a href="#systems">01. Systems &amp; Software</a>
-        <a href="#writing">02. Research Notes</a>
-        <a href="#principles">03. Principles</a>
-        <a href="#background">04. Background</a>
+        <a href="#principles">01. Principles</a>
+        <a href="#writing">02. Writing &amp; Research</a>
       </nav>
     </header>
 
     <main id="main">
-      <!-- Section 1: Systems & Software -->
-      <section id="systems">
-        <h2>01. Systems &amp; Software</h2>
-
-        <!-- Apicat -->
-        <article class="system-entry">
-          <div class="system-head">
-            <h3 class="system-title"><a href="https://github.com/digplan/apicat">apicat</a></h3>
-            <span class="system-meta">YAML · CLI · JavaScript/TypeScript · LLM Tooling</span>
-          </div>
-          <div class="system-desc">
-            <p>
-              <strong>APIs as executable definitions.</strong> Keeps API specifications in concise, human-readable YAML and compiles them into a tiny CLI and TypeScript library.
-            </p>
-            <p>
-              Instead of teaching language models dozens of bespoke SDK wrappers, <em>apicat</em> gives agents a compact, machine-readable vocabulary for making HTTP and WebSocket calls. This minimizes context token usage, eliminates boilerplate code generation, and allows agents to reason over inspectable interface definitions.
-            </p>
-          </div>
-          <pre class="code-block"><code># apicat definition: openai.chat.yaml
-name: openai.chat
-description: Standard completion endpoint for reasoning agents
-request:
-  method: POST
-  url: https://api.openai.com/v1/chat/completions
-  headers:
-    Authorization: "Bearer ${OPENAI_API_KEY}"
-  body:
-    model: "${MODEL:-gpt-4o}"
-    messages: "${MESSAGES}"
-    temperature: 0.2</code></pre>
-          <div class="code-caption">Example declarative YAML definition used by both humans and LLM tool runtimes.</div>
-          <div class="system-links">
-            <a href="https://github.com/digplan/apicat">Source Repository →</a>
-            <a href="https://www.npmjs.com/package/apicat">npm package →</a>
-          </div>
-        </article>
-
-        <!-- Prolific -->
-        <article class="system-entry">
-          <div class="system-head">
-            <h3 class="system-title"><a href="https://github.com/digplan/prolific">prolific</a></h3>
-            <span class="system-meta">Coding Agent · Bun · apicat Tooling · Terminal UI · Evaluation</span>
-          </div>
-          <div class="system-desc">
-            <p>
-              <strong>A minimal, environment-scoped coding agent.</strong> Run by Bun and compatible with any OpenAI-compatible LLM backend (Ollama, local endpoints, or cloud providers).
-            </p>
-            <p>
-              All HTTP and model calls are routed through <em>apicat</em> using each environment's declarative <code>apicat.yaml</code> definitions. Features environment-specific persistence (<code>SYSTEM.md</code>, <code>MEMORY.md</code>, <code>tools.yaml</code>, <code>context.json</code>), an interactive React/Ink terminal interface with a <code>/</code> command menu, managed background jobs (<code>!cmd &amp;</code>), prompt-to-command approval caching, and integrated <code>/bench</code> task harness reporting per-task timing, TTFT, tokens/sec, and deterministic reward scripts.
-            </p>
-          </div>
-          <pre class="code-block"><code># Run the minimal coding agent with environment-scoped context
-$ bun link &amp;&amp; agent --env default
-[prolific] Active environment: default (ctx 4.2k | bg 0)
-[prolific] Endpoint: http://127.0.0.1:11434 (model: qwen3:8b)
-/bench    # Runs deterministic reward evaluation suite under bench-tasks/
-/debug    # Toggles raw .http request/response logging</code></pre>
-          <div class="system-links">
-            <a href="https://github.com/digplan/prolific">Source Repository →</a>
-          </div>
-        </article>
-
-        <!-- Benchforge -->
-        <article class="system-entry">
-          <div class="system-head">
-            <h3 class="system-title"><a href="https://github.com/digplan/benchforge">benchforge</a></h3>
-            <span class="system-meta">Evaluation Harness · Benchmark Infrastructure · Pass@K</span>
-          </div>
-          <div class="system-desc">
-            <p>
-              <strong>Benchmark infrastructure and repeatable evaluation workflows for AI systems.</strong>
-            </p>
-            <p>
-              Provides standardized harness orchestration for measuring model performance across coding, reasoning, and tool-use tasks. Enforces deterministic execution verifiers (compiler assertions, test suite exit codes) to ground evaluation metrics in observable reality rather than purely subjective ratings.
-            </p>
-          </div>
-          <div class="system-links">
-            <a href="https://github.com/digplan/benchforge">Source Repository →</a>
-          </div>
-        </article>
-
-        <!-- LLM-Scorer -->
-        <article class="system-entry">
-          <div class="system-head">
-            <h3 class="system-title"><a href="https://github.com/digplan/llm-scorer">llm-scorer</a></h3>
-            <span class="system-meta">Automated Judges · Multi-metric Grading · Calibration</span>
-          </div>
-          <div class="system-desc">
-            <p>
-              <strong>Primitives for scoring model outputs and validating reasoning steps.</strong>
-            </p>
-            <p>
-              A narrow, composable library designed for LLM-as-a-judge pipelines. Implements confidence scoring, position-bias permutation testing, and rubrics for step-by-step chain-of-thought verification.
-            </p>
-          </div>
-          <div class="system-links">
-            <a href="https://github.com/digplan/llm-scorer">Source Repository →</a>
-          </div>
-        </article>
-
-        <!-- Compare-LLMs -->
-        <article class="system-entry">
-          <div class="system-head">
-            <h3 class="system-title"><a href="https://github.com/digplan/compare-llms">compare-llms</a></h3>
-            <span class="system-meta">Model Probing · Divergence Analysis · Evaluation</span>
-          </div>
-          <div class="system-desc">
-            <p>
-              <strong>Tools for empirical model comparison and reasoning divergence.</strong>
-            </p>
-            <p>
-              A focused experiment and visual interface for comparing model outputs, analyzing chain-of-thought branching paths, and evaluating how different architectures handle edge cases in structured extraction and code generation.
-            </p>
-          </div>
-          <div class="system-links">
-            <a href="https://github.com/digplan/compare-llms">Source Repository →</a>
-          </div>
-        </article>
-
-        <!-- Vanilla Light -->
-        <article class="system-entry">
-          <div class="system-head">
-            <h3 class="system-title"><a href="https://github.com/digplan/vanilla-light">vanilla-light</a></h3>
-            <span class="system-meta">No-Build Full-Stack · Bun · Reactive Client</span>
-          </div>
-          <div class="system-desc">
-            <p>
-              <strong>A no-build, dependency-free full-stack web framework.</strong>
-            </p>
-            <p>
-              Reactive browser client paired with an HTTPS Bun server, plugin-driven backend architecture, auth, file storage, and built-in OpenAI-compatible LLM inference primitives. Designed without bundlers or heavy build steps to maximize operational transparency.
-            </p>
-          </div>
-          <div class="system-links">
-            <a href="https://github.com/digplan/vanilla-light">Source Repository →</a>
-          </div>
-        </article>
-
-        <!-- Workflow -->
-        <article class="system-entry">
-          <div class="system-head">
-            <h3 class="system-title"><a href="https://github.com/digplan/workflow">workflow</a></h3>
-            <span class="system-meta">Graph Execution · Unix Pipes · Minimalist Automation</span>
-          </div>
-          <div class="system-desc">
-            <p>
-              <strong>Tooling for expressing and executing composable workflows.</strong>
-            </p>
-            <p>
-              Emphasizes clean Unix-style pipelining and inspectable intermediate states over opaque, monolithic orchestration platforms.
-            </p>
-          </div>
-          <div class="system-links">
-            <a href="https://github.com/digplan/workflow">Source Repository →</a>
-          </div>
-        </article>
-      </section>
-
-      <!-- Section 2: Research Notes & Writing -->
-      <section id="writing">
-        <h2>02. Research Notes &amp; Writing</h2>
-        <ul class="writing-list">
-          <li class="writing-item">
-            <div class="writing-head">
-              <span class="writing-title">The Case for Declarative API Schemas in Agentic Systems</span>
-              <span class="writing-date">2026</span>
-            </div>
-            <p class="writing-summary">
-              Why machine-readable YAML definitions beat bespoke SDK wrappers and heavy framework abstractions by providing models with a compact, deterministic tool vocabulary.
-            </p>
-          </li>
-
-          <li class="writing-item">
-            <div class="writing-head">
-              <span class="writing-title">Environment-Scoped Memory and Declarative Execution in Coding Agents</span>
-              <span class="writing-date">2026</span>
-            </div>
-            <p class="writing-summary">
-              Why isolating LLM guidance, conversation context, and tool definitions per environment prevents cross-task context pollution and enables repeatable agent evaluation.
-            </p>
-          </li>
-
-          <li class="writing-item">
-            <div class="writing-head">
-              <span class="writing-title">Calibrating Automated LLM Judges with Verifiable Execution Feedback</span>
-              <span class="writing-date">2025</span>
-            </div>
-            <p class="writing-summary">
-              Mitigating position and self-preference bias in synthetic evaluation harnesses by anchoring model ratings to deterministic compiler and test suite artifacts.
-            </p>
-          </li>
-
-          <li class="writing-item">
-            <div class="writing-head">
-              <span class="writing-title">Minimalist AI Systems: Composing Unix Primitives with Foundation Models</span>
-              <span class="writing-date">2025</span>
-            </div>
-            <p class="writing-summary">
-              Why standard POSIX streams, plain text files, and simple HTTP endpoints provide a more resilient foundation for agent tooling than complex multi-layered frameworks.
-            </p>
-          </li>
-        </ul>
-      </section>
-
-      <!-- Section 3: Principles -->
+      <!-- Section 1: Principles -->
       <section id="principles">
-        <h2>03. Working Principles</h2>
+        <h2>01. Working Principles</h2>
         <ol class="principles-list">
           <li>
             <strong>Ground all reasoning in verifiable execution.</strong>
@@ -430,33 +91,50 @@ $ bun link &amp;&amp; agent --env default
         </ol>
       </section>
 
-      <!-- Section 4: Background -->
-      <section id="background">
-        <h2>04. Background &amp; Timeline</h2>
-        <table class="timeline-table">
-          <tbody>
-            <tr>
-              <td class="timeline-year">NOW</td>
-              <td class="timeline-content">
-                <strong>AI Systems &amp; Agent Infrastructure Research</strong>
-                <p>Building open-source tooling for declarative tool use (apicat), environment-scoped coding agents (prolific), and reproducible evaluation harnesses (benchforge).</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="timeline-year">PREVIOUS</td>
-              <td class="timeline-content">
-                <strong>Systems Engineering &amp; Developer Tooling</strong>
-                <p>Focused on API tooling, minimal web frameworks (vanilla-light), distributed automation pipelines, and model evaluation utilities.</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="timeline-year">METHOD</td>
-              <td class="timeline-content">
-                <strong>Build → Benchmark → Evaluate → Simplify → Repeat.</strong>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Section 2: Writing & Blog Posts -->
+      <section id="writing">
+        <h2>02. Writing &amp; Research</h2>
+        <ul class="writing-list">
+          <li class="writing-item">
+            <div class="writing-head">
+              <span class="writing-title"><a href="/drafts/draft-in-memory-mcp-vs-cli.md">Stop Making Your AI Agents Run Curl: The Performance of In-Memory API Execution</a></span>
+              <span class="writing-date">August 2026</span>
+            </div>
+            <p class="writing-summary">
+              Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.
+            </p>
+          </li>
+
+          <li class="writing-item">
+            <div class="writing-head">
+              <span class="writing-title"><a href="/drafts/draft-benchmarks-without-harness.md">Model Leaderboards Mean Nothing Without the Harness</a></span>
+              <span class="writing-date">August 2026</span>
+            </div>
+            <p class="writing-summary">
+              Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.
+            </p>
+          </li>
+
+          <li class="writing-item">
+            <div class="writing-head">
+              <span class="writing-title"><a href="/drafts/draft-avo-local-harness.md">Agentic Variation Operators: Evolutionary Search in Local Sandboxes</a></span>
+              <span class="writing-date">August 2026</span>
+            </div>
+            <p class="writing-summary">
+              Using Level-1 git sandboxes for sub-millisecond rollback on failed edits and Level-4 meta-supervisors to break stagnation loops in coding agents.
+            </p>
+          </li>
+
+          <li class="writing-item">
+            <div class="writing-head">
+              <span class="writing-title"><a href="/drafts/draft-zero-build-frontend.md">Building Full-Stack Web Apps Without Bundlers or Build Steps</a></span>
+              <span class="writing-date">2026</span>
+            </div>
+            <p class="writing-summary">
+              Simplifying web applications using modern browser standards, vanilla JavaScript, and Bun HTTPS servers without build steps or complex toolchains.
+            </p>
+          </li>
+        </ul>
       </section>
     </main>
 
