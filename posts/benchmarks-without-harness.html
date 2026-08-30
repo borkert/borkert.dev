@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Model Leaderboards Mean Nothing Without the Harness — Chris Borkert</title>
+  <meta name="description" content="Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.">
+  <meta name="author" content="Chris Borkert">
+  <link rel="canonical" href="https://borkert.dev/posts/benchmarks-without-harness.html">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <a href="/" class="header-back">← borkert.dev</a>
+        <div class="header-links">
+          <a href="https://github.com/digplan">github.com/digplan</a>
+          <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">theme</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <article class="post-content">
+        <header class="post-header">
+          <h1>Model Leaderboards Mean Nothing Without the Harness</h1>
+          <div class="post-meta">By Chris Borkert · August 2026</div>
+        </header>
+
+        <p>Model leaderboards are all the rage right now. It makes sense: we love lists, and we love to crown winners. Every time a new release drops, social feeds fill up with cropped benchmark charts declaring an undisputed champion.</p>
+
+        <p>A few days ago I was looking at benchmark numbers for a reasoning model that showed up with a 1M-token context window. Depending on where you look, you get two completely irreconcilable stories:</p>
+
+        <ol>
+          <li><strong>On LiveBench:</strong> Across several categories of reasoning, data analysis, and math, it lands below lightweight models.</li>
+          <li><strong>On its own benchmark report:</strong> An independent run of 10 real-world repository coding tasks solved 8 out of 10 bugs, putting its mean pass rate at 80%, beating frontier models running at max effort.</li>
+        </ol>
+
+        <p>The reason the results point in opposite directions is that we keep treating a "benchmark score" as an intrinsic property of a model.</p>
+
+        <p>The core thesis of this post is straightforward:</p>
+        <ol>
+          <li><strong>There is no such thing as "General Coding Ability."</strong> Coding is not a single scalar metric. It is a cluster of distinct cognitive behaviors: zero-shot boundary simulation, multi-file AST navigation, diff syntax compliance, and compiler error recovery.</li>
+          <li><strong>You are never benchmarking a model in isolation: you are always benchmarking the Model × Harness pairing.</strong> The prompt scaffolding, edit protocol, and verification feedback loop provide half of the cognitive system. Change the harness, and you change the winner.</li>
+        </ol>
+
+        <hr>
+
+        <h2>The Three Vectors of AI Evaluation</h2>
+
+        <p>To make sense of any benchmark result, you have to untangle three independent variables:</p>
+
+        <pre class="code-block"><code>[ Vector 1: Provider + Model ]   ×   [ Vector 2: Benchmark Dataset ]   ×   [ Vector 3: Agent Harness ]
+• OpenRouter / Gemini 3.7 Flash      • Exercism Python (140 tasks)          • Aider (Diff + pytest)
+• OpenRouter / GLM-5.2               • HumanEval+ (164 tasks)               • EvalPlus (AST Fuzzer)
+• OpenRouter / DeepSeek Flash        • MBPP+ (378 tasks)                    • Cline / OpenCode / SWE-agent
+• (Local: Ollama / vLLM)             • SWE-bench Lite (300 tasks)           • Claude Code / Antigravity</code></pre>
+
+        <hr>
+
+        <h2>What an Agent Harness Actually Does</h2>
+
+        <p>A model doesn't just receive a prompt and output a grade. It passes through a pipeline of decisions that dictate what succeeds and what fails:</p>
+
+        <h3>1. The Output Contract and Edit Syntax</h3>
+        <p>If you test a model on Aider Bench, the harness expects the model to output a strict search-and-replace block. If a model generates valid Python code but formats the diff marker incorrectly, the harness records a failure.</p>
+
+        <h3>2. Verification and Error Recovery Feedback</h3>
+        <p>When tests fail, how does the harness format the traceback? Does it inject raw pytest logs, prune stack traces, or provide AST diff summaries? The feedback protocol fundamentally dictates whether a model can recover from errors.</p>
+
+        <hr>
+
+        <h2>Key Takeaways</h2>
+        <ol>
+          <li>Always inspect the evaluation harness before citing benchmark gains.</li>
+          <li>Pair models with harnesses designed for their specific output protocol strengths.</li>
+          <li>Deterministic verifiers (compilers, test exit codes) provide ground truth over subjective ratings.</li>
+        </ol>
+      </article>
+    </main>
+
+    <footer>
+      <div>
+        <span>Chris Borkert</span> · <span><a href="https://github.com/digplan">github.com/digplan</a></span> · <span><a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+      </div>
+      <div>
+        <span><a href="/">borkert.dev</a></span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="../main.js"></script>
+</body>
+</html>
