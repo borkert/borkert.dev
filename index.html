@@ -66,34 +66,15 @@
 
       <nav class="toc" aria-label="Table of Contents">
         <span>Contents:</span>
-        <a href="#principles">01. Principles</a>
-        <a href="#writing">02. Writing &amp; Research</a>
+        <a href="#writing">01. Writing &amp; Research</a>
+        <a href="#principles">02. Principles</a>
       </nav>
     </header>
 
     <main id="main">
-      <!-- Section 1: Principles -->
-      <section id="principles">
-        <h2>01. Working Principles</h2>
-        <ol class="principles-list">
-          <li>
-            <strong>Ground all reasoning in verifiable execution.</strong>
-            Language models generate plausible text; compilers, linters, and unit test suites provide ground truth. Agent reasoning loops must always be verified against deterministic runtime feedback.
-          </li>
-          <li>
-            <strong>Use the smallest useful abstraction.</strong>
-            Frameworks accumulate technical debt and obscure failure modes. Prefer declarative schemas, known APIs, Unix primitives, and inspectable intermediate states.
-          </li>
-          <li>
-            <strong>Empirical benchmarking before optimization.</strong>
-            Never tune prompts or agent architectures based on intuition alone. Build automated evaluation loops, measure baseline variance, and iterate methodically.
-          </li>
-        </ol>
-      </section>
-
-      <!-- Section 2: Writing & Blog Posts -->
+      <!-- Section 1: Writing & Blog Posts -->
       <section id="writing">
-        <h2>02. Writing &amp; Research</h2>
+        <h2>01. Writing &amp; Research</h2>
         <ul class="writing-list">
           <li class="writing-item">
             <div class="writing-head">
@@ -135,6 +116,25 @@
             </p>
           </li>
         </ul>
+      </section>
+
+      <!-- Section 2: Principles -->
+      <section id="principles">
+        <h2>02. Working Principles</h2>
+        <ol class="principles-list">
+          <li>
+            <strong>Ground all reasoning in verifiable execution.</strong>
+            Language models generate plausible text; compilers, linters, and unit test suites provide ground truth. Agent reasoning loops must always be verified against deterministic runtime feedback.
+          </li>
+          <li>
+            <strong>Use the smallest useful abstraction.</strong>
+            Frameworks accumulate technical debt and obscure failure modes. Prefer declarative schemas, known APIs, Unix primitives, and inspectable intermediate states.
+          </li>
+          <li>
+            <strong>Empirical benchmarking before optimization.</strong>
+            Never tune prompts or agent architectures based on intuition alone. Build automated evaluation loops, measure baseline variance, and iterate methodically.
+          </li>
+        </ol>
       </section>
     </main>
 
