@@ -19,7 +19,7 @@
 
 ## 02. Writing & Research
 
-- **[Stop Making Your AI Agents Run Curl: The Performance of In-Memory API Execution](/drafts/draft-in-memory-mcp-vs-cli.md)** (August 2026): Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.
+- **[Making Agent API Calls 10x Faster with Cached Definitions](/drafts/draft-in-memory-mcp-vs-cli.md)** (August 2026): Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.
 - **[Model Leaderboards Mean Nothing Without the Harness](/drafts/draft-benchmarks-without-harness.md)** (August 2026): Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.
 - **[Agentic Variation Operators: Evolutionary Search in Local Sandboxes](/drafts/draft-avo-local-harness.md)** (August 2026): Using Level-1 git sandboxes for sub-millisecond rollback on failed edits and Level-4 meta-supervisors to break stagnation loops in coding agents.
 - **[Building Full-Stack Web Apps Without Bundlers or Build Steps](/drafts/draft-zero-build-frontend.md)** (2026): Simplifying web applications using modern browser standards, vanilla JavaScript, and Bun HTTPS servers without build steps or complex toolchains.

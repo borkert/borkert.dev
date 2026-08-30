@@ -1,4 +1,4 @@
-# Stop Making Your AI Agents Run Curl: The Performance of In-Memory API Execution
+# Making Agent API Calls 10x Faster with Cached Definitions
 
 *By Chris Borkert · Draft · August 2026*
 
