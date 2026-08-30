@@ -23,8 +23,8 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
 
-  --max-w: 760px;
-  --line-height: 1.65;
+  --max-w: 920px;
+  --line-height: 1.68;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -272,6 +272,127 @@ h2 {
   margin-bottom: 24px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
+}
+
+/* Article & Blog Post Typography */
+.post-content {
+  font-size: 1.12rem;
+  line-height: 1.72;
+}
+
+.post-header {
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.post-header h1 {
+  font-size: 2.35rem;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.post-meta {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.header-back {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: var(--text-muted);
+}
+
+.header-back:hover {
+  color: var(--text-main);
+  text-decoration: underline;
+}
+
+.post-content p {
+  margin-bottom: 22px;
+}
+
+.post-content h2 {
+  margin-top: 56px;
+  margin-bottom: 22px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+}
+
+.post-content h3 {
+  margin-top: 40px;
+  margin-bottom: 16px;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.post-content hr {
+  margin: 48px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+.post-content ul,
+.post-content ol {
+  margin-bottom: 24px;
+  padding-left: 28px;
+}
+
+.post-content li {
+  margin-bottom: 10px;
+}
+
+.post-content blockquote {
+  margin: 32px 0;
+  padding: 16px 24px;
+  border-left: 3px solid var(--text-link);
+  background: var(--bg-subtle);
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+  color: var(--text-main);
+}
+
+.table-container {
+  overflow-x: auto;
+  margin: 32px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+table th,
+table td {
+  padding: 11px 15px;
+  border: 1px solid var(--border);
+  vertical-align: top;
+}
+
+table th {
+  background: var(--bg-subtle);
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
 }
 
 /* Project / System Entry */
