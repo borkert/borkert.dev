@@ -12,7 +12,7 @@ I ran a set of benchmarks on real API queries against Fireworks AI and OpenRoute
 2. **CLI subprocess wrappers:** The agent runs a local CLI command like `apic <service.endpoint>`.
 3. **In-memory MCP server:** The agent sends structured calls to a compiled Rust Model Context Protocol (MCP) server that keeps connections open in memory.
 
-The difference in speed and token efficiency was substantial. Shell-based tool execution required 10 times more reasoning turns, used 96.5% more tokens, and ran up to 6 times slower.
+The difference in speed and token efficiency was substantial. MCP ran 10x faster, used one turn instead of ten, and 96.5% less tokens.
 
 ---
 
