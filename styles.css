@@ -136,7 +136,7 @@ body {
   color: var(--text-main);
   font-family: var(--font-serif);
   line-height: var(--line-height);
-  padding: 60px 24px 100px;
+  padding: 40px 20px 60px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -172,8 +172,8 @@ a:hover {
 
 /* Top Header */
 header {
-  margin-bottom: 48px;
-  padding-bottom: 24px;
+  margin-bottom: 36px;
+  padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -259,7 +259,7 @@ h1 {
 
 /* Sections */
 section {
-  margin-top: 56px;
+  margin-top: 44px;
 }
 
 h2 {
@@ -269,7 +269,7 @@ h2 {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-muted);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
@@ -281,8 +281,8 @@ h2 {
 }
 
 .post-header {
-  margin-bottom: 40px;
-  padding-bottom: 24px;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -314,13 +314,13 @@ h2 {
 }
 
 .post-content p {
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 }
 
 .post-content h2 {
-  margin-top: 56px;
-  margin-bottom: 22px;
-  padding-bottom: 10px;
+  margin-top: 44px;
+  margin-bottom: 18px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
   font-family: var(--font-serif);
   font-size: 1.45rem;
@@ -331,8 +331,8 @@ h2 {
 }
 
 .post-content h3 {
-  margin-top: 40px;
-  margin-bottom: 16px;
+  margin-top: 32px;
+  margin-bottom: 14px;
   font-family: var(--font-serif);
   font-size: 1.2rem;
   font-weight: 600;
@@ -340,24 +340,24 @@ h2 {
 }
 
 .post-content hr {
-  margin: 48px 0;
+  margin: 36px 0;
   border: none;
   border-top: 1px solid var(--border);
 }
 
 .post-content ul,
 .post-content ol {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding-left: 28px;
 }
 
 .post-content li {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .post-content blockquote {
-  margin: 32px 0;
-  padding: 16px 24px;
+  margin: 24px 0;
+  padding: 14px 20px;
   border-left: 3px solid var(--text-link);
   background: var(--bg-subtle);
   border-radius: 0 4px 4px 0;
@@ -367,7 +367,7 @@ h2 {
 
 .table-container {
   overflow-x: auto;
-  margin: 32px 0;
+  margin: 24px 0;
 }
 
 table {
@@ -455,7 +455,18 @@ table th {
   font-weight: 600;
 }
 
-/* Code Blocks & Schemas */
+/* Code Blocks, Inline Commands & Schemas */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  font-weight: 600;
+  background: var(--bg-code);
+  color: var(--text-main);
+  padding: 0.12em 0.35em;
+  border-radius: 3px;
+  border: 1px solid var(--border-light);
+}
+
 .code-block {
   background: var(--bg-code);
   border: 1px solid var(--border);
@@ -467,6 +478,17 @@ table th {
   overflow-x: auto;
   margin: 14px 0 18px;
   color: var(--text-main);
+}
+
+.code-block code {
+  font-family: var(--font-mono);
+  font-size: inherit;
+  font-weight: 400;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  color: inherit;
 }
 
 .code-caption {
@@ -585,8 +607,8 @@ table th {
 
 /* Footer */
 footer {
-  margin-top: 80px;
-  padding-top: 24px;
+  margin-top: 56px;
+  padding-top: 20px;
   border-top: 1px solid var(--border);
   font-family: var(--font-mono);
   font-size: 0.82rem;
@@ -628,7 +650,7 @@ footer a:hover {
 /* Mobile responsive */
 @media (max-width: 600px) {
   body {
-    padding: 36px 18px 60px;
+    padding: 24px 16px 44px;
   }
   h1 {
     font-size: 1.8rem;

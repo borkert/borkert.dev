@@ -44,9 +44,11 @@
           <div class="post-meta">By Chris Borkert · August 2026</div>
         </header>
 
-        <p>When developers give an AI coding assistant (like Cursor, Claude Code, Antigravity, or Cline) access to web APIs, the default approach is almost always the same: give the agent a bash tool and let it run <code>curl</code> or a CLI.</p>
+        <p>When developers give an AI coding assistant (like Cursor, Claude Code, Antigravity, or Cline) access to web APIs, the default approach is almost always the same: give the agent a bash tool and let it run <code>curl</code> or a CLI tool in a subshell.</p>
 
-        <p>I built a tool called <a href="https://github.com/digplan/apicat">apicat</a> (invoked on the command line as <code>apic</code>) to simplify how APIs are managed and called. Instead of writing shell scripts or memorizing complex curl flags, you define endpoints once in a clean YAML file (<code>~/.apicat</code> or <code>apicat.yaml</code>), and <code>apic</code> handles headers, variable interpolation, and response formatting. While <code>apic</code> works well for human developers in a terminal, having an autonomous AI agent spawn shell processes to execute it revealed three deeper problems: slow execution, wasted context tokens, and lost socket reuse.</p>
+        <p>I built an open-source tool called <a href="https://github.com/digplan/apicat">apicat</a> (invoked on the command line as <code>apic</code>) to simplify how APIs are managed and called. Instead of writing shell scripts or memorizing complex curl flags, you define your endpoints in a clean YAML configuration file (<code>~/.apicat</code> or <code>./apicat.yaml</code>). The CLI tool takes care of authentication tokens, headers, variable interpolation, and response formatting. While <code>apic</code> works well for human developers in a terminal, having an autonomous AI agent spawn shell processes to execute it revealed three deeper problems: slow execution, wasted context tokens, and lost socket reuse.</p>
+
+        <p>The technique explored here leverages that declarative YAML API definition format from <code>apicat</code>, but pairs it with a fast in-memory Model Context Protocol (MCP) server for LLMs rather than spawning CLI subprocesses.</p>
 
         <p>I ran a set of benchmarks on real API queries against Fireworks AI and OpenRouter to compare three execution models:</p>
 
@@ -60,23 +62,65 @@
 
         <hr>
 
-        <h2>Two bottlenecks of agent API execution</h2>
+        <h2>Architecture: apicat and native MCP</h2>
+
+        <p>In <a href="https://github.com/digplan/apicat">apicat</a>, we combined declarative YAML definitions with an in-memory Rust MCP server.</p>
+
+        <h3>1. Declarative YAML definitions (<code>apicat.yaml</code>)</h3>
+        <p>Endpoints are defined in a clean, structured YAML file:</p>
+
+        <pre class="code-block"><code>fireworks.costs:
+  url: https://api.fireworks.ai/v1/accounts/chb1856-7irji5gdx5b0/usageCosts:query
+  method: POST
+  headers:
+    Authorization: "Bearer $!FIREWORKS_API_KEY"
+    Content-Type: application/json
+  body: |
+    {
+      "start_time": "$START_TIME",
+      "end_time": "$END_TIME",
+      "scope": 1,
+      "group_by": ["MODEL"]
+    }
+  help: Retrieve rated dollar costs and model spend breakdown.</code></pre>
+
+        <h3>2. Automatic JSON Schema generation</h3>
+        <p>When the MCP server starts, it reads <code>~/.apicat</code> and <code>./apicat.yaml</code>, converting required (<code>$!VAR</code>) and optional (<code>$VAR</code>) variables into native JSON Schema tool definitions:</p>
+
+        <pre class="code-block"><code>{
+  "name": "fireworks_costs",
+  "description": "Retrieve rated dollar costs and model spend breakdown.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "START_TIME": { "type": "string", "description": "ISO timestamp" },
+      "END_TIME": { "type": "string", "description": "ISO timestamp" }
+    },
+    "required": ["START_TIME", "END_TIME"]
+  }
+}</code></pre>
+
+        <p>The model receives exact parameter types upfront, preventing hallucinated flag names, documentation scraping turns, or shell escaping mistakes.</p>
+
+        <hr>
+
+        <h2>Two bottlenecks when agents call APIs</h2>
 
         <p>When an agent interacts with external APIs, it faces two separate challenges:</p>
 
-        <pre class="code-block"><code>┌─────────────────────────────────────────────────────────────┐
-│ 1. The Knowledge Problem: "What are the endpoints &amp; schemas?"│
-└──────────────────────────────┬──────────────────────────────┘
-                               │ Declarative apicat.yaml
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 2. The Execution Problem: "How do bytes reach the socket?"  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ In-Memory Rust MCP Server
-                               ▼
-                    [ Upstream Web APIs ]</code></pre>
+        <pre class="code-block"><code>┌──────────────────────────────────────────────────────────┐
+│ 1. Schema Discovery: "What are the endpoints &amp; schemas?" │
+└────────────────────────────┬─────────────────────────────┘
+                             │ Declarative apicat.yaml
+                             ▼
+┌──────────────────────────────────────────────────────────┐
+│ 2. Runtime Execution: "How do bytes reach the socket?"   │
+└────────────────────────────┬─────────────────────────────┘
+                             │ In-Memory Rust MCP Server
+                             ▼
+                  [ Upstream Web APIs ]</code></pre>
 
-        <h3>1. The knowledge problem</h3>
+        <h3>1. Schema discovery</h3>
         <p>Large models do not know your project's specific infrastructure:</p>
         <ul>
           <li>What is your custom account ID or quota path?</li>
@@ -86,7 +130,7 @@
 
         <p>Without a defined schema, the agent enters an exploratory loop: searching the web, reading thousands of tokens of documentation, guessing parameters, and fixing 400 Bad Request responses.</p>
 
-        <h3>2. The execution problem</h3>
+        <h3>2. Runtime execution</h3>
         <p>Even when the agent knows the syntax, running through a shell adds overhead:</p>
         <ul>
           <li><strong>Subprocess startup:</strong> Spawning a subshell, booting a runtime like Node.js or Python, and parsing configuration files from disk on every invocation.</li>
@@ -228,11 +272,9 @@ fireworks_balance() + openrouter_key() + fireworks_costs() in parallel -> send_m
           </table>
         </div>
 
-        <hr>
+        <h3>Connection pooling and Keep-Alive</h3>
 
-        <h2>Why connection pooling matters</h2>
-
-        <p>The main technical factor behind lower latency is HTTP connection reuse (Keep-Alive).</p>
+        <p>The main technical factor behind lower latency in repeated calls is HTTP connection reuse (Keep-Alive).</p>
 
         <p>When an agent runs <code>curl</code> or a CLI command, the operating system creates a process that immediately terminates after printing stdout. Every subsequent request must create a new TCP connection, resolve DNS, and complete an SSL/TLS handshake.</p>
 
@@ -296,48 +338,6 @@ fireworks_balance() + openrouter_key() + fireworks_costs() in parallel -> send_m
         </div>
 
         <p>The compiled Rust binary starts in 4.3 milliseconds and uses 1.77 MB of memory, making it practical to leave running during an editing session.</p>
-
-        <hr>
-
-        <h2>Architecture: apicat and native MCP</h2>
-
-        <p>In <a href="https://github.com/digplan/apicat">apicat</a>, we combined declarative YAML definitions with an in-memory Rust MCP server.</p>
-
-        <h3>1. Declarative YAML definitions (<code>apicat.yaml</code>)</h3>
-        <p>Endpoints are defined in a structured YAML file:</p>
-
-        <pre class="code-block"><code>fireworks.costs:
-  url: https://api.fireworks.ai/v1/accounts/chb1856-7irji5gdx5b0/usageCosts:query
-  method: POST
-  headers:
-    Authorization: "Bearer $!FIREWORKS_API_KEY"
-    Content-Type: application/json
-  body: |
-    {
-      "start_time": "$START_TIME",
-      "end_time": "$END_TIME",
-      "scope": 1,
-      "group_by": ["MODEL"]
-    }
-  help: Retrieve rated dollar costs and model spend breakdown.</code></pre>
-
-        <h3>2. Automatic JSON Schema generation</h3>
-        <p>When the MCP server starts, it reads <code>~/.apicat</code> and <code>./apicat.yaml</code>, converting required (<code>$!VAR</code>) and optional (<code>$VAR</code>) variables into JSON Schema tool definitions:</p>
-
-        <pre class="code-block"><code>{
-  "name": "fireworks_costs",
-  "description": "Retrieve rated dollar costs and model spend breakdown.",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "START_TIME": { "type": "string", "description": "ISO timestamp" },
-      "END_TIME": { "type": "string", "description": "ISO timestamp" }
-    },
-    "required": ["START_TIME", "END_TIME"]
-  }
-}</code></pre>
-
-        <p>The model receives exact parameter types upfront, preventing hallucinated flag names or shell escaping mistakes.</p>
 
         <hr>
 
