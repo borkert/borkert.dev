@@ -1,7 +1,5 @@
 # Making Agent API Calls 10x Faster with Cached Definitions
 
-*By Chris Borkert · Draft · August 2026*
-
 When developers give an AI coding assistant (like Cursor, Claude Code, Antigravity, or Cline) access to web APIs, the default approach is almost always the same: give the agent a bash tool and let it run `curl` or a CLI.
 
 I built a tool called `apicat` (invoked on the command line as `apic`) to simplify how APIs are managed and called. Instead of writing shell scripts or memorizing complex curl flags, you define endpoints once in a clean YAML file (`~/.apicat` or `apicat.yaml`), and `apic` handles headers, variable interpolation, and response formatting. While `apic` works well for human developers in a terminal, having an autonomous AI agent spawn shell processes to execute it revealed three deeper problems: slow execution, wasted context tokens, and lost socket reuse.
