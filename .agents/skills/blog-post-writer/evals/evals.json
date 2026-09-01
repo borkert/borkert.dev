@@ -1,0 +1,26 @@
+{
+  "skill_name": "blog-post-writer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a first draft of a borkert.dev post about running a 7B local model in an agentic coding loop, using the measured results in drafts/draft-avo-local-harness.md.",
+      "expected_output": "A draft matching the site byline/H1 conventions, first-person empirical voice, exact measurements, no invented results, tables for metrics, and a heading structure the skeptic gate would pass.",
+      "files": ["drafts/draft-avo-local-harness.md"],
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "prompt": "Revise drafts/draft-better-agents-by-removing-personas-and-role-play.md: remove AI-sounding phrasing, tighten the prose, and confirm every prevalence claim is backed by the N=20 data.",
+      "expected_output": "An edited draft preserving the author's ideas, purged of AI tells, with prevalence claims replaced by measured statements.",
+      "files": ["drafts/draft-better-agents-by-removing-personas-and-role-play.md"],
+      "assertions": []
+    },
+    {
+      "id": 3,
+      "prompt": "Run the adversarial skeptic review gate on drafts/draft-zero-build-frontend.md and produce the blocking report.",
+      "expected_output": "An adversarial review report listing flagged machine tropes and challenge questions requiring the human author's input; publication blocked until resolved.",
+      "files": ["drafts/draft-zero-build-frontend.md"],
+      "assertions": []
+    }
+  ]
+}

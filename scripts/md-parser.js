@@ -240,7 +240,6 @@ export function parseMarkdown(markdownText, options = {}) {
 
   const outputBlocks = [];
   const usedSlugs = new Set();
-  let hasMermaid = false;
 
   function getUniqueSlug(text) {
     let slug = slugify(text);
@@ -296,8 +295,10 @@ export function parseMarkdown(markdownText, options = {}) {
 
       const escapedCode = escapeHtml(codeLines.join('\n'));
       if (lang === 'mermaid') {
-        hasMermaid = true;
-        outputBlocks.push(`<pre class="code-block mermaid"><code class="language-mermaid">${escapedCode}</code></pre>`);
+        outputBlocks.push(`<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">${escapedCode}</code></pre>
+</div>`);
       } else if (lang) {
         outputBlocks.push(`<pre class="code-block"><code class="language-${lang}">${escapedCode}</code></pre>`);
       } else {
@@ -504,7 +505,6 @@ export function parseMarkdown(markdownText, options = {}) {
     meta: postMeta,
     description: postDescription,
     frontmatter,
-    hasMermaid,
     contentHtml: outputBlocks.join('\n\n')
   };
 }

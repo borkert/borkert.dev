@@ -110,8 +110,10 @@ flowchart LR
   assert(parsed.contentHtml.includes('<pre class="code-block"><code class="language-python">'), 'Adds language class to code block');
   assert(parsed.contentHtml.includes('assert 2 &lt; 3 and 4 &gt; 1'), 'Escapes HTML entities < and > inside code block');
   assert(parsed.contentHtml.includes('return &quot;&lt;ok&gt;&quot;'), 'Escapes quotes and tags in code');
-  assert(parsed.contentHtml.includes('<pre class="code-block mermaid"><code class="language-mermaid">'), 'Handles Mermaid diagram code block');
-  assert(parsed.hasMermaid === true, 'Sets hasMermaid flag when mermaid diagrams exist');
+  assert(parsed.contentHtml.includes('<div class="diagram-block">'), 'Wraps Mermaid diagram in labeled diagram block');
+  assert(parsed.contentHtml.includes('<div class="diagram-caption">Diagram</div>'), 'Labels Mermaid diagram source block');
+  assert(parsed.contentHtml.includes('<pre class="code-block mermaid-source"><code class="language-mermaid">'), 'Renders Mermaid source as readable code');
+  assert(parsed.hasMermaid === undefined, 'No longer sets hasMermaid flag');
 });
 
 // 5. Test Blockquotes & GitHub Callouts

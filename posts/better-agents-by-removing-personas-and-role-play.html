@@ -69,10 +69,13 @@
 
 <p>To isolate the effect of persona framing, the benchmark shared an identical operational core across both conditions:</p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart TD
     Core[&quot;Shared Operational Core&lt;br&gt;• Native Tools: read_file, write_file, run_command&lt;br&gt;• Verification: Test suite exit code 0&lt;br&gt;• Search Budget: Max 6 turns, temperature = 0.0&quot;]
     Core --&gt; A[&quot;Condition A: Expert Persona&lt;br&gt;Principal Architect role-play &amp; human intuition&quot;]
     Core --&gt; B[&quot;Condition B: Objective Engine&lt;br&gt;Deterministic code generation &amp; formal constraints&quot;]</code></pre>
+</div>
 
 <p>Both agents had the exact same native file tools (<code>read_file</code>, <code>write_file</code>, <code>run_command</code>), the same 6-turn limit, the same temperature (<span class="vbg-formula">0.0</span>), and the same mandate to check exit codes before finishing. The only independent variable was the persona framing.</p>
 
@@ -280,23 +283,5 @@
   </div>
 
   <script src="/main.js?v=2"></script>
-  <!-- Mermaid.js Dynamic Vector Diagram Loader -->
-  <script type="module">
-    if (document.querySelector('.mermaid')) {
-      const script = document.createElement('script');
-      script.type = 'module';
-      script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-      script.onload = () => {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-                       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        globalThis.mermaid.initialize({
-          startOnLoad: true,
-          theme: isDark ? 'dark' : 'neutral',
-          fontFamily: 'Geist Mono, monospace'
-        });
-      };
-      document.head.appendChild(script);
-    }
-  </script>
 </body>
 </html>

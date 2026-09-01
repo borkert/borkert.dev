@@ -173,11 +173,14 @@ def new_logic():
 
 <p><em>The model gets a single prompt and must handle all reasoning, edge-case simulation, and syntax emission in one shot with zero feedback:</em></p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">flowchart LR
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart LR
     A[&quot;Task Prompt&quot;] --&gt; B[&quot;LLM Generation&quot;]
     B --&gt; C[&quot;AST Code Extractor&quot;]
     C --&gt; D[&quot;Sandbox Test Runner&quot;]
     D --&gt; E[&quot;Single Pass / Fail ($pass@1$)&quot;]</code></pre>
+</div>
 
 <hr>
 
@@ -185,7 +188,9 @@ def new_logic():
 
 <p><em>The model proposes a localized edit. If the compiler fails, the harness feeds the traceback back to the model for a second pass:</em></p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart TD
     A[&quot;Repo Exercise&quot;] --&gt; B[&quot;LLM Emits SEARCH/REPLACE Diff&quot;]
     B --&gt; C[&quot;Harness Applies Patch&quot;]
     C --&gt; D[&quot;Run pytest Compiler&quot;]
@@ -193,6 +198,7 @@ def new_logic():
     D -- &quot;Fail&quot; --&gt; F[&quot;Feed Compiler Traceback to LLM&quot;]
     F --&gt; G[&quot;LLM Turn 2 Patch&quot;]
     G --&gt; C</code></pre>
+</div>
 
 <hr>
 
@@ -200,13 +206,16 @@ def new_logic():
 
 <p><em>The model orchestrates a free-form loop of shell commands, file reads, and grep searches inside a persistent Linux sandbox:</em></p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart TD
     A[&quot;Issue Description&quot;] --&gt; B[&quot;LLM Chooses Tool Call&quot;]
     B --&gt; C[&quot;Sandbox Executes Tool: bash / view / edit&quot;]
     C --&gt; D[&quot;Feed stdout / stderr back into Context&quot;]
     D --&gt; E{&quot;Resolved?&quot;}
     E -- &quot;No&quot; --&gt; B
     E -- &quot;Yes&quot; --&gt; F[&quot;Submit Repo Patch&quot;]</code></pre>
+</div>
 
 <hr>
 
@@ -214,10 +223,13 @@ def new_logic():
 
 <p><em>Replaces the open-ended autonomous loop with a structured, deterministic multi-phase pipeline:</em></p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">flowchart LR
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart LR
     A[&quot;Repo Issue&quot;] --&gt; B[&quot;Phase 1: Localize Faulty Files &amp; Lines&quot;]
     B --&gt; C[&quot;Phase 2: Generate Surgical Patch&quot;]
     C --&gt; D[&quot;Phase 3: Run Reproduction Verifier&quot;]</code></pre>
+</div>
 
 <hr>
 
@@ -374,11 +386,14 @@ def new_logic():
 
 <p><em>Tests strict boundary handling (empty inputs, recursion limits, type edge cases) in single-shot mode:</em></p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">xychart-beta
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">xychart-beta
     title &quot;EvalPlus HumanEval+ (Single-Shot Fuzzing Pass@1 %)&quot;
     x-axis [&quot;Gemini 3.7 Flash&quot;, &quot;DeepSeek Flash 0731&quot;, &quot;GLM-5.2&quot;]
     y-axis &quot;Pass Rate (%)&quot; 0 --&gt; 100
     bar [72.6, 67.7, 54.9]</code></pre>
+</div>
 
 <pre class="code-block"><code class="language-text">Gemini 3.7 Flash    █████████████████████████████           72.6% (119/164)
 DeepSeek Flash 0731 ███████████████████████████             67.7% (111/164)  [+12.8% over GLM]
@@ -390,11 +405,14 @@ GLM-5.2             ████████████████████
 
 <p><em>Tests multi-file repo refactoring, Search/Replace formatting, and compiler error recovery:</em></p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">xychart-beta
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">xychart-beta
     title &quot;Aider Bench (Multi-Turn Git Diff Editing %)&quot;
     x-axis [&quot;Gemini 3.7 Flash&quot;, &quot;GLM-5.2&quot;, &quot;DeepSeek Flash 0731&quot;]
     y-axis &quot;Pass Rate (%)&quot; 0 --&gt; 100
     bar [99.3, 91.4, 71.4]</code></pre>
+</div>
 
 <pre class="code-block"><code class="language-text">Gemini 3.7 Flash    ████████████████████████████████████████ 99.3% (139/140)
 GLM-5.2             ████████████████████████████████████    91.4% (128/140)  [+20.0% over DeepSeek]
@@ -406,11 +424,14 @@ DeepSeek Flash 0731 ████████████████████
 
 <p><em>Tests multi-statement algorithmic challenges across 378 python problems:</em></p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">xychart-beta
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">xychart-beta
     title &quot;EvalPlus MBPP+ (Extended Contract Fuzzing %)&quot;
     x-axis [&quot;Gemini 3.7 Flash&quot;, &quot;GLM-5.2&quot;, &quot;DeepSeek Flash 0731&quot;]
     y-axis &quot;Pass Rate (%)&quot; 0 --&gt; 100
     bar [71.4, 65.3, 67.0]</code></pre>
+</div>
 
 <pre class="code-block"><code class="language-text">Gemini 3.7 Flash    ████████████████████████████            71.4% (270/378)
 DeepSeek Flash 0731 ███████████████████████████             67.0% (Eval)
@@ -558,23 +579,5 @@ GLM-5.2             ████████████████████
   </div>
 
   <script src="/main.js?v=2"></script>
-  <!-- Mermaid.js Dynamic Vector Diagram Loader -->
-  <script type="module">
-    if (document.querySelector('.mermaid')) {
-      const script = document.createElement('script');
-      script.type = 'module';
-      script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-      script.onload = () => {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-                       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        globalThis.mermaid.initialize({
-          startOnLoad: true,
-          theme: isDark ? 'dark' : 'neutral',
-          fontFamily: 'Geist Mono, monospace'
-        });
-      };
-      document.head.appendChild(script);
-    }
-  </script>
 </body>
 </html>

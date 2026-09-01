@@ -449,6 +449,22 @@ pre code, .code-block code {
   color: inherit;
 }
 
+/* Diagram source fallback: Mermaid definitions rendered as readable code */
+.diagram-block {
+  margin-block: var(--vbg-space-4);
+}
+.diagram-block .diagram-caption {
+  font-family: var(--vbg-font-mono);
+  font-size: var(--vbg-type-compact);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vbg-text-secondary);
+  margin-bottom: var(--vbg-space-1);
+}
+.diagram-block .mermaid-source {
+  margin-block: 0;
+}
+
 /* --------------------------------------------------------------------------
    8. Post Detail Content Typography & Asymmetric Margins
    -------------------------------------------------------------------------- */

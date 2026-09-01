@@ -1,0 +1,26 @@
+{
+  "skill_name": "blog-post-phd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run the PhD rubric gate on drafts/draft-avo-local-harness.md and produce the full report.",
+      "expected_output": "A scored report with all 11 criteria, evidence quotes for scores below 4, blocking failures listed, and a PUBLISH/REVISE/BLOCK verdict.",
+      "files": ["drafts/draft-avo-local-harness.md"],
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "prompt": "Grade this newly drafted section for the personas post against the rubric: 'Most engineers struggle with prompting agents, and this commonly leads to unreliable results. It's important to note that role play is at its core ineffective.'",
+      "expected_output": "Blocking failures flagged on criteria 1-2 (unquantified prevalence, presumed framing) and 6 (AI tells: 'at its core', 'it's important to note') with a BLOCK verdict.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 3,
+      "prompt": "Check drafts/draft-zero-build-frontend.md for fabricated results: any claim about benchmark outcomes not traceable to the source material.",
+      "expected_output": "Criterion 3 scored with each measured claim traced to the draft; any untraceable claim quoted and flagged as a blocking failure.",
+      "files": ["drafts/draft-zero-build-frontend.md"],
+      "assertions": []
+    }
+  ]
+}

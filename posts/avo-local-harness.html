@@ -205,7 +205,9 @@
   </table>
 </div>
 
-<pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart TD
     subgraph AVO[&quot;AVO Iteration Loop in agent-platform&quot;]
         A[&quot;Task Ingestion &amp; Test Spec&quot;] --&gt; B[&quot;Generate Candidate Variation (Iteration K)&quot;]
         B --&gt; C[&quot;Execute in Subprocess / Docker Sandbox&quot;]
@@ -217,6 +219,7 @@
         H --&gt; I[&quot;Synthesize Fresh Clean Prompt + Diagnostic Trace&quot;]
         I --&gt; B
     end</code></pre>
+</div>
 
 <hr>
 
@@ -611,7 +614,9 @@ Output ONLY the executable shell command or python script inside a ```bash or ``
 
 <p>In real-world enterprise tasks (such as regulatory due diligence, expense auditing, or multi-currency reconciliations), tasks are broken down into a series of sequential milestones, each governed by a <strong>state checkpoint</strong>:</p>
 
-<pre class="code-block mermaid"><code class="language-mermaid">flowchart LR
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart LR
     A[&quot;Step 1: Web Research / Data Extraction&quot;] --&gt; CP1{&quot;Checkpoint 1: Target Accessible?&quot;}
     CP1 -- PASS --&gt; B[&quot;Step 2: Parse &amp; Normalize Table&quot;]
     CP1 -- FAIL --&gt; S1[&quot;AVO Supervisor Intervention&quot;]
@@ -620,6 +625,7 @@ Output ONLY the executable shell command or python script inside a ```bash or ``
     CP2 -- PASS --&gt; C[&quot;Step 3: Generate Summary Deck / Report&quot;]
     CP2 -- FAIL --&gt; S2[&quot;AVO Supervisor Intervention&quot;]
     S2 --&gt; B</code></pre>
+</div>
 
 <h3 id="flexible-state-checkpoints-not-rigid-answers">Flexible State Checkpoints (Not Rigid Answers)</h3>
 
@@ -682,23 +688,5 @@ Output ONLY the executable shell command or python script inside a ```bash or ``
   </div>
 
   <script src="/main.js?v=2"></script>
-  <!-- Mermaid.js Dynamic Vector Diagram Loader -->
-  <script type="module">
-    if (document.querySelector('.mermaid')) {
-      const script = document.createElement('script');
-      script.type = 'module';
-      script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-      script.onload = () => {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-                       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        globalThis.mermaid.initialize({
-          startOnLoad: true,
-          theme: isDark ? 'dark' : 'neutral',
-          fontFamily: 'Geist Mono, monospace'
-        });
-      };
-      document.head.appendChild(script);
-    }
-  </script>
 </body>
 </html>

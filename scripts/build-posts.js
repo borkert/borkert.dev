@@ -36,7 +36,6 @@ export function renderPostTemplate({
   description,
   contentHtml,
   slug,
-  hasMermaid = false,
   author = 'Chris Borkert',
   domain = 'https://borkert.dev'
 }) {
@@ -44,26 +43,6 @@ export function renderPostTemplate({
   const safeTitle = escapeHtml(title);
   const safeDescription = escapeHtml(description);
   const safeAuthor = escapeHtml(author);
-
-  const mermaidScript = hasMermaid ? `
-  <!-- Mermaid.js Dynamic Vector Diagram Loader -->
-  <script type="module">
-    if (document.querySelector('.mermaid')) {
-      const script = document.createElement('script');
-      script.type = 'module';
-      script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-      script.onload = () => {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-                       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        globalThis.mermaid.initialize({
-          startOnLoad: true,
-          theme: isDark ? 'dark' : 'neutral',
-          fontFamily: 'Geist Mono, monospace'
-        });
-      };
-      document.head.appendChild(script);
-    }
-  </script>` : '';
 
   return `<!doctype html>
 <html lang="en">
@@ -129,7 +108,7 @@ export function renderPostTemplate({
     </footer>
   </div>
 
-  <script src="/main.js?v=2"></script>${mermaidScript}
+  <script src="/main.js?v=2"></script>
 </body>
 </html>
 `;
@@ -160,7 +139,6 @@ export function buildPost(inputPath, options = {}) {
     description: parsed.description,
     contentHtml: parsed.contentHtml,
     slug,
-    hasMermaid: parsed.hasMermaid,
     author: parsed.frontmatter.author || 'Chris Borkert',
     domain: options.domain || 'https://borkert.dev'
   });
