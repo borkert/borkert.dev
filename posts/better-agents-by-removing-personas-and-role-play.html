@@ -69,22 +69,14 @@
 
 <p>To isolate the effect of persona framing, the benchmark shared an identical operational core across both conditions:</p>
 
-<pre class="code-block"><code>+-----------------------------------------------------------------------------------+
-|                        SHARED OPERATIONAL CORE (100% IDENTICAL)                   |
-|  • Native Python Tools: read_file(path), write_file(path, code), run_command(cmd) |
-|  • Strict Termination Mandate: &quot;Verify all unit tests pass with exit code 0&quot;     |
-|  • Strict JSON Schema: {&quot;thought&quot;: &quot;...&quot;, &quot;action&quot;: &quot;...&quot;, &quot;action_input&quot;: &quot;...&quot;} |
-|  • Search Budget: Max 6 ReAct turns, temperature = 0.0                            |
-+-----------------------------------------------------------------------------------+
-                                         │
-                 ┌───────────────────────┴───────────────────────┐
-                 ▼                                               ▼
-   [ Condition A: Expert Role-Play ]               [ Condition B: Objective Engine ]
-   &quot;You are a Principal Software Engineer          &quot;System Role: Deterministic Code
-    and Staff Architect. Approach this task         Generation and Verification Engine.
-    with the problem-solving mindset, domain        Execute task specifications by analyzing
-    intuition, and rigorous quality standards       inputs, generating implementations, and
-    of an experienced senior human developer...&quot;    evaluating formal constraints...&quot;</code></pre>
+<pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
+    subgraph Core[&quot;Shared Operational Core (Identical)&quot;]
+        Tools[&quot;Native Tools: read_file · write_file · run_command&quot;]
+        Rule[&quot;Verification Rule: Test suite exit code == 0&quot;]
+        Budget[&quot;Budget: Max 6 turns · Temperature = 0.0&quot;]
+    end
+    Core --&gt; A[&quot;Condition A: Expert Persona&lt;br/&gt;&#39;Principal Architect... human intuition&#39;&quot;]
+    Core --&gt; B[&quot;Condition B: Objective Engine&lt;br/&gt;&#39;Deterministic Engine... evaluate constraints&#39;&quot;]</code></pre>
 
 <p>Both agents had the exact same native file tools (<code>read_file</code>, <code>write_file</code>, <code>run_command</code>), the same 6-turn limit, the same temperature (<span class="vbg-formula">0.0</span>), and the same mandate to check exit codes before finishing. The only independent variable was the persona framing.</p>
 
@@ -113,8 +105,8 @@
     <thead>
       <tr>
         <th scope="col">Metric</th>
-        <th scope="col">Condition A: Expert Role-Play</th>
-        <th scope="col">Condition B: Objective Engine</th>
+        <th scope="col">Expert Persona (A)</th>
+        <th scope="col">Objective Engine (B)</th>
         <th scope="col">Delta</th>
       </tr>
     </thead>
@@ -123,31 +115,31 @@
         <th scope="row"><strong>Pass Rate / Accuracy</strong></th>
         <td><strong>10 / 20 (50.0%)</strong></td>
         <td><strong>14 / 20 (70.0%)</strong></td>
-        <td><strong>+20.0% (+40% relative)</strong></td>
+        <td><strong>+20.0% (+40% rel)</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong>Premature False Finishes</strong></th>
         <td><strong>0 / 20 (0%)</strong></td>
         <td><strong>0 / 20 (0%)</strong></td>
-        <td><strong>0 (Both respected exit code rule)</strong></td>
+        <td><strong>0 (Exit code enforced)</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong>Avg Turns to Solve</strong></th>
-        <td><strong>5.40 turns</strong></td>
-        <td><strong>4.80 turns</strong></td>
-        <td><strong>-11.1% turns</strong></td>
+        <td><strong>5.40</strong></td>
+        <td><strong>4.80</strong></td>
+        <td><strong>-11.1%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong>Avg Completion Tokens</strong></th>
-        <td><strong>1,244.8 tokens</strong></td>
-        <td><strong>943.5 tokens</strong></td>
-        <td><strong>-24.2% completion tokens</strong></td>
+        <td><strong>1,244.8</strong></td>
+        <td><strong>943.5</strong></td>
+        <td><strong>-24.2%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong>Total Tokens Consumed</strong></th>
-        <td><strong>150,260 tokens</strong></td>
-        <td><strong>115,247 tokens</strong></td>
-        <td><strong>-23.3% total tokens</strong></td>
+        <td><strong>150,260</strong></td>
+        <td><strong>115,247</strong></td>
+        <td><strong>-23.3%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong>Wall-Clock Latency</strong></th>
@@ -159,7 +151,7 @@
         <th scope="row"><strong>Avg Thought Length</strong></th>
         <td><strong>257.3 chars</strong></td>
         <td><strong>203.9 chars</strong></td>
-        <td><strong>-20.8% thought length</strong></td>
+        <td><strong>-20.8%</strong></td>
       </tr>
     </tbody>
   </table>
@@ -167,15 +159,56 @@
 
 <h3 id="category-breakdown">Category Breakdown</h3>
 
-<pre class="code-block"><code>Category                     Expert Persona        Objective Engine        Delta
-─────────────────────────────────────────────────────────────────────────────────
-Parsing &amp; Text (5)           3 / 5 (60.0%)         5 / 5 (100.0%)          +40.0%
-Bug Fixing / Concurrency (5) 3 / 5 (60.0%)         4 / 5 (80.0%)           +20.0%
-Systems &amp; State Machines (5) 2 / 5 (40.0%)         3 / 5 (60.0%)           +20.0%
-Algorithms (2)               1 / 2 (50.0%)         1 / 2 (50.0%)            0.0%
-Data Structures (3)          1 / 3 (33.3%)         1 / 3 (33.3%)            0.0%
-─────────────────────────────────────────────────────────────────────────────────
-OVERALL (20 Tasks)          10 / 20 (50.0%)        14 / 20 (70.0%)         +20.0%</code></pre>
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Category</th>
+        <th scope="col">Expert Persona (A)</th>
+        <th scope="col">Objective Engine (B)</th>
+        <th scope="col">Delta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Parsing & Text (5)</strong></th>
+        <td>3 / 5 (60.0%)</td>
+        <td>5 / 5 (100.0%)</td>
+        <td>+40.0%</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Bug Fixing / Concurrency (5)</strong></th>
+        <td>3 / 5 (60.0%)</td>
+        <td>4 / 5 (80.0%)</td>
+        <td>+20.0%</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Systems & State Machines (5)</strong></th>
+        <td>2 / 5 (40.0%)</td>
+        <td>3 / 5 (60.0%)</td>
+        <td>+20.0%</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Algorithms (2)</strong></th>
+        <td>1 / 2 (50.0%)</td>
+        <td>1 / 2 (50.0%)</td>
+        <td>0.0%</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Data Structures (3)</strong></th>
+        <td>1 / 3 (33.3%)</td>
+        <td>1 / 3 (33.3%)</td>
+        <td>0.0%</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Overall (20 Tasks)</strong></th>
+        <td><strong>10 / 20 (50.0%)</strong></td>
+        <td><strong>14 / 20 (70.0%)</strong></td>
+        <td><strong>+20.0%</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 <hr>
 
@@ -251,5 +284,23 @@ OVERALL (20 Tasks)          10 / 20 (50.0%)        14 / 20 (70.0%)         +20.0
   </div>
 
   <script src="/main.js?v=2"></script>
+  <!-- Mermaid.js Dynamic Vector Diagram Loader -->
+  <script type="module">
+    if (document.querySelector('.mermaid')) {
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      script.onload = () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+                       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        globalThis.mermaid.initialize({
+          startOnLoad: true,
+          theme: isDark ? 'dark' : 'neutral',
+          fontFamily: 'Geist Mono, monospace'
+        });
+      };
+      document.head.appendChild(script);
+    }
+  </script>
 </body>
 </html>

@@ -21,23 +21,15 @@ I ran a controlled $N=20$ benchmark (40 multi-turn agent runs) across five categ
 
 To isolate the effect of persona framing, the benchmark shared an identical operational core across both conditions:
 
-```
-+-----------------------------------------------------------------------------------+
-|                        SHARED OPERATIONAL CORE (100% IDENTICAL)                   |
-|  • Native Python Tools: read_file(path), write_file(path, code), run_command(cmd) |
-|  • Strict Termination Mandate: "Verify all unit tests pass with exit code 0"     |
-|  • Strict JSON Schema: {"thought": "...", "action": "...", "action_input": "..."} |
-|  • Search Budget: Max 6 ReAct turns, temperature = 0.0                            |
-+-----------------------------------------------------------------------------------+
-                                         │
-                 ┌───────────────────────┴───────────────────────┐
-                 ▼                                               ▼
-   [ Condition A: Expert Role-Play ]               [ Condition B: Objective Engine ]
-   "You are a Principal Software Engineer          "System Role: Deterministic Code
-    and Staff Architect. Approach this task         Generation and Verification Engine.
-    with the problem-solving mindset, domain        Execute task specifications by analyzing
-    intuition, and rigorous quality standards       inputs, generating implementations, and
-    of an experienced senior human developer..."    evaluating formal constraints..."
+```mermaid
+flowchart TD
+    subgraph Core["Shared Operational Core (Identical)"]
+        Tools["Native Tools: read_file · write_file · run_command"]
+        Rule["Verification Rule: Test suite exit code == 0"]
+        Budget["Budget: Max 6 turns · Temperature = 0.0"]
+    end
+    Core --> A["Condition A: Expert Persona<br/>'Principal Architect... human intuition'"]
+    Core --> B["Condition B: Objective Engine<br/>'Deterministic Engine... evaluate constraints'"]
 ```
 
 Both agents had the exact same native file tools (`read_file`, `write_file`, `run_command`), the same 6-turn limit, the same temperature ($0.0$), and the same mandate to check exit codes before finishing. The only independent variable was the persona framing.
@@ -60,29 +52,26 @@ The benchmark evaluated 20 diverse, self-contained Python tasks:
 
 Every task was evaluated against automated unit tests running in an isolated temporary directory.
 
-| Metric | Condition A: Expert Role-Play | Condition B: Objective Engine | Delta |
+| Metric | Expert Persona (A) | Objective Engine (B) | Delta |
 | :--- | :--- | :--- | :--- |
-| **Pass Rate / Accuracy** | **10 / 20 (50.0%)** | **14 / 20 (70.0%)** | **+20.0% (+40% relative)** |
-| **Premature False Finishes** | **0 / 20 (0%)** | **0 / 20 (0%)** | **0 (Both respected exit code rule)** |
-| **Avg Turns to Solve** | **5.40 turns** | **4.80 turns** | **-11.1% turns** |
-| **Avg Completion Tokens** | **1,244.8 tokens** | **943.5 tokens** | **-24.2% completion tokens** |
-| **Total Tokens Consumed** | **150,260 tokens** | **115,247 tokens** | **-23.3% total tokens** |
+| **Pass Rate / Accuracy** | **10 / 20 (50.0%)** | **14 / 20 (70.0%)** | **+20.0% (+40% rel)** |
+| **Premature False Finishes** | **0 / 20 (0%)** | **0 / 20 (0%)** | **0 (Exit code enforced)** |
+| **Avg Turns to Solve** | **5.40** | **4.80** | **-11.1%** |
+| **Avg Completion Tokens** | **1,244.8** | **943.5** | **-24.2%** |
+| **Total Tokens Consumed** | **150,260** | **115,247** | **-23.3%** |
 | **Wall-Clock Latency** | **467.04s** (23.35s/task) | **335.97s** (16.80s/task) | **-28.1% faster** |
-| **Avg Thought Length** | **257.3 chars** | **203.9 chars** | **-20.8% thought length** |
+| **Avg Thought Length** | **257.3 chars** | **203.9 chars** | **-20.8%** |
 
 ### Category Breakdown
 
-```
-Category                     Expert Persona        Objective Engine        Delta
-─────────────────────────────────────────────────────────────────────────────────
-Parsing & Text (5)           3 / 5 (60.0%)         5 / 5 (100.0%)          +40.0%
-Bug Fixing / Concurrency (5) 3 / 5 (60.0%)         4 / 5 (80.0%)           +20.0%
-Systems & State Machines (5) 2 / 5 (40.0%)         3 / 5 (60.0%)           +20.0%
-Algorithms (2)               1 / 2 (50.0%)         1 / 2 (50.0%)            0.0%
-Data Structures (3)          1 / 3 (33.3%)         1 / 3 (33.3%)            0.0%
-─────────────────────────────────────────────────────────────────────────────────
-OVERALL (20 Tasks)          10 / 20 (50.0%)        14 / 20 (70.0%)         +20.0%
-```
+| Category | Expert Persona (A) | Objective Engine (B) | Delta |
+| :--- | :--- | :--- | :--- |
+| **Parsing & Text (5)** | 3 / 5 (60.0%) | 5 / 5 (100.0%) | +40.0% |
+| **Bug Fixing / Concurrency (5)** | 3 / 5 (60.0%) | 4 / 5 (80.0%) | +20.0% |
+| **Systems & State Machines (5)** | 2 / 5 (40.0%) | 3 / 5 (60.0%) | +20.0% |
+| **Algorithms (2)** | 1 / 2 (50.0%) | 1 / 2 (50.0%) | 0.0% |
+| **Data Structures (3)** | 1 / 3 (33.3%) | 1 / 3 (33.3%) | 0.0% |
+| **Overall (20 Tasks)** | **10 / 20 (50.0%)** | **14 / 20 (70.0%)** | **+20.0%** |
 
 ---
 
