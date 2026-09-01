@@ -1,0 +1,20 @@
+{
+  "name": "borkert.dev",
+  "version": "1.0.0",
+  "description": "borkert.dev — AI Systems, Declarative Protocols, and Empirical Evaluation",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-posts.js --all --sync-sitemap",
+    "watch": "node scripts/build-posts.js --watch",
+    "test": "node test-md-to-html.js && node test-agent-readiness.js"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "systems",
+    "evaluation",
+    "zero-build"
+  ],
+  "author": "Chris Borkert <chris@borkert.dev>",
+  "license": "MIT"
+}

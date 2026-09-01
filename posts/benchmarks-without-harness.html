@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Model Leaderboards Mean Nothing Without the Harness — Chris Borkert</title>
-  <meta name="description" content="Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.">
+  <meta name="description" content="Model leaderboards are all the rage right now. It makes sense: we love lists, and we love to crown winners. Every time a new release drops, social feeds fill up...">
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/posts/benchmarks-without-harness.html">
 
   <!-- Open Graph -->
   <meta property="og:title" content="Model Leaderboards Mean Nothing Without the Harness">
-  <meta property="og:description" content="Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.">
+  <meta property="og:description" content="Model leaderboards are all the rage right now. It makes sense: we love lists, and we love to crown winners. Every time a new release drops, social feeds fill up...">
   <meta property="og:url" content="https://borkert.dev/posts/benchmarks-without-harness.html">
   <meta property="og:type" content="article">
 
@@ -43,58 +43,506 @@
       <article class="post-content">
         <header class="post-header">
           <h1 class="vbg-title">Model Leaderboards Mean Nothing Without the Harness</h1>
-          <div class="post-meta">By Chris Borkert · August 2026 · Empirical LLM Benchmarking</div>
+          <div class="post-meta">By Chris Borkert · Draft · August 2026</div>
         </header>
 
         <p>Model leaderboards are all the rage right now. It makes sense: we love lists, and we love to crown winners. Every time a new release drops, social feeds fill up with cropped benchmark charts declaring an undisputed champion.</p>
 
-        <p>A few days ago I was looking at benchmark numbers for a reasoning model that showed up with a 1M-token context window. Depending on where you look, you get two completely irreconcilable stories:</p>
+<p>A few days ago I was looking at benchmark numbers for Ox Alpha, a reasoning model that showed up with a 1M-token context window.</p>
 
-        <ol>
-          <li><strong>On LiveBench:</strong> Across several categories of reasoning, data analysis, and math, it lands below lightweight models.</li>
-          <li><strong>On its own benchmark report:</strong> An independent run of 10 real-world repository coding tasks solved 8 out of 10 bugs, putting its mean pass rate at 80%, beating frontier models running at max effort.</li>
-        </ol>
+<p>Depending on where you look, you get two completely irreconcilable stories:</p>
 
-        <p>The reason the results point in opposite directions is that we keep treating a "benchmark score" as an intrinsic property of a model.</p>
+<ol>
+  <li><strong>On LiveBench</strong> (<a href="https://livebench.ai/">livebench.ai</a>), it looks thoroughly mediocre. Across several categories of reasoning, data analysis, and math, it lands below lightweight models like GPT-5.4 Nano.</li>
+  <li><strong>On OxAlpha's own benchmark report</strong> (<a href="https://oxalpha.com/ox-alpha-benchmarks">oxalpha.com</a>), an independent run of 10 real-world repository coding tasks, it solved 8 out of 10 bugs. That put its mean pass rate at 80%, beating Anthropic's Claude Fable 5 running at max effort (65%) by 15 percentage points.</li>
+</ol>
 
-        <p>The core thesis of this post is straightforward:</p>
-        <ol>
-          <li><strong>There is no such thing as "General Coding Ability."</strong> Coding is not a single scalar metric. It is a cluster of distinct cognitive behaviors: zero-shot boundary simulation, multi-file AST navigation, diff syntax compliance, and compiler error recovery.</li>
-          <li><strong>You are never benchmarking a model in isolation: you are always benchmarking the Model × Harness pairing.</strong> The prompt scaffolding, edit protocol, and verification feedback loop provide half of the cognitive system. Change the harness, and you change the winner.</li>
-        </ol>
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Model</th>
+        <th scope="col">Tasks Solved</th>
+        <th scope="col">Mean Pass Rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Ox Alpha</strong></th>
+        <td>8 / 10</td>
+        <td>80%</td>
+      </tr>
+      <tr>
+        <th scope="row">Claude Fable 5 (max effort)</th>
+        <td>~6.5 / 10</td>
+        <td>65%</td>
+      </tr>
+      <tr>
+        <th scope="row">GPT-5</th>
+        <td>—</td>
+        <td>Lower</td>
+      </tr>
+      <tr>
+        <th scope="row">Grok 4</th>
+        <td>—</td>
+        <td>Competitive</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-        <hr>
+<p>So which leaderboard is lying?</p>
 
-        <h2>The Three Vectors of AI Evaluation</h2>
+<p>Neither of them. Both benchmarks probably ran exactly what they claimed. The reason the results point in opposite directions is that we keep treating a "benchmark score" as an intrinsic property of a model.</p>
 
-        <p>To make sense of any benchmark result, you have to untangle three independent variables:</p>
+<p>The core thesis of this post is straightforward:</p>
 
-        <pre class="code-block"><code>[ Vector 1: Provider + Model ]   ×   [ Vector 2: Benchmark Dataset ]   ×   [ Vector 3: Agent Harness ]
+<ol>
+  <li><strong>There is no such thing as "General Coding Ability."</strong> Coding is not a single scalar metric. It is a cluster of distinct cognitive behaviors—zero-shot boundary simulation, multi-file AST navigation, diff syntax compliance, and compiler error recovery.</li>
+  <li><strong>You are never benchmarking a model in isolation—you are always benchmarking the <span class="vbg-formula">Model &times; Harness</span> pairing.</strong> The prompt scaffolding, edit protocol, and verification feedback loop provide half of the cognitive system. Change the harness, and you change the winner.</li>
+</ol>
+
+<hr>
+
+<h2 id="the-three-vectors-of-ai-evaluation">The Three Vectors of AI Evaluation</h2>
+
+<p>To make sense of any benchmark result, you have to untangle three independent variables:</p>
+
+<pre class="code-block"><code>[ Vector 1: Provider + Model ]   ×   [ Vector 2: Benchmark Dataset ]   ×   [ Vector 3: Agent Harness ]
 • OpenRouter / Gemini 3.7 Flash      • Exercism Python (140 tasks)          • Aider (Diff + pytest)
 • OpenRouter / GLM-5.2               • HumanEval+ (164 tasks)               • EvalPlus (AST Fuzzer)
 • OpenRouter / DeepSeek Flash        • MBPP+ (378 tasks)                    • Cline / OpenCode / SWE-agent
-• (Local: Ollama / vLLM)             • SWE-bench Lite (300 tasks)           • Claude Code / Antigravity</code></pre>
+• (Local: Ollama / vLLM)*            • SWE-bench Lite (300 tasks)           • Claude Code / Antigravity</code></pre>
 
-        <hr>
+<p><em>(Note: In this post, we evaluate hosted frontier models on OpenRouter to keep network latency and rate limits identical. In a follow-up post, we will run this exact matrix against local models served via Ollama and vLLM).</em></p>
 
-        <h2>What an Agent Harness Actually Does</h2>
+<hr>
 
-        <p>A model doesn't just receive a prompt and output a grade. It passes through a pipeline of decisions that dictate what succeeds and what fails:</p>
+<h2 id="what-an-agent-harness-actually-does">What an Agent Harness Actually Does</h2>
 
-        <h3>1. The Output Contract and Edit Syntax</h3>
-        <p>If you test a model on Aider Bench, the harness expects the model to output a strict search-and-replace block. If a model generates valid Python code but formats the diff marker incorrectly, the harness records a failure.</p>
+<p>When someone tweets that Model A beats Model B by 4%, they usually link to a leaderboard table. What they almost never link to is the repository that orchestrated the run.</p>
 
-        <h3>2. Verification and Error Recovery Feedback</h3>
-        <p>When tests fail, how does the harness format the traceback? Does it inject raw pytest logs, prune stack traces, or provide AST diff summaries? The feedback protocol fundamentally dictates whether a model can recover from errors.</p>
+<p>A model doesn't just receive a prompt and output a grade. It passes through a pipeline of decisions that dictate what succeeds and what fails:</p>
 
-        <hr>
+<h3 id="1-the-output-contract-edit-syntax">1. The Output Contract & Edit Syntax</h3>
 
-        <h2>Key Takeaways</h2>
-        <ol>
-          <li>Always inspect the evaluation harness before citing benchmark gains.</li>
-          <li>Pair models with harnesses designed for their specific output protocol strengths.</li>
-          <li>Deterministic verifiers (compilers, test exit codes) provide ground truth over subjective ratings.</li>
-        </ol>
+<p>If you test a model on <a href="https://github.com/Aider-AI/aider">Aider Bench</a>, the harness expects the model to output a strict search-and-replace block:</p>
+
+<pre class="code-block"><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; SEARCH
+def old_logic():
+=======
+def new_logic():
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; REPLACE</code></pre>
+
+<p>If a model generates the absolute right algorithmic fix but adds conversational padding or gets the diff fence indentation off by one space, the harness fails to apply the patch. It gets a zero.</p>
+
+<p>Aider's own benchmark research documented that forcing the exact same model weights to use Unified Diff format (<code>@@ -12,4 +12,6 @@</code>) instead of Search/Replace drops scores by <strong>20 to 25 percentage points</strong>—purely because autoregressive tokenizers struggle with zero-shot line-offset arithmetic. Is that a failure of coding capability, or a syntax mismatch with the harness parser? The leaderboard doesn't distinguish.</p>
+
+<h3 id="2-scaffold-divergence-on-the-same-model-weights">2. Scaffold Divergence on the Same Model Weights</h3>
+
+<p>We saw this play out dramatically on SWE-bench Lite. When researchers ran the identical model weights (<code>claude-3-5-sonnet-20240620</code>) across different agent scaffolds, the resolve rate swung wildly:</p>
+
+<ul>
+  <li><strong>Naive ReAct Agent Loop</strong>: ~27%</li>
+  <li><strong>SWE-agent</strong> (custom CLI shell & AST navigation): ~38%</li>
+  <li><strong>Agentless</strong> (hierarchical search + localized patch, zero autonomous loop): ~42%</li>
+  <li><strong>Moatless Tools / OpenHands</strong>: ~49%</li>
+</ul>
+
+<p>That is a <strong>22-point swing on the exact same model</strong>. The scaffold choice contributed more variance than the generational leap between GPT-4 and GPT-4o.</p>
+
+<h3 id="3-tool-calling-protocols-json-schema-vs-xml">3. Tool-Calling Protocols: JSON Schema vs XML</h3>
+
+<p>Different models are tuned on distinct tool-calling idioms. OpenAI and Google models are optimized for structured JSON-Schema function calling. When dropped into Anthropic-style raw <code>&lt;function_call&gt;</code> XML harnesses, their tool parsing error rates jump 10–18%. Conversely, open-weights MoEs (like DeepSeek and Qwen) excel at raw markdown/XML blocks and reasoning traces (<code>&lt;think&gt;...&lt;/think&gt;</code>), but degrade when forced into rigid JSON-schema wrappers that strip intermediate reasoning tokens.</p>
+
+<h3 id="4-verification-loops-error-feedback-depth-pass1-vs-passk">4. Verification Loops & Error-Feedback Depth (<span class="vbg-formula">pass@1</span> vs <span class="vbg-formula">pass@k</span>)</h3>
+
+<p>On EvalPlus, you test raw first-try completion (<span class="vbg-formula">pass@1</span>). Models with deep internal CoT reasoning (like Gemini 3.7 Flash) thrive because they verify edge cases before emitting code.</p>
+
+<p>On Aider, the runner gives the model two tries: if the initial patch fails <code>pytest</code>, the runner feeds the traceback back to the model for a second pass. In feedback-loop harnesses, fast, cheap models with strong error-recovery (like DeepSeek Flash) catch up significantly because the execution environment provides the missing verification signal.</p>
+
+<hr>
+
+<hr>
+
+<h2 id="the-four-request-response-loop-architectures">The Four Request-Response Loop Architectures</h2>
+
+<p>The reason scores diverge across harnesses is that they orchestrate the model through completely different interaction loops:</p>
+
+<h3 id="loop-1-open-loop-zero-shot-evalplus-livebench">Loop 1: Open-Loop Zero-Shot (EvalPlus, LiveBench)</h3>
+
+<p><em>The model gets a single prompt and must handle all reasoning, edge-case simulation, and syntax emission in one shot with zero feedback:</em></p>
+
+<pre class="code-block mermaid"><code class="language-mermaid">flowchart LR
+    A[&quot;Task Prompt&quot;] --&gt; B[&quot;LLM Generation&quot;]
+    B --&gt; C[&quot;AST Code Extractor&quot;]
+    C --&gt; D[&quot;Sandbox Test Runner&quot;]
+    D --&gt; E[&quot;Single Pass / Fail ($pass@1$)&quot;]</code></pre>
+
+<hr>
+
+<h3 id="loop-2-test-driven-feedback-loop-aider-interactive-diff">Loop 2: Test-Driven Feedback Loop (Aider Interactive Diff)</h3>
+
+<p><em>The model proposes a localized edit. If the compiler fails, the harness feeds the traceback back to the model for a second pass:</em></p>
+
+<pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
+    A[&quot;Repo Exercise&quot;] --&gt; B[&quot;LLM Emits SEARCH/REPLACE Diff&quot;]
+    B --&gt; C[&quot;Harness Applies Patch&quot;]
+    C --&gt; D[&quot;Run pytest Compiler&quot;]
+    D -- &quot;Pass (100%)&quot; --&gt; E[&quot;Git Commit &amp; Success&quot;]
+    D -- &quot;Fail&quot; --&gt; F[&quot;Feed Compiler Traceback to LLM&quot;]
+    F --&gt; G[&quot;LLM Turn 2 Patch&quot;]
+    G --&gt; C</code></pre>
+
+<hr>
+
+<h3 id="loop-3-autonomous-tool-use-loop-swe-agent-cline-openhands">Loop 3: Autonomous Tool-Use Loop (SWE-agent, Cline, OpenHands)</h3>
+
+<p><em>The model orchestrates a free-form loop of shell commands, file reads, and grep searches inside a persistent Linux sandbox:</em></p>
+
+<pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
+    A[&quot;Issue Description&quot;] --&gt; B[&quot;LLM Chooses Tool Call&quot;]
+    B --&gt; C[&quot;Sandbox Executes Tool: bash / view / edit&quot;]
+    C --&gt; D[&quot;Feed stdout / stderr back into Context&quot;]
+    D --&gt; E{&quot;Resolved?&quot;}
+    E -- &quot;No&quot; --&gt; B
+    E -- &quot;Yes&quot; --&gt; F[&quot;Submit Repo Patch&quot;]</code></pre>
+
+<hr>
+
+<h3 id="loop-4-multi-stage-hierarchical-pipeline-agentless-moatless">Loop 4: Multi-Stage Hierarchical Pipeline (Agentless, Moatless)</h3>
+
+<p><em>Replaces the open-ended autonomous loop with a structured, deterministic multi-phase pipeline:</em></p>
+
+<pre class="code-block mermaid"><code class="language-mermaid">flowchart LR
+    A[&quot;Repo Issue&quot;] --&gt; B[&quot;Phase 1: Localize Faulty Files &amp; Lines&quot;]
+    B --&gt; C[&quot;Phase 2: Generate Surgical Patch&quot;]
+    C --&gt; D[&quot;Phase 3: Run Reproduction Verifier&quot;]</code></pre>
+
+<hr>
+
+<h2 id="four-benchmarks-four-different-execution-harnesses">Four Benchmarks, Four Different Execution Harnesses</h2>
+
+<p>To see how rank ordering behaves across different execution paradigms, we evaluated our cohort across four distinct combinations of benchmark datasets and execution harnesses:</p>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Benchmark Dataset</th>
+        <th scope="col">Execution Harness / Runner</th>
+        <th scope="col">What the Harness Stresses</th>
+        <th scope="col">Where Models Break</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong><a href="https://exercism.org">Exercism Python</a></strong> (140 exercises)</th>
+        <td><strong>Aider Interactive Diff Runner</strong> (<code>pytest</code> feedback loop)</td>
+        <td>Diff format adherence, error recovery</td>
+        <td>Malformed search/replace fences</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><a href="https://evalplus.github.io">HumanEval+ & MBPP+</a></strong> (542 tasks)</th>
+        <td><strong>EvalPlus Fuzzer Runner</strong> (AST extraction, 80x test fuzzing)</td>
+        <td>Zero-shot boundary correctness</td>
+        <td>Edge cases (empty lists, recursion)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><a href="https://bigcode-bench.github.io">BigCodeBench</a></strong> (1,140 tasks)</th>
+        <td><strong>Docker Package Sandbox</strong> (139+ Python dependencies)</td>
+        <td>Real library syntax composition</td>
+        <td>Hallucinated library parameters</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><a href="https://livebench.ai">LiveBench</a></strong> (~1,000 tasks)</th>
+        <td><strong>Zero-Shot Evaluation Runner</strong> (Ground truth grading)</td>
+        <td>Uncontaminated reasoning breadth</td>
+        <td>Memorization drift / math without tools</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<hr>
+
+<h2 id="what-the-numbers-look-like-in-practice">What the Numbers Look Like in Practice</h2>
+
+<p>Here are the empirical results from our runs across the test cohort:</p>
+
+<h3 id="1-the-model-benchmark-harness-matrix">1. The Model × Benchmark × Harness Matrix</h3>
+
+<p>A benchmark score is not an intrinsic property of model weights. It is the output of an interaction between the model, the task dataset, and the execution harness:</p>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Model</th>
+        <th scope="col">Benchmark Dataset</th>
+        <th scope="col">Evaluation Harness / Scaffold</th>
+        <th scope="col">Output / Edit Protocol</th>
+        <th scope="col">Verification Mechanism</th>
+        <th scope="col">Attempt Budget</th>
+        <th scope="col">Empirical Pass Rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong><code>google/gemini-3.7-flash</code></strong></th>
+        <td><strong>HumanEval+</strong> (164 tasks)</td>
+        <td><strong>EvalPlus Fuzzer Runner</strong></td>
+        <td>Zero-Shot Function AST</td>
+        <td>80x Contract Fuzzing</td>
+        <td><span class="vbg-formula">pass@1</span> (0 retries)</td>
+        <td><strong>72.6%</strong> (119/164)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>google/gemini-3.7-flash</code></strong></th>
+        <td><strong>MBPP+</strong> (378 tasks)</td>
+        <td><strong>EvalPlus Fuzzer Runner</strong></td>
+        <td>Zero-Shot Function AST</td>
+        <td>Extended Contract Fuzzing</td>
+        <td><span class="vbg-formula">pass@1</span> (0 retries)</td>
+        <td><strong>71.4%</strong> (270/378)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>google/gemini-3.7-flash</code></strong></th>
+        <td><strong>Exercism</strong> (140 tasks)</td>
+        <td><strong>Aider Interactive Diff Runner</strong></td>
+        <td>Git <code>SEARCH/REPLACE</code> Diff</td>
+        <td>Live <code>pytest</code> Tracebacks</td>
+        <td>Multi-turn (2 tries)</td>
+        <td><strong>99.3%</strong> (139/140)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>z-ai/glm-5.2</code></strong></th>
+        <td><strong>HumanEval+</strong> (164 tasks)</td>
+        <td><strong>EvalPlus Fuzzer Runner</strong></td>
+        <td>Zero-Shot Function AST</td>
+        <td>80x Contract Fuzzing</td>
+        <td><span class="vbg-formula">pass@1</span> (0 retries)</td>
+        <td><strong>54.9%</strong> (90/164)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>z-ai/glm-5.2</code></strong></th>
+        <td><strong>MBPP+</strong> (378 tasks)</td>
+        <td><strong>EvalPlus Fuzzer Runner</strong></td>
+        <td>Zero-Shot Function AST</td>
+        <td>Extended Contract Fuzzing</td>
+        <td><span class="vbg-formula">pass@1</span> (0 retries)</td>
+        <td><strong>65.3%</strong> (247/378)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>z-ai/glm-5.2</code></strong></th>
+        <td><strong>Exercism</strong> (140 tasks)</td>
+        <td><strong>Aider Interactive Diff Runner</strong></td>
+        <td>Git <code>SEARCH/REPLACE</code> Diff</td>
+        <td>Live <code>pytest</code> Tracebacks</td>
+        <td>Multi-turn (2 tries)</td>
+        <td><strong>91.4%</strong> (128/140)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>deepseek/deepseek-v4-flash-0731</code></strong></th>
+        <td><strong>HumanEval+</strong> (164 tasks)</td>
+        <td><strong>EvalPlus Fuzzer Runner</strong></td>
+        <td>Zero-Shot Function AST</td>
+        <td>80x Contract Fuzzing</td>
+        <td><span class="vbg-formula">pass@1</span> (0 retries)</td>
+        <td><strong>67.7%</strong> (111/164)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>deepseek/deepseek-v4-flash-0731</code></strong></th>
+        <td><strong>Exercism</strong> (140 tasks)</td>
+        <td><strong>Aider Interactive Diff Runner</strong></td>
+        <td>Git <code>SEARCH/REPLACE</code> Diff</td>
+        <td>Live <code>pytest</code> Tracebacks</td>
+        <td>Multi-turn (2 tries)</td>
+        <td><strong>71.4%</strong> (20/28)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 id="2-separate-harness-comparisons-model-vs-model">2. Separate Harness Comparisons: Model vs. Model</h3>
+
+<p>When you isolate each harness into its own comparison, the relative rankings and gap sizes diverge completely:</p>
+
+<h4 id="a-evalplus-humaneval-zero-shot-contract-fuzzing-pass1-0-retries">A. EvalPlus HumanEval+ (Zero-Shot Contract Fuzzing · <span class="vbg-formula">pass@1</span> · 0 Retries)</h4>
+
+<p><em>Tests strict boundary handling (empty inputs, recursion limits, type edge cases) in single-shot mode:</em></p>
+
+<pre class="code-block mermaid"><code class="language-mermaid">xychart-beta
+    title &quot;EvalPlus HumanEval+ (Single-Shot Fuzzing Pass@1 %)&quot;
+    x-axis [&quot;Gemini 3.7 Flash&quot;, &quot;DeepSeek Flash 0731&quot;, &quot;GLM-5.2&quot;]
+    y-axis &quot;Pass Rate (%)&quot; 0 --&gt; 100
+    bar [72.6, 67.7, 54.9]</code></pre>
+
+<pre class="code-block"><code class="language-text">Gemini 3.7 Flash    █████████████████████████████           72.6% (119/164)
+DeepSeek Flash 0731 ███████████████████████████             67.7% (111/164)  [+12.8% over GLM]
+GLM-5.2             ██████████████████████                  54.9% (90/164)</code></pre>
+
+<hr>
+
+<h4 id="b-aider-bench-multi-turn-git-diff-agent-pytest-tracebacks-2-attempts">B. Aider Bench (Multi-Turn Git Diff Agent · <code>pytest</code> Tracebacks · 2 Attempts)</h4>
+
+<p><em>Tests multi-file repo refactoring, Search/Replace formatting, and compiler error recovery:</em></p>
+
+<pre class="code-block mermaid"><code class="language-mermaid">xychart-beta
+    title &quot;Aider Bench (Multi-Turn Git Diff Editing %)&quot;
+    x-axis [&quot;Gemini 3.7 Flash&quot;, &quot;GLM-5.2&quot;, &quot;DeepSeek Flash 0731&quot;]
+    y-axis &quot;Pass Rate (%)&quot; 0 --&gt; 100
+    bar [99.3, 91.4, 71.4]</code></pre>
+
+<pre class="code-block"><code class="language-text">Gemini 3.7 Flash    ████████████████████████████████████████ 99.3% (139/140)
+GLM-5.2             ████████████████████████████████████    91.4% (128/140)  [+20.0% over DeepSeek]
+DeepSeek Flash 0731 ████████████████████████████            71.4% (20/28)</code></pre>
+
+<hr>
+
+<h4 id="c-evalplus-mbpp-multi-assertion-contract-fuzzing-pass1-0-retries">C. EvalPlus MBPP+ (Multi-Assertion Contract Fuzzing · <span class="vbg-formula">pass@1</span> · 0 Retries)</h4>
+
+<p><em>Tests multi-statement algorithmic challenges across 378 python problems:</em></p>
+
+<pre class="code-block mermaid"><code class="language-mermaid">xychart-beta
+    title &quot;EvalPlus MBPP+ (Extended Contract Fuzzing %)&quot;
+    x-axis [&quot;Gemini 3.7 Flash&quot;, &quot;GLM-5.2&quot;, &quot;DeepSeek Flash 0731&quot;]
+    y-axis &quot;Pass Rate (%)&quot; 0 --&gt; 100
+    bar [71.4, 65.3, 67.0]</code></pre>
+
+<pre class="code-block"><code class="language-text">Gemini 3.7 Flash    ████████████████████████████            71.4% (270/378)
+DeepSeek Flash 0731 ███████████████████████████             67.0% (Eval)
+GLM-5.2             ██████████████████████████              65.3% (247/378)</code></pre>
+
+<hr>
+
+<h3 id="the-two-critical-observations-from-these-charts">The Two Critical Observations from These Charts</h3>
+
+<ol>
+  <li><strong>The Rank Inversion (DeepSeek vs. GLM-5.2)</strong>: 
+  <ul>
+    <li>In <strong>Chart A (Single-Shot Fuzzer)</strong>: DeepSeek Flash beats GLM-5.2 by <strong>+12.8 percentage points</strong>.</li>
+    <li>In <strong>Chart B (Interactive Diff Agent)</strong>: The order flips 180 degrees—GLM-5.2 beats DeepSeek Flash by <strong>+20.0 percentage points</strong>.</li>
+  </ul>
+</li>
+  <li><strong>The Feedback Multiplier</strong>: 
+  <ul>
+    <li>GLM-5.2 jumps from <strong>54.9%</strong> in single-shot mode to <strong>91.4%</strong> in the interactive loop when it receives compiler error feedback.</li>
+  </ul>
+</li>
+  <li><strong>The Format Floor</strong>: 
+  <ul>
+    <li>Gemini 3.7 Flash maintains high zero-shot reasoning (<strong>72.6%</strong>) and reaches near-perfection (<strong>99.3%</strong>) when constrained to surgical Search/Replace blocks.</li>
+  </ul>
+</li>
+</ol>
+
+<h3 id="2-actual-measured-token-cost-ledger">2. Actual Measured Token & Cost Ledger</h3>
+
+<p>Here is the exact token ledger from our execution logs across 1,570+ test executions:</p>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Model</th>
+        <th scope="col">Tasks Evaluated</th>
+        <th scope="col">Input Tokens</th>
+        <th scope="col">Output Tokens</th>
+        <th scope="col">Total Spend (USD)</th>
+        <th scope="col">Cost / 100 Tasks</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>DeepSeek Flash 0731</strong></th>
+        <td>402 tasks</td>
+        <td>~106k</td>
+        <td>~61k</td>
+        <td><strong>$0.016</strong></td>
+        <td><strong>~$0.004</strong> <em>(less than half a cent)</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Gemini 3.7 Flash</strong></th>
+        <td>496 tasks</td>
+        <td>~272k</td>
+        <td>~86k</td>
+        <td><strong>$0.752</strong></td>
+        <td><strong>~$0.15</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>GLM-5.2</strong></th>
+        <td>682 tasks</td>
+        <td>~354k</td>
+        <td>~94k</td>
+        <td><strong>$1.984</strong></td>
+        <td><strong>~$0.29</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>TOTAL COHORT</strong></th>
+        <td><strong>1,580 tests</strong></td>
+        <td><strong>~732k</strong></td>
+        <td><strong>~241k</strong></td>
+        <td><strong>$2.75 total</strong></td>
+        <td><strong>~$0.17 avg</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Running hundreds of real compiler tests, fuzzed assertions, and git commits across three frontier models cost <strong>less than $3.00 total</strong>.</p>
+
+<hr>
+
+<h2 id="why-saving-traces-matters-more-than-the-score">Why Saving Traces Matters More Than the Score</h2>
+
+<p>When we set up the runner script for this suite, the most important design decision wasn't the scoring parser. It was saving the raw execution traces:</p>
+
+<pre class="code-block"><code class="language-bash">benchmarks/traces/
+├── aider/          # Raw .aider.chat.history.md with git commit diffs
+├── livebench/      # Full question/answer exchanges and CoT tokens
+├── evalplus/       # samples.jsonl with assertion tracebacks
+└── runs_*/         # Timestamped stdout/stderr terminal logs</code></pre>
+
+<p>A final leaderboard number won't tell you <em>why</em> a model failed.</p>
+
+<p>When you inspect the trace logs:</p>
+
+<ul>
+  <li>You see whether Ox Alpha lost points on LiveBench because of reasoning depth or because the question formatting didn't elicit its thinking mode.</li>
+  <li>You see whether a model failed an Aider task because it didn't know the algorithm, or because it formatted the SEARCH/REPLACE block with triple backticks inside the block.</li>
+  <li>You see whether a model failed BigCodeBench because it didn't understand the problem, or because it hallucinated a keyword argument in <code>pandas.DataFrame.to_parquet</code>.</li>
+</ul>
+
+<hr>
+
+<hr>
+
+<h2 id="the-takeaway-stop-measuring-models-in-a-vacuum">The Takeaway: Stop Measuring Models in a Vacuum</h2>
+
+<p>The next time a new model drops and conflicting leaderboards trigger online debates, remember the two core rules of evaluation:</p>
+
+<ol>
+  <li><strong>There is no such thing as "General Coding Ability."</strong> A model that excels at single-shot boundary testing (like DeepSeek Flash on EvalPlus) can be outperformed by 20 points in an interactive IDE loop by a model with better compiler error-recovery (like GLM-5.2 on Aider).</li>
+  <li><strong>You are never benchmarking a model in isolation—you are always benchmarking the <span class="vbg-formula">Model &times; Harness</span> pairing.</strong> The prompt scaffolding, edit protocol, and verification loop provide half of the cognitive system.</li>
+</ol>
+
+<p>Before you choose a model for your team or production stack:</p>
+
+<ol>
+  <li><strong>Ask for the harness repository first.</strong> If someone shares a benchmark chart without the runner script, prompt template, and attempt budget, treat it as marketing material.</li>
+  <li><strong>Match the harness to your real workload.</strong> If you are building an interactive coding assistant, single-shot multiple-choice benchmarks tell you nothing. You need an environment that tests real diff parsers and compiler feedback loops.</li>
+  <li><strong>Run your own deterministic test battery.</strong> With open endpoints and containers, evaluating a multi-model cohort costs less than $3.00 and takes a couple of hours.</li>
+</ol>
+
+<p>Don't ask which model is universally better. Ask which model fits your harness.</p>
+
+<hr>
+
+<p><em>The full containerized evaluation rig, container definitions, and runner scripts are open-source in the <a href="https://github.com/digplan/borkert.dev">borkert.dev repository</a>.</em></p>
+
       </article>
     </main>
 
@@ -110,5 +558,23 @@
   </div>
 
   <script src="/main.js?v=2"></script>
+  <!-- Mermaid.js Dynamic Vector Diagram Loader -->
+  <script type="module">
+    if (document.querySelector('.mermaid')) {
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      script.onload = () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+                       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        globalThis.mermaid.initialize({
+          startOnLoad: true,
+          theme: isDark ? 'dark' : 'neutral',
+          fontFamily: 'Geist Mono, monospace'
+        });
+      };
+      document.head.appendChild(script);
+    }
+  </script>
 </body>
 </html>

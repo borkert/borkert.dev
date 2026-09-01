@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agentic Variation Operators: Evolutionary Search in Local Sandboxes — Chris Borkert</title>
-  <meta name="description" content="Adapting NVIDIA's Agentic Variation Operators (AVO) research into local agent platforms: sub-millisecond Git rollbacks, meta-controller supervisors, and eliminating the multi-turn agent tax on small models.">
+  <title>Can NVIDIA’s AVO Make a 7B Local Model a Better Coding Agent? — Chris Borkert</title>
+  <meta name="description" content="A few weeks ago, NVIDIA published Agentic Variation Operators (AVO).">
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/posts/avo-local-harness.html">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Agentic Variation Operators: Evolutionary Search in Local Sandboxes">
-  <meta property="og:description" content="Adapting NVIDIA's Agentic Variation Operators (AVO) research into local agent platforms: sub-millisecond Git rollbacks, meta-controller supervisors, and eliminating the multi-turn agent tax on small models.">
+  <meta property="og:title" content="Can NVIDIA’s AVO Make a 7B Local Model a Better Coding Agent?">
+  <meta property="og:description" content="A few weeks ago, NVIDIA published Agentic Variation Operators (AVO).">
   <meta property="og:url" content="https://borkert.dev/posts/avo-local-harness.html">
   <meta property="og:type" content="article">
 
@@ -43,584 +43,630 @@
       <article class="post-content">
         <header class="post-header">
           <h1 class="vbg-title">Can NVIDIA’s AVO Make a 7B Local Model a Better Coding Agent?</h1>
-          <div class="post-meta">By Chris Borkert · August 2026 · AI Systems &amp; Evolutionary Search</div>
+          <div class="post-meta">By Chris Borkert - Draft - August 2026</div>
         </header>
 
         <p>A few weeks ago, NVIDIA published <strong><a href="https://arxiv.org/abs/2603.24517">Agentic Variation Operators (AVO)</a></strong>.</p>
 
-        <p>The paper demonstrated dramatic gains on frontier models: wrapping Claude Opus in an evolutionary variation loop with instant rollbacks and meta-supervisors pushed ARC-AGI from a 30% baseline to 100%, and generated attention kernels on DGX B200 clusters faster than FlashAttention-4.</p>
+<p>The paper demonstrated dramatic gains on frontier models: wrapping Claude Opus in an evolutionary variation loop with instant rollbacks and meta-supervisors pushed ARC-AGI from a 30% baseline to 100%, and generated attention kernels on DGX B200 clusters faster than FlashAttention-4.</p>
 
-        <p>The underlying premise is compelling: instead of relying on an LLM to self-correct within a messy, accumulating conversation history, you treat code generation as an evolutionary search process over variation operators, backed by deterministic test verification and immediate state rollbacks.</p>
+<p>The underlying premise is compelling: instead of relying on an LLM to self-correct within a messy, accumulating conversation history, you treat code generation as an evolutionary search process over variation operators, backed by deterministic test verification and immediate state rollbacks.</p>
 
-        <p>I wanted to see what happens when you strip away the multi-GPU clusters and apply those exact harness concepts to small local models. In this context, our definition of a "small local model" is practical: <strong>any model (from 7B up to 14B quantized parameters, such as <code>phi4:14b</code> or <code>qwen2.5-coder:7b</code>) that can run entirely on a base-level laptop with 16 gigabytes of RAM.</strong></p>
+<p>I wanted to see what happens when you strip away the multi-GPU clusters and apply those exact harness concepts to small local models. In this context, our definition of a "small local model" is practical: <strong>any model (from 7B up to 14B quantized parameters, such as <code>phi4:14b</code> or <code>qwen2.5-coder:7b</code>) that can run entirely on a base-level laptop with 16 gigabytes of RAM.</strong></p>
 
-        <p>To test this, we implemented the AVO architecture inside <strong><code>agent-platform</code></strong> as a pluggable middleware subsystem. We then evaluated it across challenging algorithmic puzzles and systems tasks under realistic local token and memory constraints.</p>
+<p>To test this, we implemented the AVO architecture inside <strong><a href="https://github.com/digplan/agent-platform"><code>agent-platform</code></a></strong> as a pluggable middleware subsystem. We then evaluated it across challenging algorithmic puzzles and systems tasks under realistic local token and memory constraints.</p>
 
-        <p>Here is what we learned from building the harness, why standard multi-turn chat breaks down on small models, and what the local implementation looks like.</p>
+<p>Here is what we learned from building the harness, why standard multi-turn chat breaks down on small models, and what the local implementation looks like.</p>
 
-        <hr>
+<hr>
 
-        <h2>The Problem: The "Agent Tax" and Multi-Turn Doom Loops</h2>
+<h2 id="the-problem-the-agent-tax-and-multi-turn-doom-loops">The Problem: The "Agent Tax" and Multi-Turn Doom Loops</h2>
 
-        <p>When you give a 7B or 14B model a coding problem in a standard multi-turn chat setup (like a classic ReAct agent), it tends to break down in predictable ways:</p>
+<p>When you give a 7B or 14B model a coding problem in a standard multi-turn chat setup (like a classic ReAct agent), it tends to break down in predictable ways:</p>
 
-        <ol>
-          <li><strong>Tokenization and boundary errors:</strong> The model generates plausible logic that fails on an edge case or minor syntax detail.</li>
-          <li><strong>Context rot:</strong> When it fails on Turn 1, the raw compiler error and full execution traceback enter the prompt history. By Turn 3, the context is bloated with hundreds of tokens of failed output.</li>
-          <li><strong>Workspace corruption:</strong> The broken candidate file remains modified on disk. On subsequent turns, the model tries to patch the already-broken file, introducing duplicate imports, broken indentation, and cascading syntax errors.</li>
-          <li><strong>Strategy collapse:</strong> Overwhelmed by its own previous mistakes, the model loses track of its original plan and retreats into repetitive apology loops or trivial no-op edits.</li>
-        </ol>
+<ol>
+  <li><strong>Tokenization and boundary errors:</strong> The model generates plausible logic that fails on an edge case or minor syntax detail.</li>
+  <li><strong>Context rot:</strong> When it fails on Turn 1, the raw compiler error and full execution traceback enter the prompt history. By Turn 3, the context is bloated with hundreds of tokens of failed output.</li>
+  <li><strong>Workspace corruption:</strong> The broken candidate file remains modified on disk. On subsequent turns, the model tries to patch the already-broken file, introducing duplicate imports, broken indentation, and cascading syntax errors.</li>
+  <li><strong>Strategy collapse:</strong> Overwhelmed by its own previous mistakes, the model loses track of its original plan and retreats into repetitive apology loops or trivial no-op edits.</li>
+</ol>
 
-        <pre class="code-block"><code>┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ The Standard Multi-Turn Doom Loop                                                      │
+<pre class="code-block"><code>┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ The Standard Multi-Turn Doom Loop │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ Turn 1: Model makes a minor syntax error. File remains broken on disk.                 │
-│ Turn 2: Model reads traceback, tries a patch, duplicates code, adds a NameError.       │
-│ Turn 3: Context contains 200 lines of failed bash output. Model hallucinates imports.  │
-│ Turn 4: Workspace corrupted. Model enters an apology loop. [FAIL]                      │
+│ Turn 1: Model makes a minor syntax error. File remains broken on disk. │
+│ Turn 2: Model reads traceback, tries a patch, duplicates code, adds a NameError. │
+│ Turn 3: Context contains 200 lines of failed bash output. Model hallucinates imports. │
+│ Turn 4: Workspace corrupted. Model enters an apology loop. [FAIL] │
 └────────────────────────────────────────────────────────────────────────────────────────┘</code></pre>
 
-        <p>On large frontier models (Claude 3.5 Sonnet, GPT-4o), multi-turn feedback often works because the model has enough reasoning capacity to diagnose a half-broken workspace and write a corrective patch.</p>
+<p>On large frontier models (Claude 3.5 Sonnet, GPT-4o), multi-turn feedback often works because the model has enough reasoning capacity to diagnose a half-broken workspace and write a corrective patch.</p>
 
-        <p>On 7B models, multi-turn chat acts as an <strong>Agent Tax</strong> that actively degrades performance compared to a clean, single-shot prompt.</p>
+<p>On 7B models, multi-turn chat acts as an <strong>Agent Tax</strong> that actively degrades performance compared to a clean, single-shot prompt.</p>
 
-        <hr>
+<hr>
 
-        <h2>The Verification Asymmetry: Why AVO Mirrors Real-World Engineering</h2>
+<h2 id="the-verification-asymmetry-why-avo-mirrors-real-world-engineering">The Verification Asymmetry: Why AVO Mirrors Real-World Engineering</h2>
 
-        <p>A fair philosophical question often asked about evolutionary agent harnesses is: <em>"Does an 'Oracle' that knows the answer even exist in the real world? If we already knew the answer, why would we need an AI agent to write the algorithm in the first place?"</em></p>
+<p>A fair philosophical question often asked about evolutionary agent harnesses is:</p>
 
-        <p>The answer lies in the fundamental asymmetry between <strong>Code Generation</strong> and <strong>Constraint Verification</strong> (the practical reality of P vs NP in software engineering):</p>
+<blockquote>
+  <p><em>"Does an 'Oracle' that knows the answer even exist in the real world? If we already knew the answer, why would we need an AI agent to write the algorithm in the first place?"</em></p>
+</blockquote>
 
-        <ul>
-          <li><strong>Code generation is computationally hard.</strong></li>
-          <li><strong>Constraint verification is computationally cheap.</strong></li>
-        </ul>
+<p>The answer lies in the fundamental asymmetry between <strong>Code Generation</strong> and <strong>Constraint Verification</strong> (the practical reality of <span class="vbg-formula">P</span> vs <span class="vbg-formula">NP</span> in software engineering):</p>
 
-        <table class="vbg-table">
-          <thead>
-            <tr>
-              <th>Real-World Engineering Domain</th>
-              <th>The Hard Generation Task (The LLM)</th>
-              <th>The Cheap Physical Verifier ("The Real-World Oracle")</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>CUDA Kernel Optimization</strong> <em>(NVIDIA AVO Paper)</em></td>
-              <td>Writing attention kernels with manual warp shuffles.</td>
-              <td><code>torch.allclose(out, ref)</code> + <code>cuda_timer() &lt; 1.2ms</code>.</td>
-            </tr>
-            <tr>
-              <td><strong>Financial Ledger Service</strong></td>
-              <td>Writing high-concurrency atomic ledger updates.</td>
-              <td>Automated invariant check: <code>sum(debits) == sum(credits)</code>.</td>
-            </tr>
-            <tr>
-              <td><strong>Data Engine &amp; Compilers</strong></td>
-              <td>Generating optimal AST transformation passes.</td>
-              <td><code>cargo test</code> + type checkers + fuzzing regression suites.</td>
-            </tr>
-          </tbody>
-        </table>
+<ul>
+  <li><strong>Code generation is computationally hard.</strong></li>
+  <li><strong>Constraint verification is computationally cheap.</strong></li>
+</ul>
 
-        <p>In none of these real-world scenarios does the engineer know the optimal code in advance. But they <strong>do</strong> have an automated test suite, type-checker, or performance harness that acts as an objective physical verifier.</p>
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Real-World Engineering Domain</th>
+        <th scope="col">The Hard Generation Task (The LLM)</th>
+        <th scope="col">The Cheap Physical Verifier ("The Real-World Oracle")</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>CUDA Kernel Optimization</strong> <em>(NVIDIA AVO Paper)</em></th>
+        <td>Writing attention kernels with manual warp shuffles.</td>
+        <td><code>torch.allclose(out, ref)</code> + <code>cuda_timer() &lt; 1.2ms</code>.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Financial Ledger Service</strong></th>
+        <td>Writing high-concurrency atomic ledger updates.</td>
+        <td>Automated invariant check: <code>sum(debits) == sum(credits)</code>.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Data Engine & Compilers</strong></th>
+        <td>Generating optimal AST transformation passes.</td>
+        <td><code>cargo test</code> + type checkers + fuzzing regression suites.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-        <h3>What the "Supervisor" Represents in the Real World</h3>
+<p>In none of these real-world scenarios does the engineer know the optimal code in advance. But they <strong>do</strong> have an automated test suite, type-checker, or performance harness that acts as an objective physical verifier.</p>
 
-        <p>In our architecture, the <strong>Supervisor does not know the answer either</strong>.</p>
+<h3 id="what-the-supervisor-represents-in-the-real-world">What the "Supervisor" Represents in the Real World</h3>
 
-        <p>In real-world engineering teams, the supervisor represents the <strong>Senior Developer</strong>:</p>
-        <ul>
-          <li><strong>The Stagnation Trap:</strong> A junior engineer spends 6 hours making micro-edits to a broken regular expression that fails 10 edge cases, polluting their git history and breaking CI on every commit.</li>
-          <li><strong>The Supervisor Intervention:</strong> A tech lead looks at the git diff, sees 15 commits touching the exact same 4 lines, and says:
-            <blockquote><em>"You've made the same edit 15 times and failed every build. Stop touching that regex. Delete the branch, wipe your local edits, and write a proper recursive-descent parser from scratch."</em></blockquote>
-          </li>
-        </ul>
+<p>In our architecture, the <strong>Supervisor does not know the answer either</strong>.</p>
 
-        <p>That is exactly what <code>AVOSupervisor</code> and <code>GitSandbox</code> do mathematically:</p>
-        <ol>
-          <li><code>GitSandbox.rollback_hard()</code> wipes the corrupted local branch in <strong>0.8 milliseconds</strong>.</li>
-          <li><code>AVOSupervisor.detect_loop_or_stagnation()</code> measures edit distance similarity (&gt;85%), detects the cognitive loop, and commands the agent to discard the broken mental model.</li>
-        </ol>
+<p>In real-world engineering teams, the supervisor represents the <strong>Senior Developer</strong>:</p>
 
-        <hr>
+<ul>
+  <li><strong>The Stagnation Trap:</strong> A junior engineer spends 6 hours making micro-edits to a broken regular expression that fails 10 edge cases, polluting their git history and breaking CI on every commit.</li>
+  <li><strong>The Supervisor Intervention:</strong> A tech lead looks at the git diff, sees 15 commits touching the exact same 4 lines, and says:
+<blockquote><p><em>"You've made the same edit 15 times and failed every build. Stop touching that regex. Delete the branch, wipe your local edits, and write a proper recursive-descent parser from scratch."</em></p></blockquote></li>
+</ul>
 
-        <h2>Implementing AVO in <code>agent-platform</code></h2>
+<p>That is exactly what <code>AVOSupervisor</code> and <code>GitSandbox</code> do mathematically:</p>
 
-        <p>NVIDIA’s paper structures evolutionary agent workflows into a <strong>4-tier hierarchy</strong>:</p>
+<ol>
+  <li><code>GitSandbox.rollback_hard()</code> wipes the corrupted local branch in <strong>0.8 milliseconds</strong>.</li>
+  <li><code>AVOSupervisor.detect_loop_or_stagnation()</code> measures edit distance similarity (<span class="vbg-formula">&gt;85%</span>), detects the cognitive loop, and commands the agent to discard the broken mental model.</li>
+</ol>
 
-        <ol>
-          <li><strong>Level 1 (The Execution Sandbox):</strong> Isolated filesystem state management, checkpointing, and instant rollback.</li>
-          <li><strong>Level 2 (The Variation Generator):</strong> The LLM prompt strategy that proposes new candidate code mutations.</li>
-          <li><strong>Level 3 (The Deterministic Verifier):</strong> Automated test suites (<code>pytest</code>, compiler checks, or benchmark timers) that evaluate candidates.</li>
-          <li><strong>Level 4 (The Meta-Controller Supervisor):</strong> The overarching monitor that tracks failure streaks across iterations, detects loop stagnation, and forces strategy shifts.</li>
-        </ol>
+<hr>
 
-        <p>To test this locally, we implemented this exact 4-tier mapping inside <code>agent-platform</code> as a lightweight, pluggable middleware subsystem:</p>
+<h2 id="implementing-avo-in-agent-platform">Implementing AVO in <code>agent-platform</code></h2>
 
-        <table class="vbg-table">
-          <thead>
-            <tr>
-              <th>NVIDIA AVO Tier</th>
-              <th>Local <code>agent-platform</code> Component</th>
-              <th>Implementation Role</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Level 1 (Sandbox)</strong></td>
-              <td><code>GitSandbox</code></td>
-              <td>Sub-millisecond (0.8ms) git reset/clean on failure.</td>
-            </tr>
-            <tr>
-              <td><strong>Level 2 (Generator)</strong></td>
-              <td><code>AgenticTDDAgent</code></td>
-              <td>Pristine, stateless single-turn prompt synthesis.</td>
-            </tr>
-            <tr>
-              <td><strong>Level 3 (Verifier)</strong></td>
-              <td><code>SubprocessBox</code></td>
-              <td>Isolated Python <code>unittest</code> execution.</td>
-            </tr>
-            <tr>
-              <td><strong>Level 4 (Supervisor)</strong></td>
-              <td><code>AVOSupervisor</code></td>
-              <td>Mathematical edit distance (<code>difflib</code>) &amp; failure streak detector.</td>
-            </tr>
-            <tr>
-              <td><strong>Lifecycle Glue</strong></td>
-              <td><code>AVOPlugin</code></td>
-              <td>Connects sandbox, supervisor, and verifier hooks into the agent loop.</td>
-            </tr>
-          </tbody>
-        </table>
+<p>NVIDIA’s paper structures evolutionary agent workflows into a <strong>4-tier hierarchy</strong>:</p>
 
-        <hr>
+<ol>
+  <li><strong>Level 1 (The Execution Sandbox):</strong> Isolated filesystem state management, checkpointing, and instant rollback.</li>
+  <li><strong>Level 2 (The Variation Generator):</strong> The LLM prompt strategy that proposes new candidate code mutations.</li>
+  <li><strong>Level 3 (The Deterministic Verifier):</strong> Automated test suites (<code>pytest</code>, compiler checks, or benchmark timers) that evaluate candidates.</li>
+  <li><strong>Level 4 (The Meta-Controller Supervisor):</strong> The overarching monitor that tracks failure streaks across iterations, detects loop stagnation, and forces strategy shifts.</li>
+</ol>
 
-        <h3>1. Level 1: Sub-Millisecond Git Sandboxing</h3>
+<p>To test this locally, we implemented this exact 4-tier mapping inside <a href="https://github.com/digplan/agent-platform"><code>agent-platform</code></a> as a lightweight, pluggable middleware subsystem:</p>
 
-        <p>The first principle of AVO is: <strong>never make a small LLM reason about its own dirty workspace.</strong></p>
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">NVIDIA AVO Tier</th>
+        <th scope="col">Local <code>agent-platform</code> Component</th>
+        <th scope="col">Implementation Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Level 1 (Sandbox)</strong></th>
+        <td><a href="https://github.com/digplan/agent-platform/core/plugins/avo/git_sandbox.py"><code>GitSandbox</code></a></td>
+        <td>Sub-millisecond (0.8ms) git reset/clean on failure.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Level 2 (Generator)</strong></th>
+        <td><a href="https://github.com/digplan/agent-platform/core/agents/tdd_agent.py"><code>AgenticTDDAgent</code></a></td>
+        <td>Pristine, stateless single-turn prompt synthesis.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Level 3 (Verifier)</strong></th>
+        <td><a href="https://github.com/digplan/agent-platform/core/plugins/sandboxes/subprocess_box.py"><code>SubprocessBox</code></a></td>
+        <td>Isolated Python <code>unittest</code> execution.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Level 4 (Supervisor)</strong></th>
+        <td><a href="https://github.com/digplan/agent-platform/core/plugins/avo/supervisor.py"><code>AVOSupervisor</code></a></td>
+        <td>Mathematical edit distance (<code>difflib</code>) & failure streak detector.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Lifecycle Glue</strong></th>
+        <td><a href="https://github.com/digplan/agent-platform/core/plugins/avo/plugin.py"><code>AVOPlugin</code></a></td>
+        <td>Connects sandbox, supervisor, and verifier hooks into the agent loop.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-        <p>Instead of creating and destroying heavy Docker containers or copying full directory trees between iterations (which takes 300–800ms), we use Git as a sub-millisecond transaction boundary:</p>
+<pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
+    subgraph AVO[&quot;AVO Iteration Loop in agent-platform&quot;]
+        A[&quot;Task Ingestion &amp; Test Spec&quot;] --&gt; B[&quot;Generate Candidate Variation (Iteration K)&quot;]
+        B --&gt; C[&quot;Execute in Subprocess / Docker Sandbox&quot;]
+        C --&gt; D{&quot;Deterministic Verifier (pytest / exit code)&quot;}
+        D -- PASS --&gt; E[&quot;GitSandbox.checkpoint() -&gt; Return Success&quot;]
+        D -- FAIL --&gt; F[&quot;Extract Compact Diagnostic Stderr&quot;]
+        F --&gt; G[&quot;GitSandbox.rollback_hard() (0.8ms)&quot;]
+        G --&gt; H[&quot;AVOSupervisor.detect_loop_or_stagnation()&quot;]
+        H --&gt; I[&quot;Synthesize Fresh Clean Prompt + Diagnostic Trace&quot;]
+        I --&gt; B
+    end</code></pre>
 
-        <pre class="code-block"><code># Conceptual logic in core/plugins/avo/git_sandbox.py
+<hr>
+
+<h3 id="1-level-1-sub-millisecond-git-sandboxing">1. Level 1: Sub-Millisecond Git Sandboxing</h3>
+
+<p>The first principle of AVO is: <strong>never make a small LLM reason about its own dirty workspace.</strong></p>
+
+<p>Instead of creating and destroying heavy Docker containers or copying full directory trees between iterations (which takes 300–800ms), we use Git as a sub-millisecond transaction boundary:</p>
+
+<pre class="code-block"><code class="language-python"># Conceptual logic in core/plugins/avo/git_sandbox.py
 def on_test_result(iteration, passed):
-    if passed:
-        # Commit verified working state
-        git.add_and_commit(f"AVO Checkpoint Step {iteration}")
-    else:
-        # Instantly wipe unverified hallucinations (0.8ms)
-        git.reset_hard()
-        git.clean_untracked()</code></pre>
+ if passed:
+ # Commit verified working state
+ git.add_and_commit(f&quot;AVO Checkpoint Step {iteration}&quot;)
+ else:
+ # Instantly wipe unverified hallucinations (0.8ms)
+ git.reset_hard()
+ git.clean_untracked()</code></pre>
 
-        <p><code>git reset --hard HEAD &amp;&amp; git clean -fd</code> runs in <strong>0.8 milliseconds</strong>. If an edit fails verification, the filesystem is restored to its pristine baseline before the next token is sampled.</p>
+<p><em>Full source implementation: <a href="https://github.com/digplan/agent-platform/core/plugins/avo/git_sandbox.py"><code>core/plugins/avo/git_sandbox.py</code></a></em></p>
 
-        <hr>
+<p><code>git reset --hard HEAD &amp;&amp; git clean -fd</code> runs in <strong>0.8 milliseconds</strong>. If an edit fails verification, the filesystem is restored to its pristine baseline before the next token is sampled.</p>
 
-        <h3>2. Level 4: Meta-Controller Supervisor</h3>
+<hr>
 
-        <p>When small models fail repeatedly, they tend to make trivial perturbations to a flawed concept—like tweaking a broken regular expression three times in a row.</p>
+<h3 id="2-level-4-meta-controller-supervisor">2. Level 4: Meta-Controller Supervisor</h3>
 
-        <p>The <code>AVOSupervisor</code> tracks candidate history, computes code similarity across iterations using <code>difflib.SequenceMatcher</code>, and detects failure streaks:</p>
+<p>When small models fail repeatedly, they tend to make trivial perturbations to a flawed concept—like tweaking a broken regular expression three times in a row.</p>
 
-        <pre class="code-block"><code># Conceptual logic in core/plugins/avo/supervisor.py
+<p>The <code>AVOSupervisor</code> tracks candidate history, computes code similarity across iterations using <code>difflib.SequenceMatcher</code>, and detects failure streaks:</p>
+
+<pre class="code-block"><code class="language-python"># Conceptual logic in core/plugins/avo/supervisor.py
 def detect_loop_or_stagnation(history, failure_streak):
-    if failure_streak >= 2:
-        similarity = diff_similarity(history[-1], history[-2])
-        if similarity > 0.85:
-            return (
-                f"AVO Supervisor Warning: High similarity ({similarity:.1%}) across failing iterations. "
-                "Do NOT tweak small details. Re-architect the approach from scratch."
-            )
-    return None</code></pre>
+ if failure_streak &gt;= 2:
+ similarity = diff_similarity(history[-1], history[-2])
+ if similarity &gt; 0.85:
+ return (
+ f&quot;AVO Supervisor Warning: High similarity ({similarity:.1%}) across failing iterations. &quot;
+ &quot;Do NOT tweak small details. Re-architect the approach from scratch.&quot;
+ )
+ return None</code></pre>
 
-        <hr>
+<p><em>Full source implementation: <a href="https://github.com/digplan/agent-platform/core/plugins/avo/supervisor.py"><code>core/plugins/avo/supervisor.py</code></a></em></p>
 
-        <h3>3. The Supervised Iterative Refinement Loop</h3>
+<hr>
 
-        <p>The <code>AVOPlugin</code> connects the sandbox and supervisor directly into the agent's generation lifecycle:</p>
+<h3 id="3-the-supervised-iterative-refinement-loop">3. The Supervised Iterative Refinement Loop</h3>
 
-        <pre class="code-block"><code># Conceptual loop in core/agents/tdd_agent.py
+<p>The <a href="https://github.com/digplan/agent-platform/core/plugins/avo/plugin.py"><code>AVOPlugin</code></a> connects the sandbox and supervisor directly into the agent's generation lifecycle:</p>
+
+<pre class="code-block"><code class="language-python"># Conceptual loop in core/agents/tdd_agent.py
 for turn in range(1, max_turns):
-    # 1. Synthesize fresh single-turn prompt (No multi-turn chat bloat)
-    prompt = build_prompt(task_spec, last_test_failure, supervisor_directive)
-    candidate_code = llm.generate(prompt)
+ # 1. Synthesize fresh single-turn prompt (No multi-turn chat bloat)
+ prompt = build_prompt(task_spec, last_test_failure, supervisor_directive)
+ candidate_code = llm.generate(prompt)
 
-    # 2. Execute deterministic verifier in isolated sandbox
-    test_result = run_isolated_tests(candidate_code)
+ # 2. Execute deterministic verifier in isolated sandbox
+ test_result = run_isolated_tests(candidate_code)
 
-    # 3. Evolutionary branching &amp; rollback
-    if test_result.passed:
-        git_sandbox.checkpoint(f"Verified Step {turn}")
-        return Success(candidate_code)
-    else:
-        git_sandbox.rollback_hard()  # 0.8ms clean reset
-        supervisor_directive = supervisor.detect_loop_or_stagnation()</code></pre>
+ # 3. Evolutionary branching &amp; rollback
+ if test_result.passed:
+ git_sandbox.checkpoint(f&quot;Verified Step {turn}&quot;)
+ return Success(candidate_code)
+ else:
+ git_sandbox.rollback_hard() # 0.8ms clean reset
+ supervisor_directive = supervisor.detect_loop_or_stagnation()</code></pre>
 
-        <hr>
+<p><em>Full source implementations: <a href="https://github.com/digplan/agent-platform/core/plugins/avo/plugin.py"><code>core/plugins/avo/plugin.py</code></a> and <a href="https://github.com/digplan/agent-platform/core/agents/tdd_agent.py"><code>core/agents/tdd_agent.py</code></a></em></p>
 
-        <h2>Empirical Benchmark 1: Algorithmic Optimization</h2>
+<hr>
 
-        <p>To test whether AVO could discover non-trivial algorithmic optimizations locally, we ran <code>phi4:latest</code> (14B) on an O(N^2) pairwise distance calculation:</p>
+<h2 id="empirical-benchmark-1-algorithmic-optimization">Empirical Benchmark 1: Algorithmic Optimization</h2>
 
-        <pre class="code-block"><code>=================================================================
+<p>To test whether AVO could discover non-trivial algorithmic optimizations locally, we ran <code>phi4:latest</code> (14B) on an <span class="vbg-formula">\mathcal{O}(N^2)</span> pairwise distance calculation:</p>
+
+<pre class="code-block"><code class="language-text">=================================================================
  AVO LOCAL PROTOTYPE (Model: phi4:latest)
 =================================================================
  Baseline Version (v0): Runtime: 22.12ms (Score: 46.4)
 
  --- Iteration 1/4 ---
- [FAIL] REJECTED (Incorrect math) -> Instant Git Rollback (0.8ms)
+ [FAIL] REJECTED (Incorrect math) -&gt; Instant Git Rollback (0.8ms)
  --- Iteration 2/4 ---
- [FAIL] REJECTED (Incorrect math) -> Instant Git Rollback (0.8ms)
+ [FAIL] REJECTED (Incorrect math) -&gt; Instant Git Rollback (0.8ms)
  --- Iteration 3/4 ---
- [FAIL] REJECTED (Off-by-one error) -> Instant Git Rollback (0.8ms)
+ [FAIL] REJECTED (Off-by-one error) -&gt; Instant Git Rollback (0.8ms)
  --- Iteration 4/4 ---
  [PASS] SUCCESS: 100% Correct! Runtime: 1.48ms (Score: 646.6)
- Score improved: 46.4 -> 646.6 (15.0x faster)</code></pre>
+ Score improved: 46.4 -&gt; 646.6 (15.0x faster)</code></pre>
 
-        <p>In a standard multi-turn chat, <code>phi4</code> failed after Iteration 2 because the error trace polluted the prompt and caused indentation syntax errors.</p>
+<p>In a standard multi-turn chat, <code>phi4</code> failed after Iteration 2 because the error trace polluted the prompt and caused indentation syntax errors.</p>
 
-        <p>Under AVO, each candidate started from a clean disk state. On Iteration 4, the model discovered a sorted prefix-sum mathematical identity, reducing runtime from <strong>22.12 ms down to 1.48 ms (15.0x speedup)</strong>.</p>
+<p>Under AVO, each candidate started from a clean disk state. On Iteration 4, the model discovered a sorted prefix-sum mathematical identity, reducing runtime from <strong>22.12 ms down to 1.48 ms (<span class="vbg-formula">15.0&times;</span> speedup)</strong>.</p>
 
-        <hr>
+<hr>
 
-        <h2>Empirical Evaluation: 10 Algorithmic Tasks Across 5 Trials</h2>
+<h2 id="empirical-evaluation-10-algorithmic-tasks-across-5-trials">Empirical Evaluation: 10 Algorithmic Tasks Across 5 Trials</h2>
 
-        <p>To test AVO with scientific rigor, we designed <strong>"AVO-Hard10"</strong>—a curated suite of 10 high-difficulty algorithmic, concurrency, and data structure tasks. Each task was designed with specific natural traps where local models typically fail during multi-step refinement:</p>
+<p>To test AVO with scientific rigor, we designed <strong>"AVO-Hard10"</strong>—a curated suite of 10 high-difficulty algorithmic, concurrency, and data structure tasks. Each task was designed with specific natural traps where local models typically fail during multi-step refinement:</p>
 
-        <ol>
-          <li><code>lb_code_interval_merge_k</code>: Sweep-line event scheduling with overlap multiplicity k &gt;= 2.</li>
-          <li><code>lb_code_regex_validator</code>: SemVer 2.0.0 parser with strict leading-zero rejection.</li>
-          <li><code>lb_reasoning_longest_path_dag</code>: Dynamic programming on DAGs with disconnected components and negative edge weights.</li>
-          <li><code>lb_math_modular_inverse_matrix</code>: 2x2 Matrix modular inverse modulo prime p with singularity handling.</li>
-          <li><code>lb_data_log_anomaly_detector</code>: Rolling window burst anomaly event detector.</li>
-          <li><code>lb_concurrency_bounded_priority_queue_ttl</code>: Bounded priority queue with lazy TTL expiration during <code>peek()</code> and <code>size()</code> + FIFO tie-breaking on equal priorities.</li>
-          <li><code>lb_algorithms_lru_cache_ttl</code>: LRU cache with TTL eviction and O(1) amortized get/put operations.</li>
-          <li><code>lb_graph_tarjan_strongly_connected_components</code>: Tarjan’s strongly connected components algorithm with self-loops.</li>
-          <li><code>lb_math_convex_hull_monotone_chain</code>: Andrew’s Monotone Chain 2D convex hull with collinear point pruning.</li>
-          <li><code>lb_parsers_json_ast_schema_validator</code>: Recursive JSON schema validator with constraints.</li>
-        </ol>
+<ol>
+  <li><code>lb_code_interval_merge_k</code>: Sweep-line event scheduling with overlap multiplicity <span class="vbg-formula">k &ge; 2</span>.</li>
+  <li><code>lb_code_regex_validator</code>: SemVer 2.0.0 parser with strict leading-zero rejection.</li>
+  <li><code>lb_reasoning_longest_path_dag</code>: Dynamic programming on DAGs with disconnected components and negative edge weights.</li>
+  <li><code>lb_math_modular_inverse_matrix</code>: 2x2 Matrix modular inverse modulo prime <span class="vbg-formula">p</span> with singularity handling.</li>
+  <li><code>lb_data_log_anomaly_detector</code>: Rolling window burst anomaly event detector.</li>
+  <li><code>lb_concurrency_bounded_priority_queue_ttl</code>: Bounded priority queue with lazy TTL expiration during <code>peek()</code> and <code>size()</code> + FIFO tie-breaking on equal priorities.</li>
+  <li><code>lb_algorithms_lru_cache_ttl</code>: LRU cache with TTL eviction and <span class="vbg-formula">O(1)</span> amortized get/put operations.</li>
+  <li><code>lb_graph_tarjan_strongly_connected_components</code>: Tarjan’s strongly connected components algorithm with self-loops.</li>
+  <li><code>lb_math_convex_hull_monotone_chain</code>: Andrew’s Monotone Chain 2D convex hull with collinear point pruning.</li>
+  <li><code>lb_parsers_json_ast_schema_validator</code>: Recursive JSON schema validator with constraints.</li>
+</ol>
 
-        <h3>Multi-Trial Protocol</h3>
-        <ul>
-          <li><strong>Model:</strong> <code>phi4:latest</code> (14B, Q4_K_M via Ollama on unified memory).</li>
-          <li><strong>Sample Size:</strong> 10 tasks evaluated across <strong>5 randomized trials per configuration</strong>.</li>
-          <li><strong>Configurations Tested:</strong>
-            <ul>
-              <li><strong>Baseline (No AVO):</strong> Standard TDD Agent with dirty context accumulation and un-sandboxed workspace persistence.</li>
-              <li><strong>With AVO Plugin:</strong> TDD Agent equipped with Level 1 Git Sandbox (0.8ms hard rollback) and Level 4 Meta-Controller Supervisor (failure streak &gt;= 2 detection).</li>
-            </ul>
-          </li>
-          <li><strong>Verification:</strong> Fully automated Python <code>unittest</code> runner in isolated subprocesses.</li>
-        </ul>
+<h3 id="multi-trial-protocol">Multi-Trial Protocol</h3>
 
-        <div class="vbg-callout">
-          <h4>Methodological Rigor: Preventing "Oracle Leaks"</h4>
-          <p>A frequent pitfall in AI agent benchmarking is the <strong>Oracle Leak</strong>—where the evaluation harness or supervisor inadvertently hands the answer to the model mid-run (e.g. <em>"Try using Kahn's topological sort"</em> or disclosing expected assertion values).</p>
-          <p>To ensure these results reflect genuine model reasoning rather than leaked answers:</p>
-          <ol>
-            <li><strong>Zero-Hint Supervisor:</strong> The <code>AVOSupervisor</code> has <strong>zero domain awareness</strong>. It does not know what task is running, what data structures exist, or what the correct answer looks like. It operates purely on mathematical edit distance (<code>difflib.SequenceMatcher</code>) and failure streaks (&gt;= 2). Its only action is telling the model: <em>"High similarity across failing iterations. Do NOT tweak small details. Re-architect the approach from scratch."</em></li>
-            <li><strong>No Solution Leaks from the Test Harness:</strong> The harness never injects ground-truth solution code or hints into the agent's prompt. The model must autonomously diagnose the failure, re-read the original specification, and synthesize a working algorithm unassisted.</li>
-          </ol>
-        </div>
+<ul>
+  <li><strong>Model:</strong> <code>phi4:latest</code> (14B, Q4_K_M via Ollama on unified memory).</li>
+  <li><strong>Sample Size:</strong> 10 tasks evaluated across <strong>5 randomized trials per configuration</strong>.</li>
+  <li><strong>Configurations Tested:</strong>
+  <ul>
+    <li><strong>Baseline (No AVO):</strong> Standard TDD Agent with dirty context accumulation and un-sandboxed workspace persistence.</li>
+    <li><strong>With AVO Plugin:</strong> TDD Agent equipped with Level 1 Git Sandbox (0.8ms hard rollback) and Level 4 Meta-Controller Supervisor (failure streak <span class="vbg-formula">&ge; 2</span> detection).</li>
+  </ul>
+</li>
+  <li><strong>Verification:</strong> Fully automated Python <code>unittest</code> runner in isolated subprocesses.</li>
+</ul>
 
-        <hr>
+<div class="vbg-callout" data-variant="important"><h4>IMPORTANT</h4><p>### Methodological Rigor: Preventing "Oracle Leaks"
+A frequent pitfall in AI agent benchmarking is the <strong>Oracle Leak</strong>—where the evaluation harness or supervisor inadvertently hands the answer to the model mid-run (e.g. <em>"Try using Kahn's topological sort"</em> or disclosing expected assertion values).
 
-        <h3>Scoreboard: Baseline vs AVO</h3>
+To ensure these results reflect genuine model reasoning rather than leaked answers:
+1. <strong>Zero-Hint Supervisor</strong>: The <code>AVOSupervisor</code> has <strong>zero domain awareness</strong>. It does not know what task is running, what data structures exist, or what the correct answer looks like. It operates purely on mathematical edit distance (<code>difflib.SequenceMatcher</code>) and failure streaks (<span class="vbg-formula">&ge; 2</span>). Its only action is telling the model: <em>"High similarity across failing iterations. Do NOT tweak small details. Re-architect the approach from scratch."</em>
+2. <strong>No Solution Leaks from the Test Harness</strong>: The harness never injects ground-truth solution code or hints into the agent's prompt. The model must autonomously diagnose the failure, re-read the original specification, and synthesize a working algorithm unassisted.</p></div>
 
-        <table class="vbg-table">
-          <thead>
-            <tr>
-              <th>Metric</th>
-              <th>Baseline (No AVO)</th>
-              <th>With AVO Plugin</th>
-              <th>Delta / Impact</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Overall Pass Rate</strong></td>
-              <td><strong>44.0%</strong> (22 / 50)</td>
-              <td><strong>100.0%</strong> (50 / 50)</td>
-              <td><strong>+56.0% Absolute Boost</strong> (2.27x improvement)</td>
-            </tr>
-            <tr>
-              <td><strong>Mean Iterations to Solve</strong></td>
-              <td>3.12 turns</td>
-              <td>2.40 turns</td>
-              <td><strong>-23.1% fewer turns</strong></td>
-            </tr>
-            <tr>
-              <td><strong>Mean Token Consumption</strong></td>
-              <td>3,806 tokens/task</td>
-              <td>2,736 tokens/task</td>
-              <td><strong>-28.1% token reduction</strong></td>
-            </tr>
-            <tr>
-              <td><strong>Supervisor Interventions</strong></td>
-              <td>0 (Unassisted)</td>
-              <td>30 loops broken</td>
-              <td><strong>100% Recovery Rate</strong> from stagnation</td>
-            </tr>
-          </tbody>
-        </table>
+<hr>
 
-        <hr>
+<h3 id="scoreboard-baseline-vs-avo">Scoreboard: Baseline vs AVO</h3>
 
-        <h3>Per-Task Pass Consistency Matrix (5 Trials per Task)</h3>
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Metric</th>
+        <th scope="col" data-align="center">Baseline (No AVO)</th>
+        <th scope="col" data-align="center">With AVO Plugin</th>
+        <th scope="col" data-align="center">Delta / Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Overall Pass Rate</strong></th>
+        <td data-align="center"><strong>44.0%</strong> (22 / 50)</td>
+        <td data-align="center"><strong>100.0%</strong> (50 / 50)</td>
+        <td data-align="center"><strong>+56.0% Absolute Boost</strong> (2.27× improvement)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Mean Iterations to Solve</strong></th>
+        <td data-align="center">3.12 turns</td>
+        <td data-align="center">2.40 turns</td>
+        <td data-align="center"><strong>-23.1% fewer turns</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Mean Token Consumption</strong></th>
+        <td data-align="center">3,806 tokens/task</td>
+        <td data-align="center">2,736 tokens/task</td>
+        <td data-align="center"><strong>-28.1% token reduction</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Supervisor Interventions</strong></th>
+        <td data-align="center">0 (Unassisted)</td>
+        <td data-align="center">30 loops broken</td>
+        <td data-align="center"><strong>100% Recovery Rate</strong> from stagnation</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-        <table class="vbg-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Task ID</th>
-              <th>Category</th>
-              <th>Baseline Pass Rate</th>
-              <th>With AVO Pass Rate</th>
-              <th>Supervisor Interventions</th>
-              <th>Primary Failure Mode in Baseline</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td><code>lb_code_interval_merge_k</code></td>
-              <td>Scheduling</td>
-              <td>0 / 5 (0%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>5</td>
-              <td>O(N^2) sweep-line boundary bug repeated across 4 turns.</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td><code>lb_code_regex_validator</code></td>
-              <td>Parsing</td>
-              <td>5 / 5 (100%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>0</td>
-              <td>Solved cleanly on Turn 2 (No AVO intervention needed).</td>
-            </tr>
-            <tr>
-              <td>3</td>
-              <td><code>lb_reasoning_longest_path_dag</code></td>
-              <td>Graph DP</td>
-              <td>0 / 5 (0%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>5</td>
-              <td>Recursive DFS stack exhaustion on disconnected subgraphs.</td>
-            </tr>
-            <tr>
-              <td>4</td>
-              <td><code>lb_math_modular_inverse_matrix</code></td>
-              <td>Math</td>
-              <td>5 / 5 (100%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>0</td>
-              <td>Solved zero-shot on Turn 1 via Fermat’s Little Theorem.</td>
-            </tr>
-            <tr>
-              <td>5</td>
-              <td><code>lb_data_log_anomaly_detector</code></td>
-              <td>Data Stream</td>
-              <td>0 / 5 (0%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>5</td>
-              <td>Off-by-one window slice indexing repeated continuously.</td>
-            </tr>
-            <tr>
-              <td>6</td>
-              <td><code>lb_concurrency_bounded_priority_queue_ttl</code></td>
-              <td>Data Struct</td>
-              <td>0 / 5 (0%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>5</td>
-              <td>Mutating heap array during <code>size()</code> / <code>peek()</code> queries.</td>
-            </tr>
-            <tr>
-              <td>7</td>
-              <td><code>lb_algorithms_lru_cache_ttl</code></td>
-              <td>Data Struct</td>
-              <td>0 / 5 (0%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>5</td>
-              <td>Breaking doubly-linked list pointers during TTL expiry.</td>
-            </tr>
-            <tr>
-              <td>8</td>
-              <td><code>lb_graph_tarjan_strongly_connected</code></td>
-              <td>Algorithms</td>
-              <td>5 / 5 (100%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>0</td>
-              <td>Correctly implemented DFS low-link traversal on Turn 2.</td>
-            </tr>
-            <tr>
-              <td>9</td>
-              <td><code>lb_math_convex_hull_monotone_chain</code></td>
-              <td>Geometry</td>
-              <td>2 / 5 (40%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>5</td>
-              <td>Failing to pop collinear points during cross-product check.</td>
-            </tr>
-            <tr>
-              <td>10</td>
-              <td><code>lb_parsers_json_ast_schema_validator</code></td>
-              <td>Parsers</td>
-              <td>5 / 5 (100%)</td>
-              <td><strong>5 / 5 (100%)</strong></td>
-              <td>0</td>
-              <td>Solved on Turn 2 with clean recursive type matching.</td>
-            </tr>
-          </tbody>
-        </table>
+<hr>
 
-        <hr>
+<h3 id="per-task-pass-consistency-matrix-5-trials-per-task">Per-Task Pass Consistency Matrix (5 Trials per Task)</h3>
 
-        <h2>Forensic Trace Analysis: Anatomy of a Loop Recovery</h2>
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col" data-align="center">#</th>
+        <th scope="col">Task ID</th>
+        <th scope="col" data-align="center">Category</th>
+        <th scope="col" data-align="center">Baseline Pass Rate</th>
+        <th scope="col" data-align="center">With AVO Pass Rate</th>
+        <th scope="col" data-align="center">Supervisor Interventions</th>
+        <th scope="col">Primary Failure Mode in Baseline</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row" data-align="center"><strong>1</strong></th>
+        <td><code>lb_code_interval_merge_k</code></td>
+        <td data-align="center">Scheduling</td>
+        <td data-align="center">0 / 5 (0%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">5</td>
+        <td><span class="vbg-formula">O(N^2)</span> sweep-line boundary bug repeated across 4 turns.</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>2</strong></th>
+        <td><code>lb_code_regex_validator</code></td>
+        <td data-align="center">Parsing</td>
+        <td data-align="center">5 / 5 (100%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">0</td>
+        <td>Solved cleanly on Turn 2 (No AVO intervention needed).</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>3</strong></th>
+        <td><code>lb_reasoning_longest_path_dag</code></td>
+        <td data-align="center">Graph DP</td>
+        <td data-align="center">0 / 5 (0%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">5</td>
+        <td>Recursive DFS stack exhaustion on disconnected subgraphs.</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>4</strong></th>
+        <td><code>lb_math_modular_inverse_matrix</code></td>
+        <td data-align="center">Math</td>
+        <td data-align="center">5 / 5 (100%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">0</td>
+        <td>Solved zero-shot on Turn 1 via Fermat’s Little Theorem.</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>5</strong></th>
+        <td><code>lb_data_log_anomaly_detector</code></td>
+        <td data-align="center">Data Stream</td>
+        <td data-align="center">0 / 5 (0%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">5</td>
+        <td>Off-by-one window slice indexing repeated continuously.</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>6</strong></th>
+        <td><code>lb_concurrency_bounded_priority_queue_ttl</code></td>
+        <td data-align="center">Data Struct</td>
+        <td data-align="center">0 / 5 (0%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">5</td>
+        <td>Mutating heap array during <code>size()</code> / <code>peek()</code> queries.</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>7</strong></th>
+        <td><code>lb_algorithms_lru_cache_ttl</code></td>
+        <td data-align="center">Data Struct</td>
+        <td data-align="center">0 / 5 (0%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">5</td>
+        <td>Breaking doubly-linked list pointers during TTL expiry.</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>8</strong></th>
+        <td><code>lb_graph_tarjan_strongly_connected</code></td>
+        <td data-align="center">Algorithms</td>
+        <td data-align="center">5 / 5 (100%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">0</td>
+        <td>Correctly implemented DFS low-link traversal on Turn 2.</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>9</strong></th>
+        <td><code>lb_math_convex_hull_monotone_chain</code></td>
+        <td data-align="center">Geometry</td>
+        <td data-align="center">2 / 5 (40%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">5</td>
+        <td>Failing to pop collinear points during cross-product check.</td>
+      </tr>
+      <tr>
+        <th scope="row" data-align="center"><strong>10</strong></th>
+        <td><code>lb_parsers_json_ast_schema_validator</code></td>
+        <td data-align="center">Parsers</td>
+        <td data-align="center">5 / 5 (100%)</td>
+        <td data-align="center"><strong>5 / 5 (100%)</strong></td>
+        <td data-align="center">0</td>
+        <td>Solved on Turn 2 with clean recursive type matching.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-        <p>To understand the mechanics of how AVO prevents doom loops, consider the trace logs from <strong>Task 6 (<code>lb_concurrency_bounded_priority_queue_ttl</code>)</strong>:</p>
+<hr>
 
-        <h3>The Baseline Failure (Without AVO):</h3>
-        <ul>
-          <li><strong>Turn 1:</strong> <code>phi4</code> writes a Priority Queue using <code>heapq</code>. To compute <code>size(current_time)</code>, it runs a <code>while</code> loop that calls <code>heapq.heappop()</code> to discard expired items.</li>
-          <li><strong>Test Feedback:</strong> <code>AssertionError: 'persistent' != 'exp_soon'</code> (because <code>size()</code> destructively mutated the heap, corrupting subsequent <code>pop()</code> calls).</li>
-          <li><strong>Turn 2:</strong> The model sees the error, apologizes, and attempts a fix. But because the context contains the old broken code, it makes a superficial edit (adding a temporary list copy) while keeping the same flawed pop-during-peek logic.</li>
-          <li><strong>Turns 3 &amp; 4:</strong> The context window is now congested with 3 failed implementations and 3 test traces. The model loses track of variable names and exhausts its 4-turn budget without passing. <strong>Result: [FAIL] FAILED (0/5 runs passed)</strong>.</li>
-        </ul>
+<h2 id="forensic-trace-analysis-anatomy-of-a-loop-recovery">Forensic Trace Analysis: Anatomy of a Loop Recovery</h2>
 
-        <h3>The AVO Recovery (With Git Sandbox + Supervisor):</h3>
-        <ul>
-          <li><strong>Turn 1:</strong> <code>phi4</code> writes the same flawed destructive heap mutation. Tests fail.</li>
-          <li><strong>Instant Git Rollback:</strong> The filesystem is immediately reset to a clean slate (<code>git reset --hard HEAD &amp;&amp; git clean -fd</code> in 0.8ms).</li>
-          <li><strong>Turn 2:</strong> <code>phi4</code> generates Variation 2. It fails with a similar error.</li>
-          <li><strong>Supervisor Trigger:</strong> The <code>AVOSupervisor</code> detects 2 consecutive verification failures and computes a 91.4% diff similarity between attempts. It clears the polluted conversational history and injects the domain-agnostic directive:
-            <pre class="code-block"><code>[SUPERVISOR DIRECTIVE]: High similarity (91.4%) across 2 failing iterations.
-Do NOT tweak small details. Re-architect the approach from scratch.</code></pre>
-          </li>
-          <li><strong>Turn 3:</strong> Prompted with a clean context and a clear architectural constraint, <code>phi4</code> re-reads the specification from scratch and autonomously pivots to a non-destructive generator <code>sum(1 for _, _, _, exp in self.heap if exp &gt; current_time)</code>.</li>
-          <li><strong>Result: [PASS] PASSED (100% test assertions pass on Turn 3 across all 5 trials)</strong>.</li>
-        </ul>
+<p>To understand the mechanics of how AVO prevents doom loops, consider the trace logs from <strong>Task 6 (<code>lb_concurrency_bounded_priority_queue_ttl</code>)</strong>:</p>
 
-        <pre class="code-block"><code>{
-  "task_id": "lb_concurrency_bounded_priority_queue_ttl",
-  "trial": 1,
-  "iterations": 3,
-  "status": "PASSED",
-  "supervisor_interventions": 1,
-  "step_trace": [
-    {
-      "turn": 1,
-      "outcome": "FAILED",
-      "error": "AssertionError: 'persistent' != 'exp_soon' (heap mutated during size())",
-      "action": "git_sandbox.rollback_hard() [0.8ms]"
-    },
-    {
-      "turn": 2,
-      "outcome": "FAILED",
-      "error": "AssertionError: 'persistent' != 'exp_soon' (heap mutated during peek())",
-      "action": "git_sandbox.rollback_hard() [0.8ms]",
-      "supervisor_event": "STAGNATION_DETECTED (similarity=91.4%, failure_streak=2)"
-    },
-    {
-      "turn": 3,
-      "supervisor_directive_injected": "AVO Supervisor Warning: High similarity (91.4%) across 2 failing iterations. Do NOT tweak small details. Re-architect the approach from scratch.",
-      "outcome": "PASSED",
-      "tests_passed": 3,
-      "action": "git_sandbox.checkpoint('AVO Verified Step 3')"
-    }
-  ]
+<h3 id="the-baseline-failure-without-avo">The Baseline Failure (Without AVO):</h3>
+
+<ul>
+  <li><strong>Turn 1:</strong> <code>phi4</code> writes a Priority Queue using <code>heapq</code>. To compute <code>size(current_time)</code>, it runs a <code>while</code> loop that calls <code>heapq.heappop()</code> to discard expired items.</li>
+  <li><strong>Test Feedback:</strong> <code>AssertionError: &#39;persistent&#39; != &#39;exp_soon&#39;</code> (because <code>size()</code> destructively mutated the heap, corrupting subsequent <code>pop()</code> calls).</li>
+  <li><strong>Turn 2:</strong> The model sees the error, apologizes, and attempts a fix. But because the context contains the old broken code, it makes a superficial edit (adding a temporary list copy) while keeping the same flawed pop-during-peek logic.</li>
+  <li><strong>Turns 3 & 4:</strong> The context window is now congested with 3 failed implementations and 3 test traces. The model loses track of variable names and exhausts its 4-turn budget without passing. <strong>Result: [FAIL] FAILED (0/5 runs passed)</strong>.</li>
+</ul>
+
+<h3 id="the-avo-recovery-with-git-sandbox-supervisor">The AVO Recovery (With Git Sandbox + Supervisor):</h3>
+
+<ul>
+  <li><strong>Turn 1:</strong> <code>phi4</code> writes the same flawed destructive heap mutation. Tests fail.</li>
+  <li><strong>Instant Git Rollback:</strong> The filesystem is immediately reset to a clean slate (<code>git reset --hard HEAD &amp;&amp; git clean -fd</code> in 0.8ms).</li>
+  <li><strong>Turn 2:</strong> <code>phi4</code> generates Variation 2. It fails with a similar error.</li>
+  <li><strong>Supervisor Trigger:</strong> The <code>AVOSupervisor</code> detects 2 consecutive verification failures and computes a 91.4% diff similarity between attempts. It clears the polluted conversational history and injects the domain-agnostic directive:
+<pre class="code-block"><code class="language-text">  [SUPERVISOR DIRECTIVE]: High similarity (91.4%) across 2 failing iterations.
+  Do NOT tweak small details. Re-architect the approach from scratch.</code></pre></li>
+  <li><strong>Turn 3:</strong> Prompted with a clean context and a clear architectural constraint, <code>phi4</code> re-reads the specification from scratch and autonomously pivots to a non-destructive generator <code>sum(1 for _, _, _, exp in self.heap if exp &gt; current_time)</code>.</li>
+  <li><strong>Result: [PASS] PASSED (100% test assertions pass on Turn 3 across all 5 trials)</strong>.</li>
+</ul>
+
+<pre class="code-block"><code class="language-json">{
+ &quot;task_id&quot;: &quot;lb_concurrency_bounded_priority_queue_ttl&quot;,
+ &quot;trial&quot;: 1,
+ &quot;iterations&quot;: 3,
+ &quot;status&quot;: &quot;PASSED&quot;,
+ &quot;supervisor_interventions&quot;: 1,
+ &quot;step_trace&quot;: [
+ {
+ &quot;turn&quot;: 1,
+ &quot;outcome&quot;: &quot;FAILED&quot;,
+ &quot;error&quot;: &quot;AssertionError: &#39;persistent&#39; != &#39;exp_soon&#39; (heap mutated during size())&quot;,
+ &quot;action&quot;: &quot;git_sandbox.rollback_hard() [0.8ms]&quot;
+ },
+ {
+ &quot;turn&quot;: 2,
+ &quot;outcome&quot;: &quot;FAILED&quot;,
+ &quot;error&quot;: &quot;AssertionError: &#39;persistent&#39; != &#39;exp_soon&#39; (heap mutated during peek())&quot;,
+ &quot;action&quot;: &quot;git_sandbox.rollback_hard() [0.8ms]&quot;,
+ &quot;supervisor_event&quot;: &quot;STAGNATION_DETECTED (similarity=91.4%, failure_streak=2)&quot;
+ },
+ {
+ &quot;turn&quot;: 3,
+ &quot;supervisor_directive_injected&quot;: &quot;AVO Supervisor Warning: High similarity (91.4%) across 2 failing iterations. Do NOT tweak small details. Re-architect the approach from scratch.&quot;,
+ &quot;outcome&quot;: &quot;PASSED&quot;,
+ &quot;tests_passed&quot;: 3,
+ &quot;action&quot;: &quot;git_sandbox.checkpoint(&#39;AVO Verified Step 3&#39;)&quot;
+ }
+ ]
 }</code></pre>
 
-        <hr>
+<h2 id="chat-history-bloat-vs-externalized-state-machines">Chat History Bloat vs. Externalized State Machines</h2>
 
-        <h2>Chat History Bloat vs. Externalized State Machines</h2>
+<p>A 14B parameter model does not gain higher raw reasoning capacity under AVO.</p>
 
-        <p>A 14B parameter model does not gain higher raw reasoning capacity under AVO.</p>
+<p>Instead, the benchmark reveals that standard multi-turn conversational accumulation is fundamentally toxic for local 7B–14B models. Frontier models (Claude 3.5 Sonnet, GPT-4o) have enough parameter depth and attention capacity to separate obsolete failed attempts in chat history from the current goal. Smaller models quickly suffer from context rot and get trapped in loops of cosmetic tweaks.</p>
 
-        <p>Instead, the benchmark reveals that standard multi-turn conversational accumulation is fundamentally toxic for local 7B–14B models. Frontier models (Claude 3.5 Sonnet, GPT-4o) have enough parameter depth and attention capacity to separate obsolete failed attempts in chat history from the current goal. Smaller models quickly suffer from context rot and get trapped in loops of cosmetic tweaks.</p>
+<p>AVO succeeds not by expanding model intelligence, but by decoupling search exploration from conversational memory—eliminating the multi-turn tax that causes small models to self-destruct.</p>
 
-        <p>AVO succeeds not by expanding model intelligence, but by decoupling search exploration from conversational memory—eliminating the multi-turn tax that causes small models to self-destruct.</p>
+<hr>
 
-        <hr>
+<h2 id="the-agentic-prompting-trap">The "Agentic Prompting Trap"</h2>
 
-        <h2>The "Agentic Prompting Trap"</h2>
+<p>Prompt phrasing made a surprising difference during our testing.</p>
 
-        <p>Prompt phrasing made a surprising difference during our testing.</p>
+<p>When we initially ran AVO, we used standard "agentic" role framing:</p>
 
-        <p>When we initially ran AVO, we used standard "agentic" role framing:</p>
-
-        <pre class="code-block"><code># Prompt Version A (Verbose "Agentic" Persona)
+<pre class="code-block"><code class="language-text"># Prompt Version A (Verbose &quot;Agentic&quot; Persona)
 You are an expert autonomous software engineer operating inside an AVO container sandbox.
 TASK INSTRUCTION:
 {instruction}
 SUPERVISOR DIRECTIVE:
 Try a radically different strategy.</code></pre>
 
-        <p>Performance cratered severely.</p>
+<p>Performance cratered severely.</p>
 
-        <p>When you tell a 7B model it is an "autonomous agent operating in a multi-tier sandbox," it tries to generate what it imagines an autonomous agent script looks like. It wrote 60-line bash scripts with associative arrays, signal traps, and logging wrappers—introducing syntax bugs before even touching the actual task.</p>
+<p>When you tell a 7B model it is an "autonomous agent operating in a multi-tier sandbox," it tries to generate what it imagines an autonomous agent script looks like. It wrote 60-line bash scripts with associative arrays, signal traps, and logging wrappers—introducing syntax bugs before even touching the actual task.</p>
 
-        <p>When we simplified to direct Linux terminal framing:</p>
+<p>When we simplified to direct Linux terminal framing:</p>
 
-        <pre class="code-block"><code># Prompt Version B (Direct Linux Terminal Framing)
+<pre class="code-block"><code class="language-text"># Prompt Version B (Direct Linux Terminal Framing)
 You are in a Linux terminal.
 {instruction}
 
 Output ONLY the executable shell command or python script inside a ```bash or ```python block. No explanations.</code></pre>
 
-        <p>Execution speed doubled and syntax errors dropped drastically.</p>
+<p>Execution speed doubled and syntax errors dropped drastically.</p>
 
-        <p>With smaller models, anthropomorphic role-play is pure overhead. Concise Unix constraints produce clean, reliable code.</p>
+<p>With smaller models, anthropomorphic role-play is pure overhead. Concise Unix constraints produce clean, reliable code.</p>
 
-        <hr>
+<hr>
 
-        <h2>Beyond Unit Tests: Applying AVO to Multi-Step Office Work Automation</h2>
+<h2 id="beyond-unit-tests-applying-avo-to-multi-step-office-work-automation">Beyond Unit Tests: Applying AVO to Multi-Step Office Work Automation</h2>
 
-        <p>While our initial benchmarks focused on single-module algorithmic functions, the core mechanics of AVO—<strong>instant state rollbacks and supervisor checkpointing</strong>—are useful and potentially quite valuable for automating complex, multi-step office workflows.</p>
+<p>While our initial benchmarks focused on single-module algorithmic functions, the core mechanics of AVO—<strong>instant state rollbacks and supervisor checkpointing</strong>—are useful and potentially quite valuable for automating complex, multi-step office workflows.</p>
 
-        <p>In real-world enterprise tasks (such as regulatory due diligence, expense auditing, or multi-currency reconciliations), tasks are broken down into a series of sequential milestones, each governed by a <strong>state checkpoint</strong>.</p>
+<p>In real-world enterprise tasks (such as regulatory due diligence, expense auditing, or multi-currency reconciliations), tasks are broken down into a series of sequential milestones, each governed by a <strong>state checkpoint</strong>:</p>
 
-        <h3>Flexible State Checkpoints (Not Rigid Answers)</h3>
-        <p>Unlike brittle string matching, an effective checkpoint evaluates the <strong>physical state on disk</strong> to ensure correctness while allowing for multiple valid trajectories:</p>
-        <ul>
-          <li><strong>Example (Web Research &amp; Diligence):</strong> If an agent is tasked with researching an overseas corporate registry, downloading financial filings, and publishing a compliance memo:
-            <ul>
-              <li><strong>Checkpoint 1:</strong> Verifies that the agent successfully reached the search API and extracted valid entity records (rather than hallucinating search results).</li>
-              <li><strong>Checkpoint 2:</strong> Verifies that intermediate data files (<code>corporate_tree.json</code> or <code>fx_rates.json</code>) were parsed into valid relational schemas.</li>
-              <li><strong>Checkpoint 3:</strong> Verifies that the final document (<code>.docx</code> or <code>.xlsx</code>) was generated with required tables and balanced figures.</li>
-            </ul>
-          </li>
-        </ul>
+<pre class="code-block mermaid"><code class="language-mermaid">flowchart LR
+    A[&quot;Step 1: Web Research / Data Extraction&quot;] --&gt; CP1{&quot;Checkpoint 1: Target Accessible?&quot;}
+    CP1 -- PASS --&gt; B[&quot;Step 2: Parse &amp; Normalize Table&quot;]
+    CP1 -- FAIL --&gt; S1[&quot;AVO Supervisor Intervention&quot;]
+    S1 --&gt; A
+    B --&gt; CP2{&quot;Checkpoint 2: Valid Schema on Disk?&quot;}
+    CP2 -- PASS --&gt; C[&quot;Step 3: Generate Summary Deck / Report&quot;]
+    CP2 -- FAIL --&gt; S2[&quot;AVO Supervisor Intervention&quot;]
+    S2 --&gt; B</code></pre>
 
-        <h3>Preventing Multi-Step Hallucination Drift</h3>
-        <p>If an agent fails at Checkpoint 1 (e.g. encountering an API timeout or malformed JSON), a standard chat agent will often hallucinate fake search results on Turn 2 and spend the next 6 turns writing a 20-page report based on fabricated data.</p>
+<h3 id="flexible-state-checkpoints-not-rigid-answers">Flexible State Checkpoints (Not Rigid Answers)</h3>
 
-        <p>With an AVO-style supervisor:</p>
-        <ol>
-          <li>The supervisor detects the failed physical state at Checkpoint 1.</li>
-          <li>It resets the workspace before the agent wastes context tokens building on flawed assumptions.</li>
-          <li>It guides the model back onto a valid execution trajectory early in the process.</li>
-        </ol>
+<p>Unlike brittle string matching, an effective checkpoint evaluates the <strong>physical state on disk</strong> to ensure correctness while allowing for multiple valid trajectories:</p>
 
-        <p>This transforms AVO from an isolated code refactoring loop into an <strong>active guardrail for long-horizon autonomous workflows</strong>.</p>
+<ul>
+  <li><strong>Example (Web Research & Diligence)</strong>: If an agent is tasked with researching an overseas corporate registry, downloading financial filings, and publishing a compliance memo:
+  <ul>
+    <li><strong>Checkpoint 1</strong>: Verifies that the agent successfully reached the search API and extracted valid entity records (rather than hallucinating search results).</li>
+    <li><strong>Checkpoint 2</strong>: Verifies that intermediate data files (<code>corporate_tree.json</code> or <code>fx_rates.json</code>) were parsed into valid relational schemas.</li>
+    <li><strong>Checkpoint 3</strong>: Verifies that the final document (<code>.docx</code> or <code>.xlsx</code>) was generated with required tables and balanced figures.</li>
+  </ul>
+</li>
+</ul>
 
-        <hr>
+<h3 id="preventing-multi-step-hallucination-drift">Preventing Multi-Step Hallucination Drift</h3>
 
-        <h2>Practical Takeaways for Agent Architects</h2>
+<p>If an agent fails at Checkpoint 1 (e.g. encountering an API timeout or malformed JSON), a standard chat agent will often hallucinate fake search results on Turn 2 and spend the next 6 turns writing a 20-page report based on fabricated data.</p>
 
-        <ol>
-          <li><strong>Do not accumulate raw conversation transcripts for iterative edits.</strong> Passing multi-turn chat history to a small model creates context rot. If an attempt fails, extract only the diagnostic error trace and inject it into a clean, re-synthesized prompt.</li>
-          <li><strong>Use Git as a sub-millisecond transaction boundary.</strong> Running <code>git reset --hard HEAD &amp;&amp; git clean -fd</code> between attempts prevents corrupt files from bleeding across turns.</li>
-          <li><strong>Add a stagnation supervisor.</strong> Use difflib similarity checks to detect repetitive loops and force paradigm shifts when a model gets stuck tweaking broken code.</li>
-          <li><strong>Use direct terminal constraints.</strong> Avoid complex persona prompts. Small models perform best when constrained to raw script outputs.</li>
-          <li><strong>Apply checkpoint supervision to multi-step office workflows.</strong> Break complex tasks into verifiable intermediate states so the supervisor can catch failures early before the agent drifts off track.</li>
-        </ol>
+<p>With an AVO-style supervisor:</p>
 
-        <hr>
+<ol>
+  <li>The supervisor detects the failed physical state at Checkpoint 1.</li>
+  <li>It resets the workspace before the agent wastes context tokens building on flawed assumptions.</li>
+  <li>It guides the model back onto a valid execution trajectory early in the process.</li>
+</ol>
 
-        <p><em>The full AVO plugin, Git sandbox implementation, and benchmark adapters are available in the <code>agent-platform</code> codebase.</em></p>
+<p>This transforms AVO from an isolated code refactoring loop into an <strong>active guardrail for long-horizon autonomous workflows</strong>.</p>
+
+<hr>
+
+<h2 id="practical-takeaways-for-agent-architects">Practical Takeaways for Agent Architects</h2>
+
+<p>If you are building coding agents or autonomous business workflows on top of 7B–14B models:</p>
+
+<ol>
+  <li><strong>Do not accumulate raw conversation transcripts for iterative edits.</strong> Passing multi-turn chat history to a small model creates context rot. If an attempt fails, extract only the diagnostic error trace and inject it into a clean, re-synthesized prompt.</li>
+  <li><strong>Use Git as a sub-millisecond transaction boundary.</strong> Running <code>git reset --hard HEAD &amp;&amp; git clean -fd</code> between attempts prevents corrupt files from bleeding across turns.</li>
+  <li><strong>Add a stagnation supervisor.</strong> Use difflib similarity checks to detect repetitive loops and force paradigm shifts when a model gets stuck tweaking broken code.</li>
+  <li><strong>Use direct terminal constraints.</strong> Avoid complex persona prompts. Small models perform best when constrained to raw script outputs.</li>
+  <li><strong>Apply checkpoint supervision to multi-step office workflows.</strong> Break complex tasks into verifiable intermediate states so the supervisor can catch failures early before the agent drifts off track.</li>
+</ol>
+
+<hr>
+
+<p><em>The full AVO plugin, Git sandbox implementation, and benchmark adapters are available in the <a href="https://github.com/digplan/agent-platform"><code>agent-platform</code></a> codebase.</em></p>
+
       </article>
     </main>
 
@@ -636,5 +682,23 @@ Output ONLY the executable shell command or python script inside a ```bash or ``
   </div>
 
   <script src="/main.js?v=2"></script>
+  <!-- Mermaid.js Dynamic Vector Diagram Loader -->
+  <script type="module">
+    if (document.querySelector('.mermaid')) {
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      script.onload = () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+                       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        globalThis.mermaid.initialize({
+          startOnLoad: true,
+          theme: isDark ? 'dark' : 'neutral',
+          fontFamily: 'Geist Mono, monospace'
+        });
+      };
+      document.head.appendChild(script);
+    }
+  </script>
 </body>
 </html>

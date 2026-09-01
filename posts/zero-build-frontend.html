@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Building Full-Stack Web Apps Without Bundlers or Build Steps — Chris Borkert</title>
-  <meta name="description" content="Simplifying web applications using modern browser standards, vanilla JavaScript, and Bun HTTPS servers without build steps or complex toolchains.">
+  <title>The Zero-Build Frontend: Why Native Web Standards and 12-Line Reactivity Beat Framework Sprawl — Chris Borkert</title>
+  <meta name="description" content="Over the last decade, web frontend development convinced itself that building an interactive interface requires an industrial-scale manufacturing pipeline: bund...">
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/posts/zero-build-frontend.html">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Building Full-Stack Web Apps Without Bundlers or Build Steps">
-  <meta property="og:description" content="Simplifying web applications using modern browser standards, vanilla JavaScript, and Bun HTTPS servers without build steps or complex toolchains.">
+  <meta property="og:title" content="The Zero-Build Frontend: Why Native Web Standards and 12-Line Reactivity Beat Framework Sprawl">
+  <meta property="og:description" content="Over the last decade, web frontend development convinced itself that building an interactive interface requires an industrial-scale manufacturing pipeline: bund...">
   <meta property="og:url" content="https://borkert.dev/posts/zero-build-frontend.html">
   <meta property="og:type" content="article">
 
@@ -42,28 +42,304 @@
     <main id="main">
       <article class="post-content">
         <header class="post-header">
-          <h1 class="vbg-title">Building Full-Stack Web Apps Without Bundlers or Build Steps</h1>
-          <div class="post-meta">By Chris Borkert · 2026 · Zero-Build Web Architectures</div>
+          <h1 class="vbg-title">The Zero-Build Frontend: Why Native Web Standards and 12-Line Reactivity Beat Framework Sprawl</h1>
+          <div class="post-meta">By Chris Borkert · Draft / In-Progress Research</div>
         </header>
 
-        <p>Modern frontend web development has accumulated enormous toolchain complexity: bundlers, transpilers, source maps, hot-module reloaders, and multi-gigabyte node_modules directories.</p>
+        <p>Over the last decade, web frontend development convinced itself that building an interactive interface requires an industrial-scale manufacturing pipeline: bundlers, transpilers, virtual DOM diffing engines, synthetic event systems, CSS-in-JS abstractions, and cascading dependency trees with thousands of <code>node_modules</code>.</p>
 
-        <p>With modern browser standards and native JavaScript runtime features, you can build responsive, full-stack applications with zero compilation steps:</p>
+<p>Yet modern browsers have quietly matured into remarkably capable operating environments. Today, native ECMAScript modules run directly in every major browser. Custom Web Components provide encapsulation without external runtimes. And an ES6 <code>Proxy</code> can deliver transparent, bidirectional state reactivity in roughly a dozen lines of vanilla JavaScript.</p>
 
-        <ol>
-          <li><strong>Native ES Modules:</strong> Browsers natively import ES modules over HTTP/2 without bundling.</li>
-          <li><strong>Lightweight Reactive DOM:</strong> Standard DOM APIs and Web Components eliminate heavy virtual DOM abstraction layers.</li>
-          <li><strong>Native Runtime Backend:</strong> Pairing a static reactive client with a fast Bun HTTPS server delivers instant developer iteration with zero build lag.</li>
-        </ol>
+<p>When paired with autonomous AI coding agents, this architectural shift becomes even more pronounced. This article outlines the architecture of <strong>zero-build, dependency-free vanilla web development</strong> and introduces an empirical experiment: benchmarking autonomous agents building the same complex application in <strong>Vanilla Web Components</strong> versus <strong>React</strong>.</p>
 
-        <hr>
+<hr>
 
-        <h2>Key Takeaways</h2>
-        <ul>
-          <li>Zero build steps means instant deployment and complete transparency.</li>
-          <li>Browser platform features have caught up with 90% of what bundlers used to solve.</li>
-          <li>Simpler architectures reduce maintenance burden and eliminate dependency bloat.</li>
-        </ul>
+<h2 id="1-the-core-philosophy-the-smallest-useful-abstraction">1. The Core Philosophy: The Smallest Useful Abstraction</h2>
+
+<p>Most client-server applications share the same fundamental requirements:</p>
+
+<ol>
+  <li>Render structured UI from dynamic data.</li>
+  <li>Fetch and mutate state through HTTP/REST endpoints.</li>
+  <li>Reactively update the DOM when state changes.</li>
+</ol>
+
+<p>You do not need a multi-megabyte runtime or a fragile build pipeline to satisfy these requirements.</p>
+
+<pre class="code-block"><code>┌─────────────────────────────────────────────────────────────┐
+│                      Browser Client                         │
+│  ┌───────────────────────┐       ┌───────────────────────┐  │
+│  │ &lt;custom-component-a&gt;  │       │ &lt;custom-component-b&gt;  │  │
+│  │    data=&quot;items&quot;       │       │  data=&quot;selectedItem&quot;  │  │
+│  └───────────▲───────────┘       └───────────▲───────────┘  │
+│              │                               │              │
+│              └──────────────┬────────────────┘              │
+│                             │                               │
+│              ┌──────────────┴──────────────┐                │
+│              │   app.state (ES6 Proxy)     │                │
+│              └──────────────▲──────────────┘                │
+│                             │ fetch()                       │
+└─────────────────────────────┼───────────────────────────────┘
+                              │ HTTP REST / JSON
+                              ▼
+               ┌──────────────────────────────┐
+               │       REST API Backend       │
+               └──────────────────────────────┘</code></pre>
+
+<h3 id="key-principles">Key Principles</h3>
+
+<ul>
+  <li><strong>Zero Build Step</strong>: No Webpack, Vite, Rollup, or Babel. Files are authored as standard ES modules (<code>&lt;script type=&quot;module&quot;&gt;</code>) and executed as-is.</li>
+  <li><strong>Zero Frontend Runtime Dependencies</strong>: No npm packages on the client. Native browser APIs (<code>HTMLElement</code>, <code>fetch</code>, CSS variables, Custom Elements) handle everything.</li>
+  <li><strong>Complete Frontend / Backend Decoupling</strong>: The frontend is a static bundle of HTML, CSS, and JS served from any static host or CDN. It interacts with the backend strictly over HTTP JSON/REST endpoints.</li>
+  <li><strong>Encapsulated & Terse</strong>: Each component encapsulates its template, styles, and local state. Complex helper abstractions are avoided in favor of direct, inline logic.</li>
+</ul>
+
+<hr>
+
+<h2 id="2-the-12-line-reactivity-engine">2. The 12-Line Reactivity Engine</h2>
+
+<p>Rather than maintaining a complex Virtual DOM tree and diffing overhead, we use a single global <code>Proxy</code> that tracks state assignments and dispatches updates to DOM nodes observing the modified key:</p>
+
+<pre class="code-block"><code class="language-javascript">// state-reactivity.js
+globalThis.app = globalThis.app || {};
+
+app.state = new Proxy({}, {
+  set(target, prop, value) {
+    target[prop] = value;
+
+    // Notify all DOM elements bound to this state key
+    document.querySelectorAll(`[data=&quot;${prop}&quot;]`).forEach(el =&gt; {
+      if (typeof el.render === &#39;function&#39;) {
+        el.render(value);
+      }
+    });
+
+    return true;
+  }
+});</code></pre>
+
+<h3 id="how-it-works">How It Works</h3>
+
+<ol>
+  <li><strong>Subscription</strong>: A component declares interest in a state property by adding a <code>data=&quot;&lt;property&gt;&quot;</code> attribute (e.g. <code>&lt;task-list data=&quot;tasks&quot;&gt;&lt;/task-list&gt;</code>).</li>
+  <li><strong>Reactivity</strong>: Any mutation (<code>app.state.tasks = updatedTasks</code>) queries the DOM for elements with <code>[data=&quot;tasks&quot;]</code> and invokes their <code>.render(value)</code> method with the new payload.</li>
+  <li><strong>Decoupling</strong>: Sibling components never invoke methods on each other. If Component A triggers an action that affects Component B, it writes to <code>app.state</code>, and the reactivity proxy handles synchronization.</li>
+</ol>
+
+<h3 id="what-modern-web-guidance-baseline-standards-say">What Modern Web Guidance & Baseline Standards Say</h3>
+
+<p>When evaluated against modern web development standards and <strong>Google's Modern Web Guidance</strong> (aligned with the <strong>WebDX Community Group's Baseline</strong>):</p>
+
+<ol>
+  <li><strong>100% Baseline Widely Available Primitives</strong>: Every API used in this pattern—<code>Proxy</code>, <code>globalThis</code>, <code>document.querySelectorAll()</code>, <code>CSS.escape()</code>, and Custom Elements—is universally supported across all modern browser engines without polyfills.</li>
+</ol>
+
+<ol>
+  <li><strong>Eliminating the Hydration & Diffing Tax</strong>: Modern Web Guidance emphasizes minimizing main-thread blocking time to improve Core Web Vitals (specifically <strong>Interaction to Next Paint (INP)</strong> and <strong>Largest Contentful Paint (LCP)</strong>). Directly invoking <code>.render()</code> on targeted DOM nodes bypasses the CPU overhead of full-tree virtual DOM reconciliation.</li>
+</ol>
+
+<ol>
+  <li><strong>Recommended Production Hardening</strong>: To make the pattern fully resilient in edge cases, Modern Web Guidance suggests three minimal refinements:
+  <ul>
+    <li><strong>Dirty Checking</strong>: Skip DOM queries when values are unchanged (<code>if (target[prop] === value) return true;</code>) to avoid layout thrashing.</li>
+    <li><strong>Selector Escaping</strong>: Wrap keys with <code>CSS.escape(String(prop))</code> to safeguard against hyphenated or special-character state keys.</li>
+    <li><strong>Explicit Mutation Contract</strong>: Since native ES proxies only trap top-level property assignments, state mutations should follow shallow replacement (<code>app.state.user = { ...app.state.user, name: &#39;New&#39; }</code>) rather than deep in-place property mutations.</li>
+  </ul>
+</li>
+</ol>
+
+<pre class="code-block"><code class="language-javascript">// Hardened state-reactivity.js (~15 lines)
+globalThis.app = globalThis.app || {};
+
+app.state = new Proxy({}, {
+  set(target, prop, val) {
+    if (target[prop] === val) return true; // Dirty check
+    target[prop] = val;
+
+    const selector = `[data=&quot;${CSS.escape(String(prop))}&quot;]`;
+    document.querySelectorAll(selector).forEach(el =&gt; {
+      if (typeof el.render === &#39;function&#39;) el.render(val);
+    });
+
+    return true;
+  }
+});</code></pre>
+
+<hr>
+
+<h2 id="3-the-custom-web-component-pattern">3. The Custom Web Component Pattern</h2>
+
+<p>Here is how a real-world component handles initialization, REST API data fetching, and state reactivity:</p>
+
+<pre class="code-block"><code class="language-javascript">class ItemList extends HTMLElement {
+  connectedCallback() {
+    // 1. Bind to reactive state property
+    this.setAttribute(&#39;data&#39;, &#39;items&#39;);
+
+    // 2. Initial render (if state already populated)
+    this.render(app.state.items || []);
+
+    // 3. Fetch data if empty
+    if (!app.state.items) {
+      this.fetchItems();
+    }
+  }
+
+  async fetchItems() {
+    this.innerHTML = `&lt;div class=&quot;loading&quot;&gt;Loading items...&lt;/div&gt;`;
+    try {
+      const res = await fetch(&#39;/api/items&#39;);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      // Mutating app.state automatically triggers this.render(data)
+      app.state.items = data;
+    } catch (err) {
+      this.innerHTML = `&lt;div class=&quot;error&quot;&gt;Failed to load items: ${err.message}&lt;/div&gt;`;
+    }
+  }
+
+  render(items) {
+    if (!Array.isArray(items) || items.length === 0) {
+      this.innerHTML = `&lt;p class=&quot;empty-state&quot;&gt;No items found.&lt;/p&gt;`;
+      return;
+    }
+
+    this.innerHTML = `
+      &lt;ul class=&quot;items-list&quot;&gt;
+        ${items.map(item =&gt; `
+          &lt;li class=&quot;item-card&quot;&gt;
+            &lt;h3&gt;${item.title}&lt;/h3&gt;
+            &lt;p&gt;${item.description}&lt;/p&gt;
+            &lt;button class=&quot;btn-select&quot; data-id=&quot;${item.id}&quot;&gt;Select&lt;/button&gt;
+          &lt;/li&gt;
+        `).join(&#39;&#39;)}
+      &lt;/ul&gt;
+    `;
+
+    // Local event listeners
+    this.querySelectorAll(&#39;.btn-select&#39;).forEach(btn =&gt; {
+      btn.addEventListener(&#39;click&#39;, (e) =&gt; {
+        const id = e.currentTarget.dataset.id;
+        app.state.selectedItem = (app.state.items || []).find(i =&gt; i.id === id);
+      });
+    });
+  }
+}
+
+customElements.define(&#39;item-list&#39;, ItemList);
+export default ItemList;</code></pre>
+
+<hr>
+
+<h2 id="4-the-agent-experiment-vanilla-vs-react">4. The Agent Experiment: Vanilla vs. React</h2>
+
+<p>When autonomous coding agents (like Claude Code, Codex, or Gemini CLI) are tasked with building complex applications, framework overhead introduces significant hidden friction:</p>
+
+<ul>
+  <li><strong>Context Pollution</strong>: Build scripts, JSX compiler errors, hook dependency lint rules (<code>react-hooks/exhaustive-deps</code>), hydration mismatches, and lockfile resolution consume thousands of prompt tokens.</li>
+  <li><strong>Failure Modes</strong>: Agents often get stuck in debugging loops fixing bundler configuration errors, module export mismatches, or stale closures in <code>useEffect</code>.</li>
+</ul>
+
+<h3 id="the-benchmark-setup">The Benchmark Setup</h3>
+
+<p>To empirically test this, we gave identical autonomous agent configurations the prompt to build a feature-rich, complex web application (including multi-view routing, live filtering, dynamic forms, data visualization, and REST API integration) in two distinct environments:</p>
+
+<ol>
+  <li><strong>The Vanilla Paradigm</strong>: Zero-build ES modules, Custom Web Components, <code>state-reactivity.js</code>, and direct <code>fetch()</code> calls.</li>
+  <li><strong>The React Paradigm</strong>: Vite / React 19, JSX, npm package dependencies, standard state hooks (<code>useState</code>, <code>useEffect</code>, <code>useContext</code>), and component hierarchy.</li>
+</ol>
+
+<h3 id="metrics-tracked">Metrics Tracked</h3>
+
+<ul>
+  <li><strong>Token Consumption</strong>: Total input, output, and reasoning tokens consumed across all agent conversation turns.</li>
+  <li><strong>Time to Completion</strong>: Wall-clock time required for the agent to take the project from prompt to passing test suite.</li>
+  <li><strong>Accuracy & Test Pass Rate</strong>: Deterministic end-to-end evaluation via headless browser test assertions (DOM correctness, state integrity, edge-case resilience).</li>
+</ul>
+
+<hr>
+
+<h2 id="5-benchmark-results">5. Benchmark Results</h2>
+
+<blockquote>
+  <p><em>Note: Benchmark runs are currently executing. Raw data and run transcripts will be published below once compiled.</em></p>
+</blockquote>
+
+<h3 id="summary-comparison">Summary Comparison</h3>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Metric</th>
+        <th scope="col">Vanilla (Zero-Build)</th>
+        <th scope="col">React (Vite / JSX)</th>
+        <th scope="col">Delta / Variance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Total Tokens Consumed</strong></th>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Agent Tool Invocations</strong></th>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Time to Completion (min)</strong></th>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>E2E Test Suite Pass Rate</strong></th>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Build & Setup Failures</strong></th>
+        <td><strong>0</strong> (No build step)</td>
+        <td><em>[Pending]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Final Bundle Size</strong></th>
+        <td><em>[Pending]</em> (Raw JS)</td>
+        <td><em>[Pending]</em> (Vendor + App)</td>
+        <td><em>[Pending]</em></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 id="key-observations">Key Observations</h3>
+
+<ul>
+  <li><strong>Build Tooling Tax</strong>: <em>[Insert observations on time spent configuring Vite/tsconfig vs. instant browser reload]</em></li>
+  <li><strong>Context Retention & Token Efficiency</strong>: <em>[Insert observations on token usage per component implementation]</em></li>
+  <li><strong>Error Recovery</strong>: <em>[Insert observations on how agents handled reactivity bugs vs. hook closure bugs]</em></li>
+</ul>
+
+<hr>
+
+<h2 id="6-takeaways">6. Takeaways</h2>
+
+<p>Modern web standards provide everything necessary to build performant, maintainable, and responsive frontend applications. When we remove framework bloat:</p>
+
+<ol>
+  <li><strong>Humans</strong> get simpler mental models, instant feedback loops, and zero dependency maintenance.</li>
+  <li><strong>AI Agents</strong> get deterministic, compact abstractions that drastically reduce token burn and eliminate build-failure hallucinations.</li>
+</ol>
+
+<p>Stay tuned for the full dataset and reproducible evaluation harness on <a href="https://github.com/digplan">GitHub</a>.</p>
+
       </article>
     </main>
 
