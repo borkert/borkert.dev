@@ -480,12 +480,16 @@ pre code, .code-block code {
   border-block-end: 1px solid var(--vbg-border-subtle);
 }
 
-.post-header h1 {
+.post-header h1,
+.post-header .vbg-title,
+:where(.vbg-report) .post-header :where(h1, .vbg-title) {
   font-size: var(--vbg-type-title);
   line-height: var(--vbg-leading-title);
   font-weight: var(--vbg-weight-semibold);
   letter-spacing: -0.02em;
   color: var(--vbg-text-primary);
+  max-width: var(--site-reading-width, 82ch);
+  text-wrap: balance;
   margin-block-end: var(--vbg-space-2);
 }
 

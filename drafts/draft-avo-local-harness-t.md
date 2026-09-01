@@ -33,7 +33,7 @@ This produces a characteristic failure mode:
 │ Standard Multi-Turn Failure Loop                                           │
 ├────────────────────────────────────────────────────────────────────────────┤
 │ Turn 1: Model makes a minor syntax or logic error.                         │
-│         Broken state remains on disk.                                     │
+│         Broken state remains on disk.                                      │
 │                                                                            │
 │ Turn 2: Model reads traceback and patches the broken implementation.       │
 │                                                                            │
@@ -42,7 +42,7 @@ This produces a characteristic failure mode:
 │                                                                            │
 │ Turn 4: Workspace and context are polluted. Model exhausts its budget.     │
 │                                                                            │
-│                                                         [FAIL]              │
+│                                                         [FAIL]             │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
