@@ -6,33 +6,35 @@
   <title>Making Agent API Calls 10x Faster with Cached Definitions — Chris Borkert</title>
   <meta name="description" content="Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.">
   <meta name="author" content="Chris Borkert">
-  <link rel="canonical" href="https://borkert.dev/posts/cached-definitions.html">
+  <link rel="canonical" href="https://borkert.dev/posts/apicat-api-cached-definitions.html">
 
   <!-- Open Graph -->
   <meta property="og:title" content="Making Agent API Calls 10x Faster with Cached Definitions">
   <meta property="og:description" content="Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers deliver sub-second execution.">
-  <meta property="og:url" content="https://borkert.dev/posts/cached-definitions.html">
+  <meta property="og:url" content="https://borkert.dev/posts/apicat-api-cached-definitions.html">
   <meta property="og:type" content="article">
 
   <!-- Theme Color -->
-  <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
-  <!-- Editorial Typography -->
+  <!-- Geist Typography (Vercel Brand Guideline) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
 
-  <link rel="stylesheet" href="../styles.css">
+  <!-- Vercel Brand Stylesheet -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div class="header-top">
-        <a href="/" class="header-back">← borkert.dev</a>
-        <div class="header-links">
-          <a href="https://github.com/digplan">github.com/digplan</a>
-          <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">theme</button>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
+
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <a href="/" class="site-link-mono">← borkert.dev</a>
         </div>
       </div>
     </header>
@@ -40,7 +42,8 @@
     <main id="main">
       <article class="post-content">
         <header class="post-header">
-          <h1>Making Agent API Calls 10x Faster with Cached Definitions</h1>
+          <h1 class="vbg-title">Making Agent API Calls 10x Faster with Cached Definitions</h1>
+          <div class="post-meta">By Chris Borkert · August 2026 · AI Systems &amp; Tool Calling</div>
         </header>
 
         <p>When developers give an AI coding assistant (like Cursor, Claude Code, Antigravity, or Cline) access to web APIs, the default approach is almost always the same: give the agent a bash tool and let it run <code>curl</code> or a CLI tool in a subshell.</p>
@@ -155,39 +158,39 @@
 
         <h3>Results</h3>
 
-        <div class="table-container">
+        <div class="vbg-table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Metric</th>
-                <th>Unassisted Agent (CLI &amp; Search)</th>
-                <th>In-Memory Rust MCP</th>
-                <th>Difference</th>
+                <th scope="col">Metric</th>
+                <th scope="col" class="vbg-numeric">Unassisted Agent (CLI)</th>
+                <th scope="col" class="vbg-numeric">In-Memory Rust MCP</th>
+                <th scope="col">Delta</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><strong>Total wall-clock latency</strong></td>
-                <td>21.0 seconds</td>
-                <td>~2.5 seconds</td>
-                <td>6.0x faster</td>
+                <th scope="row">Total wall-clock latency</th>
+                <td class="vbg-numeric">21.0 s</td>
+                <td class="vbg-numeric">2.5 s</td>
+                <td><strong>6.0x faster</strong></td>
               </tr>
               <tr>
-                <td><strong>LLM reasoning turns</strong></td>
-                <td>10 turns</td>
-                <td>1 turn</td>
-                <td>10x fewer turns</td>
+                <th scope="row">LLM reasoning turns</th>
+                <td class="vbg-numeric">10 turns</td>
+                <td class="vbg-numeric">1 turn</td>
+                <td><strong>10x fewer turns</strong></td>
               </tr>
               <tr>
-                <td><strong>Context token footprint</strong></td>
-                <td>~18,400 tokens</td>
-                <td>~650 tokens</td>
-                <td>96.5% reduction</td>
+                <th scope="row">Context token footprint</th>
+                <td class="vbg-numeric">18,400 tokens</td>
+                <td class="vbg-numeric">650 tokens</td>
+                <td><strong>96.5% reduction</strong></td>
               </tr>
               <tr>
-                <td><strong>Exploratory probing steps</strong></td>
-                <td>5 tool calls (<code>which</code>, <code>cat</code>, <code>--help</code>)</td>
-                <td>0 tool calls</td>
+                <th scope="row">Exploratory probing steps</th>
+                <td class="vbg-numeric">5 tool calls</td>
+                <td class="vbg-numeric">0 tool calls</td>
                 <td>Zero trial and error</td>
               </tr>
             </tbody>
@@ -220,52 +223,52 @@ fireworks_balance() + openrouter_key() + fireworks_costs() in parallel -> send_m
 
         <h3>Measured latency</h3>
 
-        <div class="table-container">
+        <div class="vbg-table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Endpoint</th>
-                <th>Raw <code>curl</code> (Subprocess)</th>
-                <th><code>apic</code> CLI (Node.js)</th>
-                <th>In-Memory Rust MCP</th>
-                <th>MCP vs. Raw <code>curl</code></th>
+                <th scope="col">Endpoint</th>
+                <th scope="col" class="vbg-numeric">Raw <code>curl</code></th>
+                <th scope="col" class="vbg-numeric"><code>apic</code> CLI (Node)</th>
+                <th scope="col" class="vbg-numeric">In-Memory Rust MCP</th>
+                <th scope="col">MCP vs. Raw <code>curl</code></th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><strong><code>catfact.getFact</code></strong></td>
-                <td>157.8 ms</td>
-                <td>390.5 ms</td>
-                <td>117.6 ms</td>
+                <th scope="row"><code>catfact.getFact</code></th>
+                <td class="vbg-numeric">157.8 ms</td>
+                <td class="vbg-numeric">390.5 ms</td>
+                <td class="vbg-numeric">117.6 ms</td>
                 <td>1.34x faster (+40 ms)</td>
               </tr>
               <tr>
-                <td><strong><code>openrouter.key</code></strong></td>
-                <td>188.3 ms</td>
-                <td>358.4 ms</td>
-                <td>131.1 ms</td>
+                <th scope="row"><code>openrouter.key</code></th>
+                <td class="vbg-numeric">188.3 ms</td>
+                <td class="vbg-numeric">358.4 ms</td>
+                <td class="vbg-numeric">131.1 ms</td>
                 <td>1.44x faster (+57 ms)</td>
               </tr>
               <tr>
-                <td><strong><code>fireworks.costs</code></strong></td>
-                <td>1,198.7 ms</td>
-                <td>1,242.4 ms</td>
-                <td>783.1 ms</td>
+                <th scope="row"><code>fireworks.costs</code></th>
+                <td class="vbg-numeric">1,198.7 ms</td>
+                <td class="vbg-numeric">1,242.4 ms</td>
+                <td class="vbg-numeric">783.1 ms</td>
                 <td>1.53x faster (+416 ms)</td>
               </tr>
               <tr>
-                <td><strong><code>fireworks.balance</code></strong></td>
-                <td>2,748.1 ms</td>
-                <td>1,394.6 ms</td>
-                <td>1,742.0 ms</td>
+                <th scope="row"><code>fireworks.balance</code></th>
+                <td class="vbg-numeric">2,748.1 ms</td>
+                <td class="vbg-numeric">1,394.6 ms</td>
+                <td class="vbg-numeric">1,742.0 ms</td>
                 <td>1.58x faster (+1,006 ms)</td>
               </tr>
               <tr>
-                <td><strong>Total batch (4 calls)</strong></td>
-                <td>4,292.9 ms</td>
-                <td>3,385.8 ms</td>
-                <td>2,773.8 ms</td>
-                <td>1.55x faster (+1.52s saved)</td>
+                <th scope="row"><strong>Total batch (4 calls)</strong></th>
+                <td class="vbg-numeric"><strong>4,292.9 ms</strong></td>
+                <td class="vbg-numeric"><strong>3,385.8 ms</strong></td>
+                <td class="vbg-numeric"><strong>2,773.8 ms</strong></td>
+                <td><strong>1.55x faster (+1.52s saved)</strong></td>
               </tr>
             </tbody>
           </table>
@@ -297,40 +300,40 @@ fireworks_balance() + openrouter_key() + fireworks_costs() in parallel -> send_m
           <li><strong>Python 3.14:</strong> Standard library <code>json</code> and <code>subprocess</code></li>
         </ul>
 
-        <div class="table-container">
+        <div class="vbg-table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Metric</th>
-                <th>Rust (Native Release)</th>
-                <th>Bun (TypeScript)</th>
-                <th>Python 3.14 (Stdlib)</th>
+                <th scope="col">Metric</th>
+                <th scope="col" class="vbg-numeric">Rust (Native Release)</th>
+                <th scope="col" class="vbg-numeric">Bun (TypeScript)</th>
+                <th scope="col" class="vbg-numeric">Python 3.14 (Stdlib)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><strong>Cold start and handshake</strong> <em>(Spawn, Init, tools/list)</em></td>
-                <td>4.36 ms</td>
-                <td>37.24 ms</td>
-                <td>42.79 ms</td>
+                <th scope="row">Cold start and handshake</th>
+                <td class="vbg-numeric">4.36 ms</td>
+                <td class="vbg-numeric">37.24 ms</td>
+                <td class="vbg-numeric">42.79 ms</td>
               </tr>
               <tr>
-                <td><strong>Raw JSON-RPC IPC latency</strong> <em>(Stdio Ping)</em></td>
-                <td>0.018 ms (18 µs)</td>
-                <td>0.058 ms (58 µs)</td>
-                <td>0.028 ms (28 µs)</td>
+                <th scope="row">Raw JSON-RPC IPC latency</th>
+                <td class="vbg-numeric">0.018 ms</td>
+                <td class="vbg-numeric">0.058 ms</td>
+                <td class="vbg-numeric">0.028 ms</td>
               </tr>
               <tr>
-                <td><strong>Memory footprint (RSS)</strong></td>
-                <td>1.77 MB</td>
-                <td>22.83 MB</td>
-                <td>17.45 MB</td>
+                <th scope="row">Memory footprint (RSS)</th>
+                <td class="vbg-numeric">1.77 MB</td>
+                <td class="vbg-numeric">22.83 MB</td>
+                <td class="vbg-numeric">17.45 MB</td>
               </tr>
               <tr>
-                <td><strong>Runtime dependencies</strong></td>
-                <td>None (Static binary)</td>
-                <td>Requires Bun or Node</td>
-                <td>Requires Python</td>
+                <th scope="row">Runtime dependencies</th>
+                <td class="vbg-numeric">None (Static)</td>
+                <td class="vbg-numeric">Bun / Node</td>
+                <td class="vbg-numeric">Python</td>
               </tr>
             </tbody>
           </table>
@@ -352,16 +355,17 @@ fireworks_balance() + openrouter_key() + fireworks_costs() in parallel -> send_m
       </article>
     </main>
 
-    <footer>
-      <div>
-        <span>Chris Borkert</span> · <span><a href="https://github.com/digplan">github.com/digplan</a></span> · <span><a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
       </div>
       <div>
-        <span><a href="/">borkert.dev</a></span>
+        <a href="/" class="site-link-mono">borkert.dev</a>
       </div>
     </footer>
   </div>
 
-  <script src="../main.js"></script>
+  <script src="/main.js"></script>
 </body>
 </html>

@@ -8,20 +8,33 @@
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/posts/benchmarks-without-harness.html">
 
+  <!-- Open Graph -->
+  <meta property="og:title" content="Model Leaderboards Mean Nothing Without the Harness">
+  <meta property="og:description" content="Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.">
+  <meta property="og:url" content="https://borkert.dev/posts/benchmarks-without-harness.html">
+  <meta property="og:type" content="article">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Geist Typography (Vercel Brand Guideline) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
 
-  <link rel="stylesheet" href="../styles.css">
+  <!-- Vercel Brand Stylesheet -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div class="header-top">
-        <a href="/" class="header-back">← borkert.dev</a>
-        <div class="header-links">
-          <a href="https://github.com/digplan">github.com/digplan</a>
-          <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">theme</button>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
+
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <a href="/" class="site-link-mono">← borkert.dev</a>
         </div>
       </div>
     </header>
@@ -29,8 +42,8 @@
     <main id="main">
       <article class="post-content">
         <header class="post-header">
-          <h1>Model Leaderboards Mean Nothing Without the Harness</h1>
-          <div class="post-meta">By Chris Borkert · August 2026</div>
+          <h1 class="vbg-title">Model Leaderboards Mean Nothing Without the Harness</h1>
+          <div class="post-meta">By Chris Borkert · August 2026 · Empirical LLM Benchmarking</div>
         </header>
 
         <p>Model leaderboards are all the rage right now. It makes sense: we love lists, and we love to crown winners. Every time a new release drops, social feeds fill up with cropped benchmark charts declaring an undisputed champion.</p>
@@ -85,16 +98,17 @@
       </article>
     </main>
 
-    <footer>
-      <div>
-        <span>Chris Borkert</span> · <span><a href="https://github.com/digplan">github.com/digplan</a></span> · <span><a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
       </div>
       <div>
-        <span><a href="/">borkert.dev</a></span>
+        <a href="/" class="site-link-mono">borkert.dev</a>
       </div>
     </footer>
   </div>
 
-  <script src="../main.js"></script>
+  <script src="/main.js"></script>
 </body>
 </html>

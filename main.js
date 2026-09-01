@@ -1,5 +1,5 @@
 /**
- * borkert.dev — Minimalist Editorial Script
+ * borkert.dev — Vercel Brand Visual Style Script
  * Handles subtle theme toggling with preference persistence and
  * exposes client-side WebMCP agent tools for AI browser agents.
  */
@@ -12,12 +12,19 @@
   const storedTheme = localStorage.getItem('digplan-theme');
   const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-  // Initialize theme
-  if (storedTheme) {
-    document.documentElement.setAttribute('data-theme', storedTheme);
-    updateToggleLabel(storedTheme);
-  } else {
-    updateToggleLabel(systemPrefersDark ? 'dark' : 'light');
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (document.body) {
+      document.body.setAttribute('data-theme', theme);
+      if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+      } else {
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
+      }
+    }
+    updateToggleLabel(theme);
   }
 
   function updateToggleLabel(theme) {
@@ -26,16 +33,28 @@
     }
   }
 
+  // Initialize theme
+  if (storedTheme) {
+    applyTheme(storedTheme);
+  } else {
+    updateToggleLabel(systemPrefersDark ? 'dark' : 'light');
+  }
+
   if (themeToggleBtn) {
     themeToggleBtn.addEventListener('click', () => {
       const currentTheme = document.documentElement.getAttribute('data-theme') || (systemPrefersDark ? 'dark' : 'light');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      
-      document.documentElement.setAttribute('data-theme', newTheme);
       localStorage.setItem('digplan-theme', newTheme);
-      updateToggleLabel(newTheme);
+      applyTheme(newTheme);
     });
   }
+
+  // Listen for system theme changes if no stored manual preference
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('digplan-theme')) {
+      updateToggleLabel(e.matches ? 'dark' : 'light');
+    }
+  });
 
   // --- WebMCP (Web Model Context Protocol) Tools ---
   // Expose structured profile and systems data to AI browser agents if supported.

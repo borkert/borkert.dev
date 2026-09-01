@@ -7,43 +7,54 @@
   <meta name="description" content="Resource not found on borkert.dev. Recovery guidance and sitemap for AI agents and human visitors.">
   <meta name="robots" content="noindex, follow">
 
-  <!-- Editorial Typography -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="/styles.css">
+  <!-- Machine-Readable Discoverability -->
   <link rel="alternate" type="text/markdown" href="/index.md">
   <link rel="alternate" type="text/markdown" title="LLMs.txt" href="/llms.txt">
-</head>
-<body>
-  <a href="#main" class="skip-link">Skip to main content</a>
 
-  <div class="container">
-    <header>
-      <div class="header-top">
-        <h1>404 — Not Found</h1>
-        <div class="header-links">
-          <a href="/">← Return Home</a>
-          <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">theme</button>
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Geist Typography (Vercel Brand Guideline) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
+
+  <!-- Vercel Brand Stylesheet -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
+
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <a href="/" class="site-link-mono">← borkert.dev</a>
+        </div>
+        <div class="vbg-document-meta site-masthead-meta">
+          <span>Error 404</span>
+          <div class="site-meta-links">
+            <a href="/">Home</a>
+            <button id="theme-toggle" class="site-theme-btn" aria-label="Toggle light and dark theme">theme</button>
+          </div>
         </div>
       </div>
 
-      <div class="bio">
-        <p>
-          The requested path does not exist on <strong>borkert.dev</strong>.
-        </p>
-        <p>
-          If you are an AI agent, crawler, or human visitor, use the recovery links below to locate the desired systems, notes, or machine-readable files.
+      <div class="vbg-opening site-hero">
+        <h1 class="vbg-display">404 — Not Found</h1>
+        <p class="vbg-lede">
+          The requested path does not exist on <strong>borkert.dev</strong>. If you are an AI agent, crawler, or human visitor, use the recovery links below to locate the desired systems, notes, or machine-readable files.
         </p>
       </div>
     </header>
 
     <main id="main">
-      <section>
-        <h2>Agent Recovery &amp; Sitemaps</h2>
-        <pre class="code-block"><code># 404 Recovery Guide for Agents & Crawlers
+      <section class="vbg-section">
+        <h2 class="vbg-heading-24">Agent Recovery &amp; Machine Sitemaps</h2>
 
+        <pre class="code-block"><code># 404 Recovery Guide for Agents & Crawlers
 The requested URI was not found. Please navigate to one of the following canonical resources:
 
 - Homepage: https://borkert.dev/
@@ -62,24 +73,24 @@ Available Project Repositories:
 - compare-llms: https://github.com/digplan/compare-llms
 - vanilla-light: https://github.com/digplan/vanilla-light
 - workflow: https://github.com/digplan/workflow</code></pre>
-        <div class="code-caption">Machine-readable recovery guide for AI agents and LLM tools.</div>
 
-        <div class="system-links" style="margin-top: 24px;">
-          <a href="/">Homepage →</a>
-          <a href="/llms.txt">llms.txt →</a>
-          <a href="/llms-full.txt">llms-full.txt →</a>
-          <a href="/sitemap.xml">sitemap.xml →</a>
-          <a href="https://github.com/digplan">GitHub (digplan) →</a>
+        <div class="site-system-links" style="margin-top: 24px;">
+          <a href="/" class="site-link-mono">Homepage →</a>
+          <a href="/llms.txt" class="site-link-mono">llms.txt →</a>
+          <a href="/llms-full.txt" class="site-link-mono">llms-full.txt →</a>
+          <a href="/sitemap.xml" class="site-link-mono">sitemap.xml →</a>
+          <a href="https://github.com/digplan" class="site-link-mono">GitHub (digplan) →</a>
         </div>
       </section>
     </main>
 
-    <footer>
-      <div>
-        <span>Chris Borkert</span> · <span><a href="https://github.com/digplan">github.com/digplan</a></span> · <span><a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
       </div>
       <div>
-        <span>borkert.dev</span>
+        <a href="/" class="site-link-mono">borkert.dev</a>
       </div>
     </footer>
   </div>

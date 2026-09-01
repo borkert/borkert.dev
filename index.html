@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chris Borkert — AI Systems &amp; Agent Infrastructure</title>
-  <meta name="description" content="Chris Borkert — Working principles and writing on AI agent infrastructure, declarative tool protocols, and empirical evaluation.">
+  <meta name="description" content="Chris Borkert — Working principles, open-source systems, and research on AI agent infrastructure, declarative tool protocols, and empirical evaluation.">
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/">
 
@@ -15,20 +15,22 @@
 
   <!-- Open Graph -->
   <meta property="og:title" content="Chris Borkert — AI Systems &amp; Agent Infrastructure">
-  <meta property="og:description" content="Working principles and writing on AI agent infrastructure, declarative tool protocols, and empirical evaluation.">
+  <meta property="og:description" content="Working principles, open-source systems, and research on AI agent infrastructure, declarative tool protocols, and empirical evaluation.">
   <meta property="og:url" content="https://borkert.dev/">
   <meta property="og:type" content="website">
 
   <!-- Theme Color -->
-  <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
-  <!-- Editorial Typography -->
+  <!-- Geist Typography (Vercel Brand Guideline) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
 
-  <link rel="stylesheet" href="styles.css">
+  <!-- Official Vercel Brand Foundation & Custom Styles -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css">
+  <link rel="stylesheet" href="/styles.css">
 
   <script type="application/ld+json">
   {
@@ -44,84 +46,249 @@
   }
   </script>
 </head>
-<body>
-  <a href="#main" class="skip-link">Skip to main content</a>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
 
-  <div class="container">
-    <header>
-      <div class="header-top">
-        <h1>Chris Borkert</h1>
-        <div class="header-links">
-          <a href="https://github.com/digplan">github.com/digplan</a>
-          <a href="mailto:chris@borkert.dev">chris@borkert.dev</a>
-          <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">theme</button>
+    <!-- Masthead & Opening Header -->
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <span class="site-logo-mark" aria-hidden="true">▲</span>
+          <span class="site-author-name">Chris Borkert</span>
+        </div>
+        <div class="vbg-document-meta site-masthead-meta">
+          <div class="site-meta-links">
+            <a href="https://github.com/digplan">github.com/digplan</a>
+            <a href="mailto:chris@borkert.dev">chris@borkert.dev</a>
+            <button id="theme-toggle" class="site-theme-btn" aria-label="Toggle light and dark theme">theme</button>
+          </div>
         </div>
       </div>
 
-      <div class="bio">
-        <p>
-          Software engineer and researcher. Building open-source tools for declarative tool protocols (<a href="https://github.com/digplan/apicat">apicat</a>), environment-scoped coding agents (<a href="https://github.com/digplan/prolific">prolific</a>), and deterministic evaluation harnesses (<a href="https://github.com/digplan/benchforge">benchforge</a>).
+      <div class="vbg-opening site-hero">
+        <h1 class="vbg-display">AI Systems &amp; Agent Infrastructure</h1>
+        <p class="vbg-lede">
+          Software engineer and researcher building open-source tools for declarative tool protocols (<a href="https://github.com/digplan/apicat">apicat</a>), environment-scoped coding agents (<a href="https://github.com/digplan/prolific">prolific</a>), and deterministic evaluation harnesses (<a href="https://github.com/digplan/benchforge">benchforge</a>).
         </p>
       </div>
 
-      <nav class="toc" aria-label="Table of Contents">
-        <span>Contents:</span>
+      <!-- Stat Strip (Evidence & Performance Metrics) -->
+      <div class="vbg-stat-strip">
+        <div class="vbg-stat">
+          <p class="vbg-stat-label">Tool Execution</p>
+          <p class="vbg-stat-value">10x Faster</p>
+          <p class="vbg-stat-detail">In-memory MCP vs. subshell curl</p>
+        </div>
+        <div class="vbg-stat">
+          <p class="vbg-stat-label">Sandbox Rollback</p>
+          <p class="vbg-stat-value">0.8 ms</p>
+          <p class="vbg-stat-detail">Level-1 Git sandboxing</p>
+        </div>
+        <div class="vbg-stat">
+          <p class="vbg-stat-label">Evaluation Harness</p>
+          <p class="vbg-stat-value">Pass@k</p>
+          <p class="vbg-stat-detail">Deterministic exit code verifiers</p>
+        </div>
+        <div class="vbg-stat">
+          <p class="vbg-stat-label">Frontend Runtime</p>
+          <p class="vbg-stat-value">Zero Build</p>
+          <p class="vbg-stat-detail">Vanilla standards &amp; Bun</p>
+        </div>
+      </div>
+
+      <!-- Jump Navigation -->
+      <nav class="site-toc" aria-label="Table of Contents">
+        <span class="vbg-label">Index:</span>
         <a href="#writing">01. Writing &amp; Research</a>
-        <a href="#principles">02. Principles</a>
+        <a href="#systems">02. Open-Source Systems</a>
+        <a href="#principles">03. Working Principles</a>
+        <a href="#machine-endpoints">04. Machine-Readable Endpoints</a>
       </nav>
     </header>
 
     <main id="main">
-      <!-- Section 1: Writing & Blog Posts -->
-      <section id="writing">
-        <h2>01. Writing &amp; Research</h2>
-        <ul class="writing-list">
-          <li class="writing-item">
-            <div class="writing-head">
-              <span class="writing-title"><a href="/posts/cached-definitions.html">Making Agent API Calls 10x Faster with Cached Definitions</a></span>
-              <span class="writing-date">August 2026</span>
+      <!-- Section 1: Writing & Research -->
+      <section id="writing" class="vbg-section">
+        <h2 class="vbg-heading-24">01. Writing &amp; Research</h2>
+        <div class="site-writing-list">
+          <article class="site-writing-entry">
+            <div class="site-writing-head">
+              <h3 class="vbg-heading-20"><a href="/posts/apicat-api-cached-definitions.html">Making Agent API Calls 10x Faster with Cached Definitions</a></h3>
+              <time class="vbg-mono site-date" datetime="2026-08">August 2026</time>
             </div>
-            <p class="writing-summary">
+            <p class="site-writing-summary">
               Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.
             </p>
-          </li>
+          </article>
 
-          <li class="writing-item">
-            <div class="writing-head">
-              <span class="writing-title"><a href="/posts/benchmarks-without-harness.html">Model Leaderboards Mean Nothing Without the Harness</a></span>
-              <span class="writing-date">August 2026</span>
+          <article class="site-writing-entry">
+            <div class="site-writing-head">
+              <h3 class="vbg-heading-20"><a href="/posts/benchmarks-without-harness.html">Model Leaderboards Mean Nothing Without the Harness</a></h3>
+              <time class="vbg-mono site-date" datetime="2026-08">August 2026</time>
             </div>
-            <p class="writing-summary">
+            <p class="site-writing-summary">
               Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.
             </p>
-          </li>
+          </article>
 
-          <li class="writing-item">
-            <div class="writing-head">
-              <span class="writing-title"><a href="/posts/avo-local-harness.html">Agentic Variation Operators: Evolutionary Search in Local Sandboxes</a></span>
-              <span class="writing-date">August 2026</span>
+          <article class="site-writing-entry">
+            <div class="site-writing-head">
+              <h3 class="vbg-heading-20"><a href="/posts/avo-local-harness.html">Agentic Variation Operators: Evolutionary Search in Local Sandboxes</a></h3>
+              <time class="vbg-mono site-date" datetime="2026-08">August 2026</time>
             </div>
-            <p class="writing-summary">
+            <p class="site-writing-summary">
               Using Level-1 git sandboxes for sub-millisecond rollback on failed edits and Level-4 meta-supervisors to break stagnation loops in coding agents.
             </p>
-          </li>
+          </article>
 
-          <li class="writing-item">
-            <div class="writing-head">
-              <span class="writing-title"><a href="/posts/zero-build-frontend.html">Building Full-Stack Web Apps Without Bundlers or Build Steps</a></span>
-              <span class="writing-date">2026</span>
+          <article class="site-writing-entry">
+            <div class="site-writing-head">
+              <h3 class="vbg-heading-20"><a href="/posts/zero-build-frontend.html">Building Full-Stack Web Apps Without Bundlers or Build Steps</a></h3>
+              <time class="vbg-mono site-date" datetime="2026">2026</time>
             </div>
-            <p class="writing-summary">
+            <p class="site-writing-summary">
               Simplifying web applications using modern browser standards, vanilla JavaScript, and Bun HTTPS servers without build steps or complex toolchains.
             </p>
-          </li>
-        </ul>
+          </article>
+        </div>
       </section>
 
-      <!-- Section 2: Principles -->
-      <section id="principles">
-        <h2>02. Working Principles</h2>
-        <ol class="principles-list">
+      <!-- Section 2: Open-Source Systems -->
+      <section id="systems" class="vbg-section">
+        <h2 class="vbg-heading-24">02. Open-Source Systems &amp; Tooling</h2>
+        <p class="site-section-intro">
+          Modular developer tooling and agent infrastructure built for declarative execution, repeatable benchmarks, and low latency.
+        </p>
+
+        <div class="site-systems-grid">
+          <!-- apicat -->
+          <article class="site-system-card">
+            <div>
+              <div class="site-system-header">
+                <h3 class="vbg-heading-20"><a href="https://github.com/digplan/apicat">apicat</a></h3>
+                <span class="site-system-tag">YAML → Tool Calling</span>
+              </div>
+              <p class="site-system-summary">
+                APIs as executable definitions. Compiles human-readable YAML specifications directly into TypeScript libraries and CLI tools for token-efficient LLM tool calling.
+              </p>
+            </div>
+            <div class="site-system-guide">
+              <span class="vbg-label">When to use:</span>
+              <p>When an agent needs compact, token-efficient YAML schemas for HTTP and WebSocket tool calls instead of verbose SDK wrappers.</p>
+              <div class="site-system-links">
+                <a href="https://github.com/digplan/apicat" class="site-link-mono">github.com/digplan/apicat</a>
+                <a href="https://www.npmjs.com/package/apicat" class="site-link-mono">npm: apicat</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- prolific -->
+          <article class="site-system-card">
+            <div>
+              <div class="site-system-header">
+                <h3 class="vbg-heading-20"><a href="https://github.com/digplan/prolific">prolific</a></h3>
+                <span class="site-system-tag">Autonomous Coding Agent</span>
+              </div>
+              <p class="site-system-summary">
+                Minimal, environment-scoped coding agent runtime in Bun with apicat tool routing, scoped persistence, and <code>/bench</code> harness.
+              </p>
+            </div>
+            <div class="site-system-guide">
+              <span class="vbg-label">When to use:</span>
+              <p>When building or testing coding agents that require isolated memory (<code>SYSTEM.md</code>, <code>MEMORY.md</code>, <code>tools.yaml</code>) per workspace.</p>
+              <div class="site-system-links">
+                <a href="https://github.com/digplan/prolific" class="site-link-mono">github.com/digplan/prolific</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- benchforge -->
+          <article class="site-system-card">
+            <div>
+              <div class="site-system-header">
+                <h3 class="vbg-heading-20"><a href="https://github.com/digplan/benchforge">benchforge</a></h3>
+                <span class="site-system-tag">Evaluation Infrastructure</span>
+              </div>
+              <p class="site-system-summary">
+                Benchmark infrastructure and repeatable evaluation workflows for AI systems with deterministic verification and pass@k metrics.
+              </p>
+            </div>
+            <div class="site-system-guide">
+              <span class="vbg-label">When to use:</span>
+              <p>When benchmarking LLM reasoning, coding, or tool use with deterministic verification (compiler exit codes, test passes).</p>
+              <div class="site-system-links">
+                <a href="https://github.com/digplan/benchforge" class="site-link-mono">github.com/digplan/benchforge</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- llm-scorer -->
+          <article class="site-system-card">
+            <div>
+              <div class="site-system-header">
+                <h3 class="vbg-heading-20"><a href="https://github.com/digplan/llm-scorer">llm-scorer</a></h3>
+                <span class="site-system-tag">LLM Judge Primitives</span>
+              </div>
+              <p class="site-system-summary">
+                Primitives for scoring model outputs, multi-metric grading, confidence scoring, and step-by-step chain-of-thought verification rubrics.
+              </p>
+            </div>
+            <div class="site-system-guide">
+              <span class="vbg-label">When to use:</span>
+              <p>When building automated evaluation pipelines requiring position-bias mitigation and rigorous judge rubrics.</p>
+              <div class="site-system-links">
+                <a href="https://github.com/digplan/llm-scorer" class="site-link-mono">github.com/digplan/llm-scorer</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- compare-llms -->
+          <article class="site-system-card">
+            <div>
+              <div class="site-system-header">
+                <h3 class="vbg-heading-20"><a href="https://github.com/digplan/compare-llms">compare-llms</a></h3>
+                <span class="site-system-tag">Reasoning Divergence</span>
+              </div>
+              <p class="site-system-summary">
+                Tools for empirical model comparison, probing reasoning trajectories, and analyzing output branch divergence across model architectures.
+              </p>
+            </div>
+            <div class="site-system-guide">
+              <span class="vbg-label">When to use:</span>
+              <p>When visualizing reasoning branch paths and comparing outputs across model architectures.</p>
+              <div class="site-system-links">
+                <a href="https://github.com/digplan/compare-llms" class="site-link-mono">github.com/digplan/compare-llms</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- vanilla-light -->
+          <article class="site-system-card">
+            <div>
+              <div class="site-system-header">
+                <h3 class="vbg-heading-20"><a href="https://github.com/digplan/vanilla-light">vanilla-light</a></h3>
+                <span class="site-system-tag">Zero-Build Web Stack</span>
+              </div>
+              <p class="site-system-summary">
+                A no-build, dependency-free full-stack web framework on Bun with reactive client-side Proxy bindings and native DOM standards.
+              </p>
+            </div>
+            <div class="site-system-guide">
+              <span class="vbg-label">When to use:</span>
+              <p>When developing web apps without bundlers or build steps using Bun HTTPS + reactive DOM standards.</p>
+              <div class="site-system-links">
+                <a href="https://github.com/digplan/vanilla-light" class="site-link-mono">github.com/digplan/vanilla-light</a>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Section 3: Working Principles -->
+      <section id="principles" class="vbg-section">
+        <h2 class="vbg-heading-24">03. Working Principles</h2>
+        <ol class="site-principles-list">
           <li>
             <strong>Ground all reasoning in verifiable execution.</strong>
             Language models generate plausible text; compilers, linters, and unit test suites provide ground truth. Agent reasoning loops must always be verified against deterministic runtime feedback.
@@ -136,18 +303,67 @@
           </li>
         </ol>
       </section>
+
+      <!-- Section 4: Machine-Readable Endpoints -->
+      <section id="machine-endpoints" class="vbg-section">
+        <h2 class="vbg-heading-24">04. Agent Interfaces &amp; Machine Endpoints</h2>
+        <p class="site-section-intro">
+          Standardized endpoints for autonomous AI agents, crawlers, and programmatic scrapers.
+        </p>
+
+        <div class="vbg-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Endpoint</th>
+                <th scope="col">Format</th>
+                <th scope="col">Purpose / Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row"><a href="/llms.txt" class="vbg-mono">/llms.txt</a></th>
+                <td><code class="vbg-mono">Markdown</code></td>
+                <td>Condensed index and systems directory optimized for AI LLMs &amp; agents</td>
+              </tr>
+              <tr>
+                <th scope="row"><a href="/llms-full.txt" class="vbg-mono">/llms-full.txt</a></th>
+                <td><code class="vbg-mono">Markdown</code></td>
+                <td>Comprehensive full-text context of all writing, architectures, and principles</td>
+              </tr>
+              <tr>
+                <th scope="row"><a href="/agent-instructions.md" class="vbg-mono">/agent-instructions.md</a></th>
+                <td><code class="vbg-mono">Markdown</code></td>
+                <td>Operational execution contracts, when-to-use matrix, and tool calling guidance</td>
+              </tr>
+              <tr>
+                <th scope="row"><a href="/index.md" class="vbg-mono">/index.md</a></th>
+                <td><code class="vbg-mono">Markdown</code></td>
+                <td>Pure markdown representation of homepage (HTTP Content-Negotiation fallback)</td>
+              </tr>
+              <tr>
+                <th scope="row"><a href="/sitemap.xml" class="vbg-mono">/sitemap.xml</a></th>
+                <td><code class="vbg-mono">XML</code></td>
+                <td>Canonical URL manifest and crawl directives for search engines and scrapers</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
 
-    <footer>
-      <div>
-        <span>Chris Borkert</span> · <span><a href="https://github.com/digplan">github.com/digplan</a></span> · <span><a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+    <!-- Footer -->
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
       </div>
       <div>
-        <span>borkert.dev</span>
+        <span class="vbg-mono">borkert.dev</span>
       </div>
     </footer>
   </div>
 
-  <script src="main.js"></script>
+  <script src="/main.js"></script>
 </body>
 </html>
