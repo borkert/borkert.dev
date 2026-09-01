@@ -70,13 +70,9 @@
 <p>To isolate the effect of persona framing, the benchmark shared an identical operational core across both conditions:</p>
 
 <pre class="code-block mermaid"><code class="language-mermaid">flowchart TD
-    subgraph Core[&quot;Shared Operational Core (Identical)&quot;]
-        Tools[&quot;Native Tools: read_file · write_file · run_command&quot;]
-        Rule[&quot;Verification Rule: Test suite exit code == 0&quot;]
-        Budget[&quot;Budget: Max 6 turns · Temperature = 0.0&quot;]
-    end
-    Core --&gt; A[&quot;Condition A: Expert Persona&lt;br/&gt;&#39;Principal Architect... human intuition&#39;&quot;]
-    Core --&gt; B[&quot;Condition B: Objective Engine&lt;br/&gt;&#39;Deterministic Engine... evaluate constraints&#39;&quot;]</code></pre>
+    Core[&quot;Shared Operational Core&lt;br&gt;• Native Tools: read_file, write_file, run_command&lt;br&gt;• Verification: Test suite exit code 0&lt;br&gt;• Search Budget: Max 6 turns, temperature = 0.0&quot;]
+    Core --&gt; A[&quot;Condition A: Expert Persona&lt;br&gt;Principal Architect role-play &amp; human intuition&quot;]
+    Core --&gt; B[&quot;Condition B: Objective Engine&lt;br&gt;Deterministic code generation &amp; formal constraints&quot;]</code></pre>
 
 <p>Both agents had the exact same native file tools (<code>read_file</code>, <code>write_file</code>, <code>run_command</code>), the same 6-turn limit, the same temperature (<span class="vbg-formula">0.0</span>), and the same mandate to check exit codes before finishing. The only independent variable was the persona framing.</p>
 
