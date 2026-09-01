@@ -465,6 +465,13 @@ pre code, .code-block code {
   margin-block: 0;
 }
 
+/* Inline math ($...$) is a span and must stay inline; only block math
+   ($$...$$, emitted as div.vbg-formula) gets block layout. vercel-brand.css
+   applies display:block to the shared .vbg-formula class. */
+:where(.vbg-report) span.vbg-formula {
+  display: inline;
+}
+
 /* --------------------------------------------------------------------------
    8. Post Detail Content Typography & Asymmetric Margins
    -------------------------------------------------------------------------- */
