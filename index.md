@@ -11,6 +11,7 @@
 
 ## 01. Writing & Research
 
+- **[Better Agents by Removing Personas and Role Play](/posts/better-agents-by-removing-personas-and-role-play.html)** (September 2026): An empirical N=20 benchmark showing that removing role-play personas and anthropomorphic guidance from ReAct agent system prompts increases unit-test accuracy by 20% and reduces token usage by 23%.
 - **[Making Agent API Calls 10x Faster with Cached Definitions](/posts/apicat-api-cached-definitions.html)** (August 2026): Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.
 - **[Model Leaderboards Mean Nothing Without the Harness](/drafts/draft-benchmarks-without-harness.md)** (August 2026): Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.
 - **[Agentic Variation Operators: Evolutionary Search in Local Sandboxes](/drafts/draft-avo-local-harness.md)** (August 2026): Using Level-1 git sandboxes for sub-millisecond rollback on failed edits and Level-4 meta-supervisors to break stagnation loops in coding agents.

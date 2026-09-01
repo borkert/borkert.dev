@@ -43,6 +43,7 @@ This site and its associated open-source projects are designed for developers an
 
 ## Research Notes & Writing
 
+- [Better Agents by Removing Personas and Role Play](https://borkert.dev/posts/better-agents-by-removing-personas-and-role-play.html): An empirical N=20 benchmark showing that removing role-play personas and anthropomorphic guidance from ReAct agent system prompts increases unit-test accuracy by 20% and reduces token usage by 23%.
 - [The Case for Declarative API Schemas in Agentic Systems](https://borkert.dev/#writing): Why machine-readable YAML definitions outperform bespoke SDK wrappers for LLM tool calling.
 - [Environment-Scoped Memory and Declarative Execution in Coding Agents](https://borkert.dev/#writing): Isolating context, memory, and tools per workspace to prevent contamination.
 - [Calibrating Automated LLM Judges with Verifiable Execution Feedback](https://borkert.dev/#writing): Grounding synthetic evaluations in deterministic test suite feedback.
