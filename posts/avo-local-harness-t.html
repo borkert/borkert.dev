@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Can NVIDIA’s AVO Make a 7B Local Model a Better Coding Agent? — Chris Borkert</title>
+  <meta name="description" content="Adapting NVIDIA's Agentic Variation Operators (AVO) research for small local models: sub-millisecond Git rollbacks, meta-controller supervisors, and eliminating the multi-turn agent tax.">
+  <meta name="author" content="Chris Borkert">
+  <link rel="canonical" href="https://borkert.dev/posts/avo-local-harness-t.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Can NVIDIA’s AVO Make a 7B Local Model a Better Coding Agent?">
+  <meta property="og:description" content="Adapting NVIDIA's Agentic Variation Operators (AVO) research for small local models: sub-millisecond Git rollbacks, meta-controller supervisors, and eliminating the multi-turn agent tax.">
+  <meta property="og:url" content="https://borkert.dev/posts/avo-local-harness-t.html">
+  <meta property="og:type" content="article">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Geist Typography (Vercel Brand Guideline) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
+
+  <!-- Vercel Brand Stylesheet -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css?v=2">
+  <link rel="stylesheet" href="/styles.css?v=2">
+</head>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
+
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <a href="/" class="site-link-mono">← borkert.dev</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <article class="post-content">
+        <header class="post-header">
+          <h1 class="vbg-title">Can NVIDIA’s AVO Make a 7B Local Model a Better Coding Agent?</h1>
+          <div class="post-meta">Chris Borkert · August 2026 · AI Systems &amp; Evolutionary Search</div>
+        </header>
+
+        <p>A few weeks ago, NVIDIA published <strong><a href="https://arxiv.org/abs/2603.24517">Agentic Variation Operators (AVO)</a></strong>, an architecture that treats code generation as evolutionary search: generate a candidate, verify it deterministically, checkpoint successful state, roll back failures, and use a meta-controller to detect stagnation.</p>
+
+        <p>The original work demonstrated substantial gains with frontier models and large compute environments. I wanted to test a narrower question:</p>
+
+        <blockquote>
+          <p><strong>Can the same architecture improve coding performance for small local models under constrained compute and context?</strong></p>
+        </blockquote>
+
+        <p>For this experiment, "small local model" means a 7B–14B quantized model that can run entirely on a commodity laptop with 16 GB of RAM, such as <code>qwen2.5-coder:7b</code> or <code>phi4:14b</code>.</p>
+
+        <p>We implemented AVO as a pluggable middleware subsystem in <strong><code>agent-platform</code></strong> and evaluated it on algorithmic, data-structure, concurrency, and parsing tasks.</p>
+
+        <p>The key result is that, on our benchmark, externalizing search state and aggressively discarding failed trajectories substantially improved iterative coding performance.</p>
+
+        <hr>
+
+        <h2>The Problem: Multi-Turn Context Accumulation</h2>
+
+        <p>Small coding models tend to degrade under conventional multi-turn refinement:</p>
+
+        <ol>
+          <li>The model generates an implementation.</li>
+          <li>Tests fail.</li>
+          <li>Compiler errors and tracebacks are appended to the conversation.</li>
+          <li>The model modifies the already-broken workspace.</li>
+          <li>Subsequent attempts increasingly resemble previous failures.</li>
+        </ol>
+
+        <p>This produces a characteristic failure mode:</p>
+
+        <pre class="code-block"><code>┌────────────────────────────────────────────────────────────────────────────┐
+│ Standard Multi-Turn Failure Loop                                           │
+├────────────────────────────────────────────────────────────────────────────┤
+│ Turn 1: Model makes a minor syntax or logic error.                         │
+│         Broken state remains on disk.                                     │
+│                                                                            │
+│ Turn 2: Model reads traceback and patches the broken implementation.       │
+│                                                                            │
+│ Turn 3: Context contains multiple failed implementations and diagnostics.  │
+│         Model makes increasingly local modifications.                      │
+│                                                                            │
+│ Turn 4: Workspace and context are polluted. Model exhausts its budget.     │
+│                                                                            │
+│                                                         [FAIL]              │
+└────────────────────────────────────────────────────────────────────────────┘</code></pre>
+
+        <p>For larger frontier models, multi-turn feedback can work well because the model has sufficient capacity to reason over partially broken state.</p>
+
+        <p>For smaller models, however, additional context can become an <strong>agent tax</strong>: failed implementations and diagnostics consume context without increasing the model's underlying reasoning capacity.</p>
+
+        <p>AVO changes this state transition:</p>
+
+        <pre class="code-block"><code>Conventional:
+
+task → attempt → failure → accumulated history → patch → failure → patch ...
+
+
+AVO:
+
+task → candidate → verify
+             │
+             └── failure → rollback → diagnostic → fresh candidate</code></pre>
+
+        <p>The failed implementation is not treated as conversational state that must be reasoned about indefinitely. It becomes a failed search trajectory.</p>
+
+        <hr>
+
+        <h2>Verification Asymmetry</h2>
+
+        <p>AVO relies on a useful asymmetry in software engineering:</p>
+
+        <ul>
+          <li><strong>Generating a correct implementation is difficult.</strong></li>
+          <li><strong>Verifying many properties of an implementation is comparatively cheap.</strong></li>
+        </ul>
+
+        <p>The verifier does not need to know the optimal implementation. It only needs to determine whether a candidate satisfies the constraints.</p>
+
+        <table class="vbg-table">
+          <thead>
+            <tr>
+              <th>Domain</th>
+              <th>Generation</th>
+              <th>Verification</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>CUDA optimization</strong></td>
+              <td>Generate optimized kernel</td>
+              <td>Correctness + benchmark</td>
+            </tr>
+            <tr>
+              <td><strong>Financial ledger</strong></td>
+              <td>Generate concurrent transaction logic</td>
+              <td><code>sum(debits) == sum(credits)</code></td>
+            </tr>
+            <tr>
+              <td><strong>Compiler optimization</strong></td>
+              <td>Generate AST transformation</td>
+              <td>Type checking + tests + fuzzing</td>
+            </tr>
+            <tr>
+              <td><strong>Local coding task</strong></td>
+              <td>Generate implementation</td>
+              <td>Automated test suite</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>This distinction is important because an AVO supervisor does <strong>not</strong> need access to the ground-truth solution. The test suite provides the objective signal.</p>
+
+        <h3>The Supervisor</h3>
+
+        <p>The supervisor also does not need domain knowledge.</p>
+
+        <p>In our implementation, <code>AVOSupervisor</code> observes only:</p>
+
+        <ul>
+          <li>verification failures,</li>
+          <li>failure streaks,</li>
+          <li>similarity between successive candidates.</li>
+        </ul>
+
+        <p>If a model repeatedly produces nearly identical failing candidates, the supervisor forces a strategy change.</p>
+
+        <p>Conceptually:</p>
+
+        <pre class="code-block"><code>candidate 1 ──FAIL──┐
+                    │
+candidate 2 ──FAIL──┼──> high similarity
+                    │
+                    └──> abandon local search
+                         and re-architect</code></pre>
+
+        <p>This is analogous to a senior engineer recognizing that repeated micro-edits are not converging and resetting the approach.</p>
+
+        <hr>
+
+        <h2>Implementing AVO in <code>agent-platform</code></h2>
+
+        <p>NVIDIA's architecture can be mapped onto four components:</p>
+
+        <table class="vbg-table">
+          <thead>
+            <tr>
+              <th>AVO Level</th>
+              <th><code>agent-platform</code> Component</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Level 1: Sandbox</strong></td>
+              <td><code>GitSandbox</code></td>
+              <td>Checkpoint and rollback filesystem state</td>
+            </tr>
+            <tr>
+              <td><strong>Level 2: Generator</strong></td>
+              <td><code>AgenticTDDAgent</code></td>
+              <td>Generate candidate implementations</td>
+            </tr>
+            <tr>
+              <td><strong>Level 3: Verifier</strong></td>
+              <td><code>SubprocessBox</code></td>
+              <td>Execute deterministic tests</td>
+            </tr>
+            <tr>
+              <td><strong>Level 4: Supervisor</strong></td>
+              <td><code>AVOSupervisor</code></td>
+              <td>Detect stagnation and force strategy changes</td>
+            </tr>
+            <tr>
+              <td><strong>Lifecycle</strong></td>
+              <td><code>AVOPlugin</code></td>
+              <td>Connect components to the agent loop</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The resulting system is intentionally lightweight. There is no additional model and no domain-specific planning component.</p>
+
+        <hr>
+
+        <h2>Level 1: Git as a Transaction Boundary</h2>
+
+        <p>The first principle is:</p>
+
+        <blockquote>
+          <p><strong>Do not make a small model reason about its own dirty workspace.</strong></p>
+        </blockquote>
+
+        <p>Instead, successful state is checkpointed and failed state is discarded.</p>
+
+        <p>Conceptually:</p>
+
+        <pre class="code-block"><code>def on_test_result(iteration, passed):
+    if passed:
+        git.add_and_commit(f"AVO Checkpoint Step {iteration}")
+    else:
+        git.reset_hard()
+        git.clean_untracked()</code></pre>
+
+        <p>On the test system, the equivalent of:</p>
+
+        <pre class="code-block"><code>git reset --hard HEAD
+git clean -fd</code></pre>
+
+        <p>completed in approximately <strong>0.8 ms</strong>.</p>
+
+        <p>The important property is not Git specifically. It is the existence of a cheap, deterministic transaction boundary between candidate evaluations.</p>
+
+        <hr>
+
+        <h2>Level 2: Stateless Candidate Generation</h2>
+
+        <p>Each candidate is generated from the task specification plus compact feedback from the previous evaluation.</p>
+
+        <p>Rather than passing the complete conversational history forward:</p>
+
+        <pre class="code-block"><code>task
++ previous implementation
++ previous traceback
++ previous discussion
++ previous attempted fix
++ ...</code></pre>
+
+        <p>the generator receives:</p>
+
+        <pre class="code-block"><code>task specification
++ relevant test failure
++ supervisor directive</code></pre>
+
+        <p>This keeps the model's effective search context small.</p>
+
+        <hr>
+
+        <h2>Level 3: Deterministic Verification</h2>
+
+        <p>Candidates are executed in an isolated subprocess and evaluated using deterministic tests.</p>
+
+        <pre class="code-block"><code>candidate_code = llm.generate(prompt)
+result = run_isolated_tests(candidate_code)
+
+if result.passed:
+    git_sandbox.checkpoint()
+else:
+    git_sandbox.rollback_hard()</code></pre>
+
+        <p>The verifier is external to the model and therefore does not depend on the model's self-assessment.</p>
+
+        <hr>
+
+        <h2>Level 4: Meta-Controller Supervisor</h2>
+
+        <p>Small models often respond to repeated failure with increasingly small edits to the same underlying approach.</p>
+
+        <p><code>AVOSupervisor</code> detects this using candidate similarity and failure streaks:</p>
+
+        <pre class="code-block"><code>def detect_loop_or_stagnation(history, failure_streak):
+    if failure_streak >= 2:
+        similarity = diff_similarity(history[-1], history[-2])
+
+        if similarity > 0.85:
+            return (
+                "High similarity across failing iterations. "
+                "Do NOT tweak small details. "
+                "Re-architect the approach from scratch."
+            )
+
+    return None</code></pre>
+
+        <p>The supervisor is intentionally <strong>domain agnostic</strong>.</p>
+
+        <p>It does not know:</p>
+
+        <ul>
+          <li>which algorithm is being implemented,</li>
+          <li>what the correct data structure is,</li>
+          <li>what the expected output should be,</li>
+          <li>which algorithm the model should try next.</li>
+        </ul>
+
+        <p>It only detects that the current search trajectory is not changing.</p>
+
+        <hr>
+
+        <h2>The Iterative Refinement Loop</h2>
+
+        <p>The complete loop is:</p>
+
+        <pre class="code-block"><code>for turn in range(1, max_turns):
+    prompt = build_prompt(
+        task_spec,
+        last_test_failure,
+        supervisor_directive
+    )
+
+    candidate_code = llm.generate(prompt)
+
+    test_result = run_isolated_tests(candidate_code)
+
+    if test_result.passed:
+        git_sandbox.checkpoint()
+        return Success(candidate_code)
+
+    git_sandbox.rollback_hard()
+
+    supervisor_directive = (
+        supervisor.detect_loop_or_stagnation()
+    )</code></pre>
+
+        <p>The important distinction from conventional agents is that <strong>iteration does not imply conversational accumulation</strong>.</p>
+
+        <p>Each iteration is an independent candidate in a verified search process.</p>
+
+        <hr>
+
+        <h2>Empirical Benchmark 1: Algorithmic Optimization</h2>
+
+        <p>As an initial experiment, we ran <code>phi4:latest</code> (14B) on an O(N²) pairwise-distance calculation.</p>
+
+        <pre class="code-block"><code>=================================================================
+AVO LOCAL PROTOTYPE
+Model: phi4:latest
+=================================================================
+
+Baseline Version (v0)
+Runtime: 22.12 ms
+Score:   46.4
+
+--- Iteration 1/4 ---
+[FAIL] Incorrect math
+       Git rollback: 0.8 ms
+
+--- Iteration 2/4 ---
+[FAIL] Incorrect math
+       Git rollback: 0.8 ms
+
+--- Iteration 3/4 ---
+[FAIL] Off-by-one error
+       Git rollback: 0.8 ms
+
+--- Iteration 4/4 ---
+[PASS] 100% correct
+       Runtime: 1.48 ms
+       Score:   646.6
+
+Speedup: 15.0x</code></pre>
+
+        <p>The final implementation discovered a sorted prefix-sum identity that reduced runtime from <strong>22.12 ms to 1.48 ms</strong>.</p>
+
+        <p>The point of the experiment is not the particular optimization. It demonstrates that the model can explore materially different implementations when failed candidates do not remain in the workspace and conversational history.</p>
+
+        <hr>
+
+        <h2>Empirical Evaluation: AVO-Hard10</h2>
+
+        <p>To evaluate the architecture more systematically, we constructed <strong>AVO-Hard10</strong>, a suite of 10 algorithmic, concurrency, data-structure, parsing, and mathematical programming tasks.</p>
+
+        <h3>Tasks</h3>
+
+        <table class="vbg-table">
+          <thead>
+            <tr>
+              <th style="text-align: right;">#</th>
+              <th>Task</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: right;">1</td>
+              <td><code>lb_code_interval_merge_k</code></td>
+              <td>Scheduling</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">2</td>
+              <td><code>lb_code_regex_validator</code></td>
+              <td>Parsing</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">3</td>
+              <td><code>lb_reasoning_longest_path_dag</code></td>
+              <td>Graph DP</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">4</td>
+              <td><code>lb_math_modular_inverse_matrix</code></td>
+              <td>Mathematics</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">5</td>
+              <td><code>lb_data_log_anomaly_detector</code></td>
+              <td>Data stream</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">6</td>
+              <td><code>lb_concurrency_bounded_priority_queue_ttl</code></td>
+              <td>Concurrency</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">7</td>
+              <td><code>lb_algorithms_lru_cache_ttl</code></td>
+              <td>Data structure</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">8</td>
+              <td><code>lb_graph_tarjan_strongly_connected</code></td>
+              <td>Graph algorithms</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">9</td>
+              <td><code>lb_math_convex_hull_monotone_chain</code></td>
+              <td>Geometry</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">10</td>
+              <td><code>lb_parsers_json_ast_schema_validator</code></td>
+              <td>Parsing</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Protocol</h3>
+
+        <table class="vbg-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Configuration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Model</strong></td>
+              <td><code>phi4:latest</code></td>
+            </tr>
+            <tr>
+              <td><strong>Parameters</strong></td>
+              <td>14B</td>
+            </tr>
+            <tr>
+              <td><strong>Quantization</strong></td>
+              <td>Q4_K_M</td>
+            </tr>
+            <tr>
+              <td><strong>Tasks</strong></td>
+              <td>10</td>
+            </tr>
+            <tr>
+              <td><strong>Trials</strong></td>
+              <td>5 / task</td>
+            </tr>
+            <tr>
+              <td><strong>Evaluations / configuration</strong></td>
+              <td>50</td>
+            </tr>
+            <tr>
+              <td><strong>Baseline</strong></td>
+              <td>Multi-turn TDD agent</td>
+            </tr>
+            <tr>
+              <td><strong>AVO</strong></td>
+              <td>TDD + Git sandbox + supervisor</td>
+            </tr>
+            <tr>
+              <td><strong>Verification</strong></td>
+              <td>Isolated Python <code>unittest</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The baseline retained workspace state and accumulated multi-turn context. AVO used the Level 1 Git sandbox and Level 4 supervisor.</p>
+
+        <h3>Preventing Oracle Leakage</h3>
+
+        <p>A key concern in agent evaluation is <strong>oracle leakage</strong>: the harness inadvertently provides the model with information about the solution.</p>
+
+        <p>We explicitly excluded this.</p>
+
+        <p>The supervisor has no domain awareness. It does not know the task semantics, expected output, or solution algorithm. Its only inputs are candidate history and verification outcomes.</p>
+
+        <p>Its intervention is limited to a directive such as:</p>
+
+        <pre class="code-block"><code>High similarity across failing iterations.
+Do NOT tweak small details.
+Re-architect the approach from scratch.</code></pre>
+
+        <p>The test harness also provides no ground-truth implementation or algorithmic hints.</p>
+
+        <hr>
+
+        <h2>Results</h2>
+
+        <table class="vbg-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th style="text-align: right;">Baseline</th>
+              <th style="text-align: right;">AVO</th>
+              <th style="text-align: right;">Δ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Pass rate</strong></td>
+              <td style="text-align: right;">44.0% (22/50)</td>
+              <td style="text-align: right;"><strong>100.0% (50/50)</strong></td>
+              <td style="text-align: right;"><strong>+56 pp</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Mean iterations</strong></td>
+              <td style="text-align: right;">3.12</td>
+              <td style="text-align: right;"><strong>2.40</strong></td>
+              <td style="text-align: right;">−23.1%</td>
+            </tr>
+            <tr>
+              <td><strong>Mean tokens/task</strong></td>
+              <td style="text-align: right;">3,806</td>
+              <td style="text-align: right;"><strong>2,736</strong></td>
+              <td style="text-align: right;">−28.1%</td>
+            </tr>
+            <tr>
+              <td><strong>Supervisor interventions</strong></td>
+              <td style="text-align: right;">0</td>
+              <td style="text-align: right;"><strong>30</strong></td>
+              <td style="text-align: right;">—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>On this benchmark, AVO increased the observed pass rate from 44% to 100%.</p>
+
+        <p><strong>Scope:</strong> this 100% result is specific to the 10-task, 50-trial evaluation using <code>phi4:latest</code> (14B Q4_K_M). It should not be interpreted as evidence that AVO generally produces 100% reliability for small language models.</p>
+
+        <p>The largest gains occurred on tasks where the baseline repeatedly modified an incorrect implementation. Tasks that were already solved within one or two iterations showed little benefit.</p>
+
+        <hr>
+
+        <h2>Per-Task Results</h2>
+
+        <table class="vbg-table">
+          <thead>
+            <tr>
+              <th style="text-align: right;">#</th>
+              <th>Task</th>
+              <th style="text-align: right;">Baseline</th>
+              <th style="text-align: right;">AVO</th>
+              <th style="text-align: right;">Interventions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: right;">1</td>
+              <td>Interval merge</td>
+              <td style="text-align: right;">0/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">5</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">2</td>
+              <td>Regex validation</td>
+              <td style="text-align: right;">5/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">0</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">3</td>
+              <td>Longest path DAG</td>
+              <td style="text-align: right;">0/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">5</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">4</td>
+              <td>Modular inverse</td>
+              <td style="text-align: right;">5/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">0</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">5</td>
+              <td>Anomaly detection</td>
+              <td style="text-align: right;">0/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">5</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">6</td>
+              <td>Bounded priority queue + TTL</td>
+              <td style="text-align: right;">0/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">5</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">7</td>
+              <td>LRU cache + TTL</td>
+              <td style="text-align: right;">0/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">5</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">8</td>
+              <td>Tarjan SCC</td>
+              <td style="text-align: right;">5/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">0</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">9</td>
+              <td>Convex hull</td>
+              <td style="text-align: right;">2/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">5</td>
+            </tr>
+            <tr>
+              <td style="text-align: right;">10</td>
+              <td>JSON schema validator</td>
+              <td style="text-align: right;">5/5</td>
+              <td style="text-align: right;"><strong>5/5</strong></td>
+              <td style="text-align: right;">0</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The pattern is consistent: AVO provides the most benefit when the model enters a <strong>stagnant local search trajectory</strong>.</p>
+
+        <hr>
+
+        <h2>Forensic Trace: Loop Recovery</h2>
+
+        <p>The bounded-priority-queue task provides a representative failure trace.</p>
+
+        <h3>Baseline</h3>
+
+        <p>The model implemented <code>size()</code> using destructive <code>heapq.heappop()</code> operations to remove expired entries.</p>
+
+        <pre class="code-block"><code>Turn 1
+  Generate implementation
+       ↓
+  Test failure:
+  AssertionError: 'persistent' != 'exp_soon'
+       ↓
+  Keep broken workspace
+       ↓
+Turn 2
+  Local patch
+       ↓
+  Same underlying heap mutation
+       ↓
+Turn 3
+  Another local patch
+       ↓
+  Context contains multiple failed implementations
+       ↓
+Turn 4
+  Failure budget exhausted
+
+Result: FAIL</code></pre>
+
+        <p>Across five baseline trials, none passed.</p>
+
+        <h3>AVO</h3>
+
+        <p>With the AVO architecture:</p>
+
+        <pre class="code-block"><code>Turn 1
+  Generate implementation
+       ↓
+  Test failure
+       ↓
+  Git rollback (0.8 ms)
+       ↓
+Turn 2
+  Generate variation
+       ↓
+  Test failure
+       ↓
+  91.4% candidate similarity
+       ↓
+  Supervisor intervention
+       ↓
+Turn 3
+  Fresh prompt + strategy-change directive
+       ↓
+  New implementation
+       ↓
+  PASS</code></pre>
+
+        <p>Representative trace:</p>
+
+        <pre class="code-block"><code>{
+  "task_id": "lb_concurrency_bounded_priority_queue_ttl",
+  "trial": 1,
+  "iterations": 3,
+  "status": "PASSED",
+  "supervisor_interventions": 1,
+  "step_trace": [
+    {
+      "turn": 1,
+      "outcome": "FAILED",
+      "error": "heap mutated during size()",
+      "action": "git_sandbox.rollback_hard() [0.8ms]"
+    },
+    {
+      "turn": 2,
+      "outcome": "FAILED",
+      "error": "heap mutated during peek()",
+      "action": "git_sandbox.rollback_hard() [0.8ms]",
+      "supervisor_event": "STAGNATION_DETECTED"
+    },
+    {
+      "turn": 3,
+      "supervisor_directive_injected":
+        "High similarity across failing iterations. Re-architect.",
+      "outcome": "PASSED",
+      "action": "git_sandbox.checkpoint()"
+    }
+  ]
+}</code></pre>
+
+        <p>The supervisor did not tell the model to use a non-destructive generator. It only prevented another local modification of the same failed design.</p>
+
+        <hr>
+
+        <h2>Chat History vs. Externalized Search State</h2>
+
+        <p>The model's raw reasoning capacity does not increase under AVO.</p>
+
+        <p>What changes is the representation of search state.</p>
+
+        <h3>Conventional Agent</h3>
+
+        <pre class="code-block"><code>Conversation
+├── Task
+├── Candidate 1
+├── Error 1
+├── Candidate 2
+├── Error 2
+├── Candidate 3
+├── Error 3
+└── ...</code></pre>
+
+        <h3>AVO</h3>
+
+        <pre class="code-block"><code>External Search State
+├── Candidate 1 → FAIL → discard
+├── Candidate 2 → FAIL → discard
+├── Candidate 3 → PASS → checkpoint
+└── ...</code></pre>
+
+        <p>This separates <strong>search exploration from conversational memory</strong>.</p>
+
+        <p>For small models, that distinction appears important. Failed candidates do not consume future context, and the model is not required to reason about increasingly obsolete workspace state.</p>
+
+        <p>The hypothesis is therefore not that AVO makes a 14B model intrinsically more capable. Rather, it reduces the amount of irrelevant state the model must process while exploring the solution space.</p>
+
+        <hr>
+
+        <h2>The "Agentic Prompting Trap"</h2>
+
+        <p>Prompt structure also had a measurable effect.</p>
+
+        <p>An initial implementation used explicit agent-role framing:</p>
+
+        <pre class="code-block"><code>You are an expert autonomous software engineer
+operating inside an AVO container sandbox.
+
+TASK INSTRUCTION:
+{instruction}
+
+SUPERVISOR DIRECTIVE:
+Try a radically different strategy.</code></pre>
+
+        <p>For small models, this often caused unnecessary orchestration behavior. The model generated shell wrappers, logging code, signal handling, and other scaffolding rather than directly solving the task.</p>
+
+        <p>A simpler terminal-oriented prompt performed better:</p>
+
+        <pre class="code-block"><code>You are in a Linux terminal.
+
+{instruction}
+
+Output ONLY the executable shell command or Python script
+inside a ```bash or ```python block.</code></pre>
+
+        <p>The simpler framing reduced syntax errors and roughly doubled execution throughput in our initial testing.</p>
+
+        <p>The implication is straightforward:</p>
+
+        <blockquote>
+          <p><strong>For small local models, operational constraints appear more useful than elaborate agent personas.</strong></p>
+        </blockquote>
+
+        <hr>
+
+        <h2>Beyond Unit Tests: Long-Horizon Workflows</h2>
+
+        <p>The same architecture can extend beyond code generation.</p>
+
+        <p>The critical abstraction is not the unit test. It is the <strong>verifiable state transition</strong>.</p>
+
+        <p>For example, consider an enterprise research workflow:</p>
+
+        <pre class="code-block"><code>Retrieve records
+      ↓
+Checkpoint 1: Valid entity records?
+      ↓
+Parse financial data
+      ↓
+Checkpoint 2: Schema-valid intermediate state?
+      ↓
+Generate report
+      ↓
+Checkpoint 3: Required tables and invariants satisfied?</code></pre>
+
+        <p>A failed checkpoint can prevent downstream stages from operating on invalid state.</p>
+
+        <p>For example:</p>
+
+        <ul>
+          <li>A failed API request should not cause the agent to fabricate retrieved data.</li>
+          <li>A malformed <code>corporate_tree.json</code> should not become input to subsequent analysis.</li>
+          <li>An inconsistent financial reconciliation should not propagate into the final report.</li>
+        </ul>
+
+        <p>The general pattern becomes:</p>
+
+        <pre class="code-block"><code>state → action → verify → checkpoint
+                  │
+                  └── failure → rollback</code></pre>
+
+        <p>This turns the AVO mechanism into a potential <strong>guardrail for long-horizon autonomous workflows</strong>, not just iterative code generation.</p>
+
+        <hr>
+
+        <h2>Practical Takeaways for Agent Architects</h2>
+
+        <ol>
+          <li><strong>Do not accumulate failed implementations in conversational context.</strong> Re-synthesize from the original specification and compact diagnostics.</li>
+          <li><strong>Make workspace state transactional.</strong> Successful candidates become checkpoints; failed candidates are discarded.</li>
+          <li><strong>Detect stagnation explicitly.</strong> Repeatedly similar failures should trigger a strategy change rather than another local edit.</li>
+          <li><strong>Keep generator prompts operational.</strong> Small models appear to benefit from direct execution constraints rather than elaborate agent personas.</li>
+          <li><strong>Treat intermediate workflow state as verifiable.</strong> Long-horizon agents can use checkpoints to prevent invalid state from propagating.</li>
+        </ol>
+
+        <hr>
+
+        <h2>Limitations</h2>
+
+        <p>These results are preliminary.</p>
+
+        <p>The evaluation uses a single 14B model, a 10-task benchmark, five trials per task, and deterministic Python tests. The benchmark is intentionally small and does not establish generalization across:</p>
+
+        <ul>
+          <li>model families,</li>
+          <li>parameter scales,</li>
+          <li>quantization schemes,</li>
+          <li>programming languages,</li>
+          <li>verifier types,</li>
+          <li>larger task distributions,</li>
+          <li>longer-horizon workflows.</li>
+        </ul>
+
+        <p>The 100% AVO pass rate should therefore be interpreted as a <strong>benchmark result</strong>, not a general reliability guarantee.</p>
+
+        <p>An important follow-up is to determine whether the observed improvement comes primarily from:</p>
+
+        <ol>
+          <li>workspace rollback,</li>
+          <li>context truncation,</li>
+          <li>stagnation detection,</li>
+          <li>prompt simplification,</li>
+        </ol>
+
+        <p>or the interaction among these components.</p>
+
+        <p>A larger factorial evaluation should isolate those effects.</p>
+
+        <hr>
+
+        <h2>Conclusion</h2>
+
+        <p>AVO does not increase the underlying reasoning capacity of a small local model. It changes the search process around the model.</p>
+
+        <p>The combination of:</p>
+
+        <ul>
+          <li>deterministic verification,</li>
+          <li>transactional workspace state,</li>
+          <li>fresh candidate generation,</li>
+          <li>and domain-agnostic stagnation detection</li>
+        </ul>
+
+        <p>allows failed trajectories to be discarded rather than accumulated in conversational and filesystem state.</p>
+
+        <p>On AVO-Hard10, this increased the observed pass rate from <strong>44% to 100%</strong>, while reducing mean iterations by 23.1% and token consumption by 28.1%. These results are specific to the evaluated benchmark and model, but they support the narrower hypothesis that <strong>externalized search state can materially improve iterative coding performance for resource-constrained agents</strong>.</p>
+
+        <p>Overall, this is a promising direction we are continuing to pursue in harness development, with further evaluation across models, task distributions, and longer-horizon workflows.</p>
+
+        <p><em>The full AVO plugin, Git sandbox implementation, and benchmark adapters are available in the <code>agent-platform</code> codebase.</em></p>
+      </article>
+    </main>
+
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+      </div>
+      <div>
+        <a href="/" class="site-link-mono">borkert.dev</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/main.js?v=2"></script>
+</body>
+</html>
