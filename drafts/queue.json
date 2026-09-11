@@ -246,6 +246,55 @@
       "lastModified": "2026-09-11T19:11:01.622Z"
     },
     {
+      "filename": "draft-push-to-talk-voice-command-mlx-whisper.md",
+      "slug": "push-to-talk-voice-command-mlx-whisper",
+      "title": "Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper",
+      "byline": "*By Chris Borkert · September 2026*",
+      "words": 1190,
+      "stage": "PUBLISHED",
+      "evaluation": {
+        "scores": {
+          "epistemicGrounding": 5,
+          "noPrevalenceClaims": 5,
+          "noInventedResults": 4,
+          "empiricalGrounding": 4,
+          "calibratedTone": 5,
+          "aiTellPurge": 5,
+          "citations": 2,
+          "structure": 4,
+          "siteFormatting": 5,
+          "negativeResults": 4,
+          "audienceCalibration": 4
+        },
+        "flaggedBannedWords": [],
+        "hasTables": true,
+        "hasMermaid": false,
+        "hasCodeBlocks": true,
+        "hasCitations": false,
+        "hasLatexMath": false,
+        "hasExactNumbers": true,
+        "blockingFailures": [],
+        "verdict": "PUBLISH_CANDIDATE"
+      },
+      "challenges": [
+        {
+          "question": "Which literature, specs, or benchmark standards (e.g. Pass@k, POSIX, RFCs) establish the baseline here?",
+          "rationale": "Prevents presumed-consensus fallacies."
+        },
+        {
+          "question": "What broke unexpectedly, and what would you design differently in retrospect?",
+          "rationale": "Forensic failure modes and candid regrets are essential to an authentic systems engineering voice."
+        },
+        {
+          "question": "Author Voice Check: Does any section sound like an LLM summarizing documentation rather than a battle-tested post-mortem?",
+          "rationale": "Mandatory human-in-the-loop review pass."
+        }
+      ],
+      "isCompiled": true,
+      "isLinkedOnHome": true,
+      "lastModified": "2026-09-11T19:36:49.953Z"
+    },
+    {
       "filename": "draft-zero-build-frontend.md",
       "slug": "zero-build-frontend",
       "title": "The Zero-Build Frontend: Why Native Web Standards and 12-Line Reactivity Beat Framework Sprawl",

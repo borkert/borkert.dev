@@ -11,6 +11,7 @@
 
 ## 01. Writing & Research
 
+- **[Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper](/posts/push-to-talk-voice-command-mlx-whisper.html)** (September 2026): Building a zero-cloud push-to-talk dictation daemon for macOS that captures CoreAudio, runs sub-100ms MLX Whisper inference on Metal, and injects prompts with automated Return key delivery across any focused window.
 - **[Gateway Agent: iMessaging Your Personal Agent](/posts/gateway-agent-imessaging-your-personal-agent.html)** (September 2026): Bridging Discord and iMessage to Antigravity CLI via a 120-line bash socket loop, local SQLite polling in ~/Library/Messages/chat.db, and Apple Silicon MLX Whisper voice transcription.
 - **[Better Agents by Removing Personas and Role Play](/posts/better-agents-by-removing-personas-and-role-play.html)** (September 2026): An empirical N=20 benchmark showing that removing role-play personas and anthropomorphic guidance from ReAct agent system prompts increases unit-test accuracy by 20% and reduces token usage by 23%.
 - **[Making Agent API Calls 10x Faster with Cached Definitions](/posts/apicat-api-cached-definitions.html)** (August 2026): Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.

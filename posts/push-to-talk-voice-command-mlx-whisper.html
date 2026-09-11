@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper — Chris Borkert</title>
+  <meta name="description" content="Typing prompts to autonomous agents creates an odd cognitive bottleneck. When reasoning about architectural diffs or test failures, speaking a prompt takes five...">
+  <meta name="author" content="Chris Borkert">
+  <link rel="canonical" href="https://borkert.dev/posts/push-to-talk-voice-command-mlx-whisper.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper">
+  <meta property="og:description" content="Typing prompts to autonomous agents creates an odd cognitive bottleneck. When reasoning about architectural diffs or test failures, speaking a prompt takes five...">
+  <meta property="og:url" content="https://borkert.dev/posts/push-to-talk-voice-command-mlx-whisper.html">
+  <meta property="og:type" content="article">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Geist Typography (Vercel Brand Guideline) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
+
+  <!-- Vercel Brand Stylesheet -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css?v=2">
+  <link rel="stylesheet" href="/styles.css?v=2">
+</head>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
+
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <a href="/" class="site-link-mono">← borkert.dev</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <article class="post-content">
+        <header class="post-header">
+          <h1 class="vbg-title">Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper</h1>
+          <div class="post-meta">By Chris Borkert · September 2026</div>
+        </header>
+
+        <p>Typing prompts to autonomous agents creates an odd cognitive bottleneck. When reasoning about architectural diffs or test failures, speaking a prompt takes five seconds; typing it out with precise code references takes thirty.</p>
+
+<p>I wanted a frictionless push-to-talk (PTT) interface on macOS that worked across every application on my machine—terminal sessions, VS Code, web chats, or standalone agent CLIs.</p>
+
+<p>Existing solutions failed in two directions:</p>
+
+<ol>
+  <li><strong>Cloud-based speech APIs</strong> (OpenAI Whisper API, Deepgram) introduce a 600ms to 1500ms network round-trip. Sending internal source code and token streams across public networks also violates basic security isolation.</li>
+  <li><strong>Built-in macOS dictation</strong> requires multiple keystrokes to trigger, struggles with programming jargon, and doesn't auto-submit. You still have to reach back to the keyboard, wait for the animation, and hit Enter.</li>
+</ol>
+
+<p>I built <code>voice_ptt.py</code>—a 330-line Python daemon that captures CoreAudio on key-press, transcribes on-device using Apple Silicon Metal via MLX Whisper, and injects the text with an automated Return key into whatever window has focus.</p>
+
+<pre class="code-block"><code>[Hold Right Option ⌥] ──► CoreAudio stream (16kHz)
+           │
+           ▼
+     [Key Release] ──► MLX Whisper Metal Inference (47ms–165ms)
+           │
+           ▼
+     pbcopy + ⌘V ──► delay 50ms ──► key code 36 (↵ Enter)</code></pre>
+
+<h2 id="the-mechanics-dual-key-routing">The Mechanics: Dual-Key Routing</h2>
+
+<p>The interface requires no GUI window, no dock icon, and no menu bar interactions. It runs as a background process managed by <code>ptt start</code> in <code>~/.local/bin/ptt</code>.</p>
+
+<p>I mapped the triggers to modifier keys on the right side of the keyboard that are rarely used during normal typing:</p>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Key Binding</th>
+        <th scope="col">Mode</th>
+        <th scope="col">Behavior</th>
+        <th scope="col">Use Case</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Right Option</strong> (<code>⌥</code> / <code>alt_r</code>)</th>
+        <td><code>enter</code></td>
+        <td>Transcribe + Paste + <code>↵ Return</code></td>
+        <td>Firing commands directly into terminal or agent chat</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Right Command</strong> (<code>⌘</code> / <code>cmd_r</code>)</th>
+        <td><code>no_enter</code></td>
+        <td>Transcribe + Paste only</td>
+        <td>Inserting dictated text into an open editor for manual editing</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Right Control</strong> (<code>ctrl_r</code>)</th>
+        <td><code>no_enter</code></td>
+        <td>Transcribe + Paste only</td>
+        <td>Alternative hand position for drafting</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>On key-down, the daemon triggers an immediate audio cue (<code>afplay /System/Library/Sounds/Pop.aiff</code>) and begins appending raw PCM samples from a CoreAudio input stream into an in-memory buffer. On key-up, it plays <code>Tink.aiff</code>, stops the stream, and hands the buffer off to a dedicated worker thread.</p>
+
+<pre class="code-block"><code class="language-python">def audio_callback(self, indata, frames, time_info, status):
+    if self.is_recording:
+        with self.lock:
+            self.audio_frames.append(indata.copy())</code></pre>
+
+<p>Decoupling recording from transcription via a worker thread prevents audio buffer overruns and ensures the key listener never drops release events if transcription takes longer than expected.</p>
+
+<h2 id="beating-the-metal-jit-compilation-penalty">Beating the Metal JIT Compilation Penalty</h2>
+
+<p>Apple's MLX framework compiles computation graphs lazily into Metal kernels on the first forward pass.</p>
+
+<p>In my initial prototype, the very first dictation after boot incurred a <strong>1,840 ms stutter</strong> while the GPU compiled the attention and convolution kernels. That initial delay destroyed the feeling of instant responsiveness.</p>
+
+<p>The fix was a synthetic warm-up pass during daemon initialization:</p>
+
+<pre class="code-block"><code class="language-python"># Warmup Metal compilation graph upfront
+print(&quot;Warming up MLX Whisper model...&quot;)
+import mlx_whisper
+mlx_whisper.transcribe(np.zeros(16000, dtype=np.float32), path_or_hf_repo=self.model_name)
+print(&quot;Ready!&quot;)</code></pre>
+
+<p>Feeding a 1-second zero tensor forces MLX to compile and cache all Metal shader kernels at boot time. Subsequent runs bypass JIT compilation entirely.</p>
+
+<h2 id="injection-why-clipboard-beats-keystroke-synthesis">Injection: Why Clipboard Beats Keystroke Synthesis</h2>
+
+<p>Once transcription completes, the text must land in the active input field.</p>
+
+<p>The obvious approach was synthesizing individual key events via AppleScript's <code>tell application &quot;System Events&quot; to keystroke text</code>. In practice, this failed:</p>
+
+<ol>
+  <li><strong>Latency</strong>: Emitting 40 words character-by-character takes ~600ms.</li>
+  <li><strong>Key Dropping</strong>: If you press any physical key while System Events is firing virtual keystrokes, the modifier states conflict and produce garbled text.</li>
+</ol>
+
+<p>The solution was atomic clipboard injection:</p>
+
+<pre class="code-block"><code class="language-python">def paste_text_and_enter(text: str, auto_enter: bool = True):
+    p = subprocess.Popen([&quot;pbcopy&quot;], stdin=subprocess.PIPE)
+    p.communicate(text.encode(&quot;utf-8&quot;))
+
+    lines = [&#39;tell application &quot;System Events&quot;&#39;, &#39;keystroke &quot;v&quot; using command down&#39;]
+    if auto_enter:
+        lines.append(&#39;delay 0.05&#39;)
+        lines.append(&#39;key code 36&#39;)  # 36 is Return
+    lines.append(&#39;end tell&#39;)
+
+    subprocess.run([&quot;osascript&quot;, &quot;-e&quot;, &quot;\n&quot;.join(lines)], stdout=subprocess.DEVNULL)</code></pre>
+
+<p>Piping UTF-8 bytes into <code>pbcopy</code> and emitting a single <code>⌘V</code> keystroke executes in under 15ms, regardless of prompt length. The 50ms delay before <code>key code 36</code> gives the host application time to process the clipboard paste event before submitting.</p>
+
+<h2 id="measured-latency-on-apple-silicon">Measured Latency on Apple Silicon</h2>
+
+<p>Using <code>mlx-community/whisper-tiny</code> on an M-series Mac, transcription latency scales with utterance length:</p>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Utterance Type</th>
+        <th scope="col">Spoken Words</th>
+        <th scope="col">Audio Duration</th>
+        <th scope="col">MLX Whisper Latency</th>
+        <th scope="col">End-to-End Delivery</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">Single command</th>
+        <td>4 words</td>
+        <td>1.1 s</td>
+        <td><strong>47 ms</strong></td>
+        <td><strong>~112 ms</strong></td>
+      </tr>
+      <tr>
+        <th scope="row">Short instruction</th>
+        <td>8 words</td>
+        <td>1.8 s</td>
+        <td><strong>59 ms</strong></td>
+        <td><strong>~124 ms</strong></td>
+      </tr>
+      <tr>
+        <th scope="row">Technical query</th>
+        <td>11 words</td>
+        <td>2.6 s</td>
+        <td><strong>72 ms</strong></td>
+        <td><strong>~137 ms</strong></td>
+      </tr>
+      <tr>
+        <th scope="row">Multi-clause prompt</th>
+        <td>16 words</td>
+        <td>3.9 s</td>
+        <td><strong>165 ms</strong></td>
+        <td><strong>~230 ms</strong></td>
+      </tr>
+      <tr>
+        <th scope="row">Complex prompt</th>
+        <td>32 words</td>
+        <td>7.4 s</td>
+        <td><strong>1,016 ms</strong></td>
+        <td><strong>~1,081 ms</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>For the vast majority of agent commands (under 15 words), transcription finishes in <strong>under 100 milliseconds</strong>. From the moment you release the Option key, the text appears and executes before your thumb has lifted off the keyboard.</p>
+
+<h2 id="negative-results-edge-cases">Negative Results & Edge Cases</h2>
+
+<p>Three operational bugs emerged during daily use:</p>
+
+<h3 id="1-the-zero-duration-hallucination-loop">1. The Zero-Duration Hallucination Loop</h3>
+
+<p>When releasing the Option key too quickly (<0.2s duration), or when recording background noise without speech, Whisper-tiny occasionally entered an autoregressive repetition loop, emitting hundreds of repeated tokens (e.g. <code>Ha ha ha ha...</code>).</p>
+
+<p>I added a minimum duration threshold before dispatching to the inference engine:</p>
+
+<pre class="code-block"><code class="language-python">audio_np = np.concatenate(frames, axis=0).flatten()
+duration = len(audio_np) / self.sample_rate
+
+if duration &lt; 0.2:
+    return</code></pre>
+
+<h3 id="2-domain-jargon-phonetics">2. Domain Jargon Phonetics</h3>
+
+<p>Small quantized models (<code>whisper-tiny</code>) occasionally stumble on developer terminology. For instance, "Ollama" is consistently transcribed as "Olamah".</p>
+
+<p>Upgrading to <code>whisper-base</code> fixes most phonetic errors at the cost of increasing inference latency from ~60ms to ~180ms. For my workflow, sub-100ms response speed on <code>whisper-tiny</code> outweighs occasional spelling fixes.</p>
+
+<h3 id="3-macos-accessibility-flakiness">3. macOS Accessibility Flakiness</h3>
+
+<p>macOS Sequoia and Sonoma require both Accessibility (<code>AXIsProcessTrusted</code>) and Input Monitoring permissions to capture global hotkeys via <code>pynput</code>. Rebuilding a virtual environment or moving binary paths invalidates the OS security token without warning, causing key events to be dropped silently.</p>
+
+<p>I added an explicit diagnostic command (<code>ptt test</code> / <code>ptt open-settings</code>) that queries <code>AXIsProcessTrustedWithOptions</code> on startup and directs the user to the exact System Settings pane if permissions drop.</p>
+
+<h2 id="conclusion-and-future-work">Conclusion and Future Work</h2>
+
+<p>A 330-line script bridging CoreAudio, MLX Whisper, and macOS System Events outperforms cloud dictation in latency, privacy, and workflow ergonomics.</p>
+
+<p>If I were refactoring this system, I would replace the Python runtime with a single compiled Swift binary using <code>CGEventTapCreate</code> and native MLX Swift bindings. That would drop memory usage from ~120MB to under 15MB and eliminate the Python virtualenv dependency.</p>
+
+<p>The daemon runs locally on my workstation via <code>alias ptt=&quot;/Users/chris/.local/bin/ptt&quot;</code>.</p>
+
+      </article>
+    </main>
+
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+      </div>
+      <div>
+        <a href="/" class="site-link-mono">borkert.dev</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/main.js?v=2"></script>
+</body>
+</html>
