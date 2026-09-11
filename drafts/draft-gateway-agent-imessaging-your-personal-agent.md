@@ -1,7 +1,7 @@
 # Gateway Agent: iMessaging Your Personal Agent
 *By Chris Borkert · Draft · September 2026*
 
-Most AI coding assistants live behind a web UI or an IDE plugin. That works fine at a desk, but not from a phone, not while driving, and not at 2 AM when an idea hits. The goal with `gateway-agent` was simple: make an AI assistant reachable through the messaging apps already on your phone — iMessage and Discord — and have it edit code directly on your machines.
+Most AI assistants live behind a web UI or an IDE plugin. That works fine at a desk, but not from a phone, not while driving, and not at 2 AM when an idea hits. The goal with `gateway-agent` was simple: make an AI assistant reachable through the messaging apps already on your phone — iMessage and Discord — and have it work directly on your machines.
 
 Existing solutions like OpenClaw and other agent gateway frameworks looked promising on paper, but configuring them turned out to be more work than writing the integration from scratch. Heavy dependencies, opinionated architectures, and deployment assumptions.
 
