@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gateway Agent: iMessaging Your Personal Agent — Chris Borkert</title>
+  <meta name="description" content="Most AI coding assistants live behind a web UI or an IDE plugin. That works fine at a desk, but not from a phone, not while driving, and not at 2 AM when an ide...">
+  <meta name="author" content="Chris Borkert">
+  <link rel="canonical" href="https://borkert.dev/posts/gateway-agent-imessaging-your-personal-agent.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Gateway Agent: iMessaging Your Personal Agent">
+  <meta property="og:description" content="Most AI coding assistants live behind a web UI or an IDE plugin. That works fine at a desk, but not from a phone, not while driving, and not at 2 AM when an ide...">
+  <meta property="og:url" content="https://borkert.dev/posts/gateway-agent-imessaging-your-personal-agent.html">
+  <meta property="og:type" content="article">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Geist Typography (Vercel Brand Guideline) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
+
+  <!-- Vercel Brand Stylesheet -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css?v=2">
+  <link rel="stylesheet" href="/styles.css?v=2">
+</head>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
+
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <a href="/" class="site-link-mono">← borkert.dev</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <article class="post-content">
+        <header class="post-header">
+          <h1 class="vbg-title">Gateway Agent: iMessaging Your Personal Agent</h1>
+          <div class="post-meta">By Chris Borkert · Draft · September 2026</div>
+        </header>
+
+        <p>Most AI coding assistants live behind a web UI or an IDE plugin. That works fine at a desk, but not from a phone, not while driving, and not at 2 AM when an idea hits. The goal with <code>gateway-agent</code> was simple: make an AI assistant reachable through the messaging apps already on your phone — iMessage and Discord — and have it edit code directly on your machines.</p>
+
+<p>Existing solutions like OpenClaw and other agent gateway frameworks looked promising on paper, but configuring them turned out to be more work than writing the integration from scratch. Heavy dependencies, opinionated architectures, and deployment assumptions.</p>
+
+<p>The initial assumption was straightforward: a single Python script wrapping a few API calls. In practice, the project turned into an exercise in macOS system internals, undocumented SQLite schemas, AppleScript edge cases, and on-device ML inference.</p>
+
+<p>The result is <code>gateway-agent</code> — a lightweight daemon that bridges Discord and iMessage to Antigravity CLI (<code>agy</code>). It runs as a macOS LaunchAgent, boots at login, recovers from crashes automatically, and operates continuously.</p>
+
+<h2 id="the-discord-loop-120-lines-of-bash">The Discord Loop: 120 Lines of Bash</h2>
+
+<p>The assumption was that a Discord integration would require a heavy Node.js or Python framework. It didn't. The entire thing is written in bash.</p>
+
+<p>Because <code>apic</code> handles the WebSocket connection, the integration reduces to a glorified <code>while read</code> loop. Unix pipes handle the rest. No framework. No runtime.</p>
+
+<pre class="code-block"><code class="language-bash">    (
+      while true; do
+        send_typing
+        sleep 7
+      done
+    ) 2&gt;/dev/null &amp;
+    typing_pid=$!
+
+    reply=&quot;$(cd /Users/chris &amp;&amp; agy -p &quot;$prompt&quot; --dangerously-skip-permissions --mode=accept-edits &lt;/dev/null)&quot; || {
+      kill &quot;$typing_pid&quot; 2&gt;/dev/null || true
+      wait &quot;$typing_pid&quot; 2&gt;/dev/null || true
+      echo &quot;agy failed&quot;
+      continue
+    }</code></pre>
+
+<p>When a message comes in, the loop kicks off a background subshell that sends a POST request to Discord's typing API every 7 seconds. It then blocks on <code>agy</code>. When <code>agy</code> finishes modifying files, the script kills the typing process and posts the output back to the channel.</p>
+
+<p>Managing conversation context was another problem. I didn't want to spin up a database just to remember the last few messages. I used a flat text file.</p>
+
+<pre class="code-block"><code class="language-bash">    ## keep AGENTS.md under 50 lines whenever it grows past the cap
+    [[ &quot;$(wc -l &lt; /Users/chris/gateway-agent/AGENTS.md)&quot; -gt 50 ]] &amp;&amp; tail -n 50 /Users/chris/gateway-agent/AGENTS.md &gt; /tmp/AGENTS.md &amp;&amp; cp /tmp/AGENTS.md /Users/chris/gateway-agent/AGENTS.md</code></pre>
+
+<p>This trick works exceptionally well. <code>AGENTS.md</code> acts as a rolling history. It is stateless, simple, and grep-able. The prompt construction just dumps this file into the input.</p>
+
+<p>Since other bots share the Discord channel, cross-talk was an issue. Bare approval commands ("yes", "approve", "lgtm") intended for other integrations would wake up the agent. I added a hardcoded filter to ignore market mover commands to keep the signal clean.</p>
+
+<h2 id="the-imessage-hack">The iMessage Hack</h2>
+
+<p>iMessage was harder. There is no public API. You have to read the local SQLite database.</p>
+
+<p>macOS stores messages in <code>~/Library/Messages/chat.db</code>. Reading it programmatically requires Full Disk Access. I wrote a Python script to poll the database directly.</p>
+
+<pre class="code-block"><code class="language-python">def fetch_new_messages(last_rowid: int) -&gt; list:
+    conn = sqlite3.connect(f&quot;file:{CHAT_DB}?mode=ro&quot;, uri=True)
+    cur = conn.cursor()
+
+    query = &quot;&quot;&quot;
+    SELECT 
+        m.ROWID,
+        m.text,
+        m.is_from_me,
+        h.id AS sender_handle,
+        a.filename AS attachment_filename,
+        a.mime_type AS attachment_mime,
+        a.transfer_name AS attachment_name
+    FROM message m
+    LEFT JOIN handle h ON m.handle_id = h.ROWID
+    LEFT JOIN message_attachment_join maj ON m.ROWID = maj.message_id
+    LEFT JOIN attachment a ON maj.attachment_id = a.ROWID
+    WHERE m.ROWID &gt; ?
+    ORDER BY m.ROWID ASC;
+    &quot;&quot;&quot;
+    cur.execute(query, (last_rowid,))
+    rows = cur.fetchall()
+    conn.close()
+    return rows</code></pre>
+
+<p>This approach works, but it is fragile. Apple changes the schema between macOS versions without warning. Full Disk Access permissions frequently reset or fail silently.</p>
+
+<p>Replying to messages requires AppleScript (<code>osascript</code>).</p>
+
+<pre class="code-block"><code class="language-python">script = f&#39;&#39;&#39;
+tell application &quot;Messages&quot;
+    set targetService to 1st service whose service type is iMessage and enabled is true
+    set targetBuddy to buddy &quot;{target}&quot; of targetService
+    send &quot;{clean_text}&quot; to targetBuddy
+end tell
+&#39;&#39;&#39;</code></pre>
+
+<p>AppleScript is terrible for sending messages at scale. If you send too many messages too fast, the Messages app locks up.</p>
+
+<p>I also needed strict anti-loop guards. To prevent the bot from reading its own outgoing messages and replying to them infinitely, bot replies are prefixed with the 🤖 emoji and tracked in a local set. Messages matching known bot outputs are silently dropped. When running on a separate Apple ID, I added a <code>DEDICATED_BOT</code> mode that just ignores all outgoing messages outright.</p>
+
+<h2 id="voice-memos-via-mlx-whisper">Voice Memos via MLX Whisper</h2>
+
+<p>I wanted to send voice notes to the agent while driving. iMessage voice memos arrive as <code>.caf</code> attachments.</p>
+
+<p>I used <code>ffmpeg</code> to convert the <code>.caf</code> files to <code>.wav</code>, then ran them through MLX Whisper locally.</p>
+
+<pre class="code-block"><code class="language-python">        import mlx_whisper
+        t0 = time.time()
+        result = mlx_whisper.transcribe(wav_path, path_or_hf_repo=&quot;mlx-community/whisper-tiny&quot;)
+        text = result.get(&quot;text&quot;, &quot;&quot;).strip()</code></pre>
+
+<p>Running the model locally on Apple Silicon means no cloud transcription service, no API latency, and no data leaving my machine. It transcribes audio clips in seconds.</p>
+
+<h2 id="scheduling-and-synchronization">Scheduling and Synchronization</h2>
+
+<p>I needed the agent to act proactively, not just reactively. I wrote a cron-like daemon in Python (<code>scheduler.py</code>) to send recurring alerts to Discord or iMessage.</p>
+
+<p>The scheduler is just a polling loop checking <code>HH:MM</code> against the current time. It drifts by up to 20 seconds. It is completely unsophisticated, and it works perfectly. It also monitors my Antigravity CLI quota usage, sending threshold alerts (50%, 30%, 20%, 10%) directly to my phone. Catching quota limits before you hit them matters when an agent has 24/7 write access to your machine.</p>
+
+<p>My setup spans a MacBook Air and a Mac mini. To keep them in sync, I use Mutagen. <code>gateway-agent</code> updates files on whatever machine it is running on, and Mutagen mirrors the changes bidirectionally in real-time via <code>mutagen.yml</code>.</p>
+
+<p>To keep everything running, I packaged it as a macOS LaunchAgent plist. The <code>KeepAlive</code> key ensures that if the Python script crashes—usually because of an SQLite database lock—<code>launchd</code> immediately restarts it.</p>
+
+<h2 id="tradeoffs-and-surprises">Tradeoffs and Surprises</h2>
+
+<p>The biggest surprise was the bash script. I wrote it as a temporary hack, but the 120 lines of code have been running for months without a single issue. The Unix pipeline model maps perfectly to a text-in, text-out API.</p>
+
+<p>The iMessage integration requires more babysitting. The <code>chat.db</code> schema will inevitably break in a future macOS update.</p>
+
+<p>If I were to do this again, I might try to build a unified queue instead of running separate bash and Python processes. But the separation of concerns keeps failures isolated. When AppleScript hangs the iMessage script, the Discord loop keeps running.</p>
+
+<p>You can find the code here: <a href="https://github.com/digplan/gateway-agent">github.com/digplan/gateway-agent</a>. MIT licensed.</p>
+
+      </article>
+    </main>
+
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+      </div>
+      <div>
+        <a href="/" class="site-link-mono">borkert.dev</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/main.js?v=2"></script>
+</body>
+</html>
