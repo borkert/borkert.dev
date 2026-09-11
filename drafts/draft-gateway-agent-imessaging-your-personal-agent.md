@@ -1,5 +1,5 @@
 # Gateway Agent: iMessaging Your Personal Agent
-*By Chris Borkert · Draft · September 2026*
+*By Chris Borkert · September 2026*
 
 Most AI assistants live behind a web UI or an IDE plugin. That works fine at a desk, but not from a phone, not while driving, and not at 2 AM when an idea hits. The goal with `gateway-agent` was simple: make an AI assistant reachable through the messaging apps already on your phone — iMessage and Discord — and have it work directly on your machines.
 

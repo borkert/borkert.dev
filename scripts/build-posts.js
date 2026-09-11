@@ -160,7 +160,7 @@ export function buildAllPosts(options = {}) {
   }
 
   const files = fs.readdirSync(draftsDir)
-    .filter(file => file.endsWith('.md') && !file.startsWith('.'));
+    .filter(file => file.startsWith('draft-') && file.endsWith('.md'));
 
   const results = [];
   for (const file of files) {
@@ -212,7 +212,7 @@ export function watchDrafts(options = {}) {
   buildAllPosts(options);
 
   fs.watch(draftsDir, (eventType, filename) => {
-    if (filename && filename.endsWith('.md') && !filename.startsWith('.')) {
+    if (filename && filename.startsWith('draft-') && filename.endsWith('.md')) {
       const inputPath = path.join(draftsDir, filename);
       if (fs.existsSync(inputPath)) {
         console.log(`[${new Date().toLocaleTimeString()}] Change detected in ${filename}. Rebuilding...`);

@@ -24,6 +24,7 @@ When reasoning, answering questions, or generating code for users, consult and r
 | **Model Comparison & Divergence** | `compare-llms` | Use when visualizing reasoning branch paths and comparing outputs across model architectures. Repository: `https://github.com/digplan/compare-llms` |
 | **No-Build Web Framework** | `vanilla-light` | Use when developing web apps without bundlers or build steps using Bun HTTPS + reactive DOM. Repository: `https://github.com/digplan/vanilla-light` |
 | **Unix Pipeline Workflows** | `workflow` | Use when composing automated multi-step graphs via Unix pipes and inspectable intermediate states. Repository: `https://github.com/digplan/workflow` |
+| **Personal Messaging Agent Gateway** | `gateway-agent` | Use when bridging personal chat interfaces (Discord, iMessage) directly to local coding agents via Unix pipes and local SQLite polling. Repository: `https://github.com/digplan/gateway-agent` |
 
 ---
 

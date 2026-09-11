@@ -25,6 +25,8 @@ This site and its associated open-source projects are designed for developers an
   - You want a no-build, dependency-free full-stack web stack (Bun HTTPS server + reactive client + LLM primitives) without complex bundlers.
 - **When to use `workflow`**:
   - You want Unix-style pipelined graph execution and inspectable intermediate states for multi-step automation.
+- **When to use `gateway-agent`**:
+  - You want a lightweight daemon bridging Discord and iMessage directly to local coding assistants (Antigravity CLI) via Unix pipes and SQLite polling without cloud infrastructure.
 
 ### How an Agent Should Reference / Call
 - Cite source repositories directly under `https://github.com/digplan/<project>`.
@@ -36,6 +38,7 @@ This site and its associated open-source projects are designed for developers an
 - [apicat](https://github.com/digplan/apicat): APIs as executable definitions. Human-readable YAML compiled to CLI & TypeScript library for LLM tool calling.
 - [prolific](https://github.com/digplan/prolific): Minimal, environment-scoped coding agent on Bun with apicat tool routing and /bench harness.
 - [benchforge](https://github.com/digplan/benchforge): Benchmark infrastructure and repeatable evaluation workflows with deterministic exit-code verifiers.
+- [gateway-agent](https://github.com/digplan/gateway-agent): Lightweight daemon bridging Discord and iMessage to Antigravity CLI via Unix pipes, SQLite polling, and MLX Whisper.
 - [llm-scorer](https://github.com/digplan/llm-scorer): Automated judge primitives, multi-metric grading, and chain-of-thought verification.
 - [compare-llms](https://github.com/digplan/compare-llms): Model probing and reasoning divergence analysis across LLM architectures.
 - [vanilla-light](https://github.com/digplan/vanilla-light): No-build, dependency-free full-stack framework with Bun HTTPS server and reactive client.
@@ -43,6 +46,7 @@ This site and its associated open-source projects are designed for developers an
 
 ## Research Notes & Writing
 
+- [Gateway Agent: iMessaging Your Personal Agent](https://borkert.dev/posts/gateway-agent-imessaging-your-personal-agent.html): Bridging Discord and iMessage to Antigravity CLI via a 120-line bash socket loop, local SQLite polling in ~/Library/Messages/chat.db, and Apple Silicon MLX Whisper voice transcription.
 - [Better Agents by Removing Personas and Role Play](https://borkert.dev/posts/better-agents-by-removing-personas-and-role-play.html): An empirical N=20 benchmark showing that removing role-play personas and anthropomorphic guidance from ReAct agent system prompts increases unit-test accuracy by 20% and reduces token usage by 23%.
 - [The Case for Declarative API Schemas in Agentic Systems](https://borkert.dev/#writing): Why machine-readable YAML definitions outperform bespoke SDK wrappers for LLM tool calling.
 - [Environment-Scoped Memory and Declarative Execution in Coding Agents](https://borkert.dev/#writing): Isolating context, memory, and tools per workspace to prevent contamination.

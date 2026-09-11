@@ -6,6 +6,7 @@
 *.tmp
 
 # Benchmarks secrets, heavy traces, and transient test directories
+benchmarks/
 benchmarks/.env
 benchmarks/traces/
 benchmarks/tmp.*

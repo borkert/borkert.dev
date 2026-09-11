@@ -1,0 +1,336 @@
+{
+  "drafts": [
+    {
+      "filename": "draft-avo-local-harness-t.md",
+      "slug": "avo-local-harness-t",
+      "title": "Can NVIDIA’s AVO Make a 7B Local Model a Better Coding Agent?",
+      "byline": "",
+      "words": 2956,
+      "stage": "READY_TO_PUBLISH",
+      "evaluation": {
+        "scores": {
+          "epistemicGrounding": 5,
+          "noPrevalenceClaims": 5,
+          "noInventedResults": 4,
+          "empiricalGrounding": 4,
+          "calibratedTone": 5,
+          "aiTellPurge": 5,
+          "citations": 2,
+          "structure": 4,
+          "siteFormatting": 5,
+          "negativeResults": 4,
+          "audienceCalibration": 4
+        },
+        "flaggedBannedWords": [],
+        "hasTables": true,
+        "hasMermaid": false,
+        "hasCodeBlocks": true,
+        "hasCitations": false,
+        "hasLatexMath": false,
+        "hasExactNumbers": true,
+        "blockingFailures": [],
+        "verdict": "PUBLISH_CANDIDATE"
+      },
+      "challenges": [
+        {
+          "question": "Which literature, specs, or benchmark standards (e.g. Pass@k, POSIX, RFCs) establish the baseline here?",
+          "rationale": "Prevents presumed-consensus fallacies."
+        },
+        {
+          "question": "Author Voice Check: Does any section sound like an LLM summarizing documentation rather than a battle-tested post-mortem?",
+          "rationale": "Mandatory human-in-the-loop review pass."
+        }
+      ],
+      "isCompiled": true,
+      "isLinkedOnHome": false,
+      "lastModified": "2026-09-01T18:53:15.610Z"
+    },
+    {
+      "filename": "draft-avo-local-harness.md",
+      "slug": "avo-local-harness",
+      "title": "Can NVIDIA’s AVO Make a 7B Local Model a Better Coding Agent?",
+      "byline": "*By Chris Borkert - Draft - August 2026*",
+      "words": 3880,
+      "stage": "PUBLISHED",
+      "evaluation": {
+        "scores": {
+          "epistemicGrounding": 5,
+          "noPrevalenceClaims": 5,
+          "noInventedResults": 4,
+          "empiricalGrounding": 4,
+          "calibratedTone": 4,
+          "aiTellPurge": 4,
+          "citations": 2,
+          "structure": 4,
+          "siteFormatting": 5,
+          "negativeResults": 4,
+          "audienceCalibration": 4
+        },
+        "flaggedBannedWords": [
+          "A frequent pitfall"
+        ],
+        "hasTables": true,
+        "hasMermaid": true,
+        "hasCodeBlocks": true,
+        "hasCitations": false,
+        "hasLatexMath": true,
+        "hasExactNumbers": true,
+        "blockingFailures": [
+          "Found banned AI terms: A frequent pitfall"
+        ],
+        "verdict": "BLOCK"
+      },
+      "challenges": [
+        {
+          "question": "Which literature, specs, or benchmark standards (e.g. Pass@k, POSIX, RFCs) establish the baseline here?",
+          "rationale": "Prevents presumed-consensus fallacies."
+        },
+        {
+          "question": "What broke unexpectedly, and what would you design differently in retrospect?",
+          "rationale": "Forensic failure modes and candid regrets are essential to an authentic systems engineering voice."
+        },
+        {
+          "question": "Author Voice Check: Does any section sound like an LLM summarizing documentation rather than a battle-tested post-mortem?",
+          "rationale": "Mandatory human-in-the-loop review pass."
+        }
+      ],
+      "isCompiled": true,
+      "isLinkedOnHome": true,
+      "lastModified": "2026-09-01T04:17:59.196Z"
+    },
+    {
+      "filename": "draft-benchmarks-without-harness.md",
+      "slug": "benchmarks-without-harness",
+      "title": "Model Leaderboards Mean Nothing Without the Harness",
+      "byline": "*By Chris Borkert · Draft · August 2026*",
+      "words": 2565,
+      "stage": "PUBLISHED",
+      "evaluation": {
+        "scores": {
+          "epistemicGrounding": 5,
+          "noPrevalenceClaims": 5,
+          "noInventedResults": 4,
+          "empiricalGrounding": 4,
+          "calibratedTone": 5,
+          "aiTellPurge": 5,
+          "citations": 2,
+          "structure": 4,
+          "siteFormatting": 5,
+          "negativeResults": 4,
+          "audienceCalibration": 4
+        },
+        "flaggedBannedWords": [],
+        "hasTables": true,
+        "hasMermaid": true,
+        "hasCodeBlocks": true,
+        "hasCitations": false,
+        "hasLatexMath": true,
+        "hasExactNumbers": true,
+        "blockingFailures": [],
+        "verdict": "PUBLISH_CANDIDATE"
+      },
+      "challenges": [
+        {
+          "question": "Which literature, specs, or benchmark standards (e.g. Pass@k, POSIX, RFCs) establish the baseline here?",
+          "rationale": "Prevents presumed-consensus fallacies."
+        },
+        {
+          "question": "What broke unexpectedly, and what would you design differently in retrospect?",
+          "rationale": "Forensic failure modes and candid regrets are essential to an authentic systems engineering voice."
+        },
+        {
+          "question": "Author Voice Check: Does any section sound like an LLM summarizing documentation rather than a battle-tested post-mortem?",
+          "rationale": "Mandatory human-in-the-loop review pass."
+        }
+      ],
+      "isCompiled": true,
+      "isLinkedOnHome": true,
+      "lastModified": "2026-08-26T21:21:55.383Z"
+    },
+    {
+      "filename": "draft-better-agents-by-removing-personas-and-role-play.md",
+      "slug": "better-agents-by-removing-personas-and-role-play",
+      "title": "Better Agents by Removing Personas and Role Play",
+      "byline": "*By Chris Borkert · Draft · September 2026*",
+      "words": 1165,
+      "stage": "PUBLISHED",
+      "evaluation": {
+        "scores": {
+          "epistemicGrounding": 5,
+          "noPrevalenceClaims": 5,
+          "noInventedResults": 4,
+          "empiricalGrounding": 4,
+          "calibratedTone": 5,
+          "aiTellPurge": 5,
+          "citations": 2,
+          "structure": 3,
+          "siteFormatting": 5,
+          "negativeResults": 4,
+          "audienceCalibration": 4
+        },
+        "flaggedBannedWords": [],
+        "hasTables": true,
+        "hasMermaid": false,
+        "hasCodeBlocks": false,
+        "hasCitations": false,
+        "hasLatexMath": true,
+        "hasExactNumbers": true,
+        "blockingFailures": [],
+        "verdict": "PUBLISH_CANDIDATE"
+      },
+      "challenges": [
+        {
+          "question": "Which literature, specs, or benchmark standards (e.g. Pass@k, POSIX, RFCs) establish the baseline here?",
+          "rationale": "Prevents presumed-consensus fallacies."
+        },
+        {
+          "question": "What broke unexpectedly, and what would you design differently in retrospect?",
+          "rationale": "Forensic failure modes and candid regrets are essential to an authentic systems engineering voice."
+        },
+        {
+          "question": "Author Voice Check: Does any section sound like an LLM summarizing documentation rather than a battle-tested post-mortem?",
+          "rationale": "Mandatory human-in-the-loop review pass."
+        }
+      ],
+      "isCompiled": true,
+      "isLinkedOnHome": true,
+      "lastModified": "2026-09-01T19:46:24.575Z"
+    },
+    {
+      "filename": "draft-gateway-agent-imessaging-your-personal-agent.md",
+      "slug": "gateway-agent-imessaging-your-personal-agent",
+      "title": "Gateway Agent: iMessaging Your Personal Agent",
+      "byline": "*By Chris Borkert · September 2026*",
+      "words": 1181,
+      "stage": "PUBLISHED",
+      "evaluation": {
+        "scores": {
+          "epistemicGrounding": 5,
+          "noPrevalenceClaims": 5,
+          "noInventedResults": 4,
+          "empiricalGrounding": 4,
+          "calibratedTone": 5,
+          "aiTellPurge": 5,
+          "citations": 2,
+          "structure": 4,
+          "siteFormatting": 3,
+          "negativeResults": 4,
+          "audienceCalibration": 4
+        },
+        "flaggedBannedWords": [],
+        "hasTables": false,
+        "hasMermaid": false,
+        "hasCodeBlocks": true,
+        "hasCitations": false,
+        "hasLatexMath": true,
+        "hasExactNumbers": true,
+        "blockingFailures": [],
+        "verdict": "PUBLISH_CANDIDATE"
+      },
+      "challenges": [
+        {
+          "question": "Which literature, specs, or benchmark standards (e.g. Pass@k, POSIX, RFCs) establish the baseline here?",
+          "rationale": "Prevents presumed-consensus fallacies."
+        },
+        {
+          "question": "What broke unexpectedly, and what would you design differently in retrospect?",
+          "rationale": "Forensic failure modes and candid regrets are essential to an authentic systems engineering voice."
+        },
+        {
+          "question": "Author Voice Check: Does any section sound like an LLM summarizing documentation rather than a battle-tested post-mortem?",
+          "rationale": "Mandatory human-in-the-loop review pass."
+        }
+      ],
+      "isCompiled": true,
+      "isLinkedOnHome": true,
+      "lastModified": "2026-09-11T19:11:01.622Z"
+    },
+    {
+      "filename": "draft-zero-build-frontend.md",
+      "slug": "zero-build-frontend",
+      "title": "The Zero-Build Frontend: Why Native Web Standards and 12-Line Reactivity Beat Framework Sprawl",
+      "byline": "*By Chris Borkert · Draft / In-Progress Research*",
+      "words": 1484,
+      "stage": "PUBLISHED",
+      "evaluation": {
+        "scores": {
+          "epistemicGrounding": 5,
+          "noPrevalenceClaims": 5,
+          "noInventedResults": 4,
+          "empiricalGrounding": 4,
+          "calibratedTone": 5,
+          "aiTellPurge": 5,
+          "citations": 2,
+          "structure": 4,
+          "siteFormatting": 5,
+          "negativeResults": 4,
+          "audienceCalibration": 4
+        },
+        "flaggedBannedWords": [],
+        "hasTables": true,
+        "hasMermaid": false,
+        "hasCodeBlocks": true,
+        "hasCitations": false,
+        "hasLatexMath": false,
+        "hasExactNumbers": true,
+        "blockingFailures": [],
+        "verdict": "PUBLISH_CANDIDATE"
+      },
+      "challenges": [
+        {
+          "question": "Which literature, specs, or benchmark standards (e.g. Pass@k, POSIX, RFCs) establish the baseline here?",
+          "rationale": "Prevents presumed-consensus fallacies."
+        },
+        {
+          "question": "What broke unexpectedly, and what would you design differently in retrospect?",
+          "rationale": "Forensic failure modes and candid regrets are essential to an authentic systems engineering voice."
+        },
+        {
+          "question": "Author Voice Check: Does any section sound like an LLM summarizing documentation rather than a battle-tested post-mortem?",
+          "rationale": "Mandatory human-in-the-loop review pass."
+        }
+      ],
+      "isCompiled": true,
+      "isLinkedOnHome": true,
+      "lastModified": "2026-08-26T02:05:23.341Z"
+    }
+  ],
+  "pitches": [
+    {
+      "repo": "borkert.dev",
+      "title": "Engineering Notes: Recent Architectural Iterations in borkert.dev",
+      "sourceCommits": "0 commit(s) on branch main",
+      "dilemma": "Iterating on borkert.dev revealed unexpected edge cases during local execution.",
+      "thesis": "Focusing on deterministic rollback and state isolation simplifies maintenance and eliminates cascading failures.",
+      "evidenceRequired": "Diff statistics (recent commits).",
+      "skepticChallenges": [
+        "What unexpected failure or runtime exception occurred during this commit sequence?",
+        "What exact hardware/benchmark configuration was used, and can the results be reproduced?"
+      ]
+    },
+    {
+      "repo": "prolific",
+      "title": "Engineering Notes: Recent Architectural Iterations in prolific",
+      "sourceCommits": "0 commit(s) on branch main",
+      "dilemma": "Iterating on prolific revealed unexpected edge cases during local execution.",
+      "thesis": "Focusing on deterministic rollback and state isolation simplifies maintenance and eliminates cascading failures.",
+      "evidenceRequired": "Diff statistics (recent commits).",
+      "skepticChallenges": [
+        "What unexpected failure or runtime exception occurred during this commit sequence?",
+        "What exact hardware/benchmark configuration was used, and can the results be reproduced?"
+      ]
+    },
+    {
+      "repo": "avo",
+      "title": "Engineering Notes: Recent Architectural Iterations in avo",
+      "sourceCommits": "0 commit(s) on branch main",
+      "dilemma": "Iterating on avo revealed unexpected edge cases during local execution.",
+      "thesis": "Focusing on deterministic rollback and state isolation simplifies maintenance and eliminates cascading failures.",
+      "evidenceRequired": "Diff statistics (recent commits).",
+      "skepticChallenges": [
+        "What unexpected failure or runtime exception occurred during this commit sequence?",
+        "What exact hardware/benchmark configuration was used, and can the results be reproduced?"
+      ]
+    }
+  ]
+}
