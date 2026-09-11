@@ -117,9 +117,9 @@ I needed the agent to act proactively, not just reactively. I wrote a cron-like 
 
 The scheduler is just a polling loop checking `HH:MM` against the current time. It drifts by up to 20 seconds. It is completely unsophisticated, and it works perfectly. It also monitors my Antigravity CLI quota usage, sending threshold alerts (50%, 30%, 20%, 10%) directly to my phone. Catching quota limits before you hit them matters when an agent has 24/7 write access to your machine.
 
-My setup spans a MacBook Air and a Mac mini. To keep them in sync, I use Mutagen. `gateway-agent` updates files on whatever machine it is running on, and Mutagen mirrors the changes bidirectionally in real-time via `mutagen.yml`.
+The agent runs on an always-on machine, but development happens on a laptop. The two need to stay in sync. Git push/pull works, but it adds friction — you have to remember to commit and push before the agent can see your changes, and pull before you can see what the agent did. Mutagen eliminates that entirely. It mirrors repos bidirectionally in real-time. Edit a file on the laptop, and it appears on the server within seconds. The agent modifies code on the server, and it shows up on the laptop without touching git. Faster and requires less thinking about.
 
-To keep everything running, I packaged it as a macOS LaunchAgent plist. The `KeepAlive` key ensures that if the Python script crashes—usually because of an SQLite database lock—`launchd` immediately restarts it.
+To keep everything running, the agent is packaged as a macOS LaunchAgent plist. The `KeepAlive` key ensures that if a script crashes — usually because of an SQLite database lock — `launchd` immediately restarts it.
 
 ## Tradeoffs and Surprises
 
