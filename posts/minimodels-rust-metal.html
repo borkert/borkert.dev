@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A small classifier in Rust and Metal — Chris Borkert</title>
+  <meta name="description" content="I’m building minimodels: a small email classifier and a training engine in Rust, with custom Metal kernels for Apple Silicon. The goal is to replace a larger cl...">
+  <meta name="author" content="Chris Borkert">
+  <link rel="canonical" href="https://borkert.dev/posts/minimodels-rust-metal.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="A small classifier in Rust and Metal">
+  <meta property="og:description" content="I’m building minimodels: a small email classifier and a training engine in Rust, with custom Metal kernels for Apple Silicon. The goal is to replace a larger cl...">
+  <meta property="og:url" content="https://borkert.dev/posts/minimodels-rust-metal.html">
+  <meta property="og:type" content="article">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Geist Typography (Vercel Brand Guideline) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
+
+  <!-- Vercel Brand Stylesheet -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css?v=2">
+  <link rel="stylesheet" href="/styles.css?v=2">
+</head>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
+
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <a href="/" class="site-link-mono">← borkert.dev</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <article class="post-content">
+        <header class="post-header">
+          <h1 class="vbg-title">A small classifier in Rust and Metal</h1>
+          <div class="post-meta">By Chris Borkert · November 2026</div>
+        </header>
+
+        <p>I’m building minimodels: a small email classifier and a training engine in Rust, with custom Metal kernels for Apple Silicon. The goal is to replace a larger classifier without giving up accuracy. So far, speed is ahead of accuracy.</p>
+
+<p>The current model has 3.35 million parameters, four encoder layers, and a 512-token limit. The engine handles differentiation and AdamW directly, without a tensor framework. The saved weights occupy 13.42 MB.</p>
+
+<p>The interesting result came from changing the runtime around the model. Reusing GPU buffers, keeping a compute encoder open across dispatches, and changing the matrix multiplication and reduction kernels brought warm inference from <strong>2.465 to 0.630 ms per email</strong> on an Apple M5. Those are medians of five run means, each over the same 256 validation emails. Tokenization and loading are excluded.[^1]</p>
+
+<p>That is a combined change, so I can’t assign the improvement to one optimization. Full validation accuracy stayed at <strong>72.45% across 3,982 emails</strong>. Independent CPU reference checks agreed within 1.43e-6 logits at sequence lengths 1, 17, and 512.[^1]</p>
+
+<p>The replacement check was less encouraging. Against the shipped classifier, the small model scored <strong>71.62% versus 88.05%</strong> on the same 3,982 email identities. Urgent-email recall was <strong>37.10% versus 81.45%</strong>. This was a practical regression screen: the shipped model may have historical training overlap, so those numbers do not establish a clean generalization comparison.[^2]</p>
+
+<p>The engine is fast enough to keep exploring. The checkpoint still misses too many urgent messages to replace the existing classifier.</p>
+
+<h2 id="references">References</h2>
+
+<p>[^1]: Local experiment records, November 2026: <code>runs/engine-check-v1/results.json</code> and <code>README-handoff.md</code> in minimodels. Warm, synchronized, batch-one inference; unchanged checkpoint. Records are not yet published. [^2]: Local replacement assessment: <code>runs/dart-feasibility-v1/REPORT.md</code>. The comparison used the shipped DART model and the custom checkpoint on Apple M5 Ultra, with each model’s own tokenizer and context limit. Records are not yet published.</p>
+
+      </article>
+    </main>
+
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+      </div>
+      <div>
+        <a href="/" class="site-link-mono">borkert.dev</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/main.js?v=2"></script>
+</body>
+</html>

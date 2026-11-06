@@ -1,28 +1,24 @@
-# Chris Borkert — AI Systems & Agent Infrastructure
+# Chris Borkert
 
-> Software engineer and researcher working on declarative tool protocols ([apicat](https://github.com/digplan/apicat)), environment-scoped coding agents ([prolific](https://github.com/digplan/prolific)), and deterministic evaluation harnesses ([benchforge](https://github.com/digplan/benchforge)).
+[GitHub](https://github.com/digplan) · [Email](mailto:chris@borkert.dev)
 
-- **Website**: [https://borkert.dev](https://borkert.dev)
-- **GitHub**: [https://github.com/digplan](https://github.com/digplan)
-- **Email**: [chris@borkert.dev](mailto:chris@borkert.dev)
-- **LLM Index**: [https://borkert.dev/llms.txt](https://borkert.dev/llms.txt)
+- [A small classifier in Rust and Metal](/posts/minimodels-rust-metal.html)
+- [Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper](/posts/push-to-talk-voice-command-mlx-whisper.html)
+- [Gateway Agent: iMessaging Your Personal Agent](/posts/gateway-agent-imessaging-your-personal-agent.html)
+- [Better Agents by Removing Personas and Role Play](/posts/better-agents-by-removing-personas-and-role-play.html)
+- [Making Agent API Calls 10x Faster with Cached Definitions](/posts/apicat-api-cached-definitions.html)
+- [Model Leaderboards Mean Nothing Without the Harness](/posts/benchmarks-without-harness.html)
+- [Agentic Variation Operators: Evolutionary Search in Local Sandboxes](/posts/avo-local-harness.html)
+- [Building Full-Stack Web Apps Without Bundlers or Build Steps](/posts/zero-build-frontend.html)
 
----
+## Projects
 
-## 01. Writing & Research
+- [apicat](https://github.com/digplan/apicat)
+- [prolific](https://github.com/digplan/prolific)
+- [benchforge](https://github.com/digplan/benchforge)
+- [llm-scorer](https://github.com/digplan/llm-scorer)
+- [compare-llms](https://github.com/digplan/compare-llms)
+- [vanilla-light](https://github.com/digplan/vanilla-light)
+- [gateway-agent](https://github.com/digplan/gateway-agent)
 
-- **[Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper](/posts/push-to-talk-voice-command-mlx-whisper.html)** (September 2026): Building a zero-cloud push-to-talk dictation daemon for macOS that captures CoreAudio, runs sub-100ms MLX Whisper inference on Metal, and injects prompts with automated Return key delivery across any focused window.
-- **[Gateway Agent: iMessaging Your Personal Agent](/posts/gateway-agent-imessaging-your-personal-agent.html)** (September 2026): Bridging Discord and iMessage to Antigravity CLI via a 120-line bash socket loop, local SQLite polling in ~/Library/Messages/chat.db, and Apple Silicon MLX Whisper voice transcription.
-- **[Better Agents by Removing Personas and Role Play](/posts/better-agents-by-removing-personas-and-role-play.html)** (September 2026): An empirical N=20 benchmark showing that removing role-play personas and anthropomorphic guidance from ReAct agent system prompts increases unit-test accuracy by 20% and reduces token usage by 23%.
-- **[Making Agent API Calls 10x Faster with Cached Definitions](/posts/apicat-api-cached-definitions.html)** (August 2026): Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.
-- **[Model Leaderboards Mean Nothing Without the Harness](/posts/benchmarks-without-harness.html)** (August 2026): Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.
-- **[Agentic Variation Operators: Evolutionary Search in Local Sandboxes](/posts/avo-local-harness.html)** (August 2026): Using Level-1 git sandboxes for sub-millisecond rollback on failed edits and Level-4 meta-supervisors to break stagnation loops in coding agents.
-- **[Building Full-Stack Web Apps Without Bundlers or Build Steps](/posts/zero-build-frontend.html)** (2026): Simplifying web applications using modern browser standards, vanilla JavaScript, and Bun HTTPS servers without build steps or complex toolchains.
-
----
-
-## 02. Working Principles
-
-1. **Ground all reasoning in verifiable execution.** Language models generate plausible text; compilers, linters, and unit test suites provide ground truth. Agent reasoning loops must always be verified against deterministic runtime feedback.
-2. **Use the smallest useful abstraction.** Frameworks accumulate technical debt and obscure failure modes. Prefer declarative schemas, known APIs, Unix primitives, and inspectable intermediate states.
-3. **Empirical benchmarking before optimization.** Never tune prompts or agent architectures based on intuition alone. Build automated evaluation loops, measure baseline variance, and iterate methodically.
+[LLM index](/llms.txt)

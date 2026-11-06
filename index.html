@@ -67,10 +67,7 @@
       </div>
 
       <div class="vbg-opening site-hero">
-        <h1 class="vbg-display">AI Systems &amp; Agent Infrastructure</h1>
-        <p class="vbg-lede">
-          Software engineer and researcher building open-source tools for declarative tool protocols (<a href="https://github.com/digplan/apicat">apicat</a>), environment-scoped coding agents (<a href="https://github.com/digplan/prolific">prolific</a>), and deterministic evaluation harnesses (<a href="https://github.com/digplan/benchforge">benchforge</a>).
-        </p>
+        <h1 class="vbg-display">Software, models, and experiments.</h1>
       </div>
 
       <!-- Stat Strip (Evidence & Performance Metrics) -->
@@ -97,29 +94,23 @@
         </div>
       </div>
 
-      <!-- Jump Navigation -->
-      <nav class="site-toc" aria-label="Table of Contents">
-        <span class="vbg-label">Index:</span>
-        <a href="#writing">01. Writing &amp; Research</a>
-        <a href="#systems">02. Open-Source Systems</a>
-        <a href="#principles">03. Working Principles</a>
-        <a href="#machine-endpoints">04. Machine-Readable Endpoints</a>
-      </nav>
     </header>
 
     <main id="main">
       <!-- Section 1: Writing & Research -->
       <section id="writing" class="vbg-section">
-        <h2 class="vbg-heading-24">01. Writing &amp; Research</h2>
         <div class="site-writing-list">
+          <article class="site-writing-entry">
+            <div class="site-writing-head">
+              <h3 class="vbg-heading-20"><a href="/posts/minimodels-rust-metal.html">A small classifier in Rust and Metal</a></h3>
+              <time class="vbg-mono site-date" datetime="2026-11-06">November 2026</time>
+            </div>
+          </article>
           <article class="site-writing-entry">
             <div class="site-writing-head">
               <h3 class="vbg-heading-20"><a href="/posts/push-to-talk-voice-command-mlx-whisper.html">Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper</a></h3>
               <time class="vbg-mono site-date" datetime="2026-09">September 2026</time>
             </div>
-            <p class="site-writing-summary">
-              Building a zero-cloud push-to-talk dictation daemon for macOS that captures CoreAudio, runs sub-100ms MLX Whisper inference on Metal, and injects prompts with automated Return key delivery across any focused window.
-            </p>
           </article>
 
           <article class="site-writing-entry">
@@ -127,9 +118,6 @@
               <h3 class="vbg-heading-20"><a href="/posts/gateway-agent-imessaging-your-personal-agent.html">Gateway Agent: iMessaging Your Personal Agent</a></h3>
               <time class="vbg-mono site-date" datetime="2026-09">September 2026</time>
             </div>
-            <p class="site-writing-summary">
-              Bridging Discord and iMessage to Antigravity CLI via a 120-line bash socket loop, local SQLite polling in ~/Library/Messages/chat.db, and Apple Silicon MLX Whisper voice transcription.
-            </p>
           </article>
 
           <article class="site-writing-entry">
@@ -137,9 +125,6 @@
               <h3 class="vbg-heading-20"><a href="/posts/better-agents-by-removing-personas-and-role-play.html">Better Agents by Removing Personas and Role Play</a></h3>
               <time class="vbg-mono site-date" datetime="2026-09">September 2026</time>
             </div>
-            <p class="site-writing-summary">
-              An empirical N=20 benchmark showing that removing role-play personas and anthropomorphic guidance from ReAct agent system prompts increases unit-test accuracy by 20% and reduces token usage by 23%.
-            </p>
           </article>
 
           <article class="site-writing-entry">
@@ -147,9 +132,6 @@
               <h3 class="vbg-heading-20"><a href="/posts/apicat-api-cached-definitions.html">Making Agent API Calls 10x Faster with Cached Definitions</a></h3>
               <time class="vbg-mono site-date" datetime="2026-08">August 2026</time>
             </div>
-            <p class="site-writing-summary">
-              Why running shell commands to call web APIs causes slow execution, wasted context tokens, and escaping bugs, and how in-memory MCP servers with TLS connection pooling deliver sub-second tool execution.
-            </p>
           </article>
 
           <article class="site-writing-entry">
@@ -157,9 +139,6 @@
               <h3 class="vbg-heading-20"><a href="/posts/benchmarks-without-harness.html">Model Leaderboards Mean Nothing Without the Harness</a></h3>
               <time class="vbg-mono site-date" datetime="2026-08">August 2026</time>
             </div>
-            <p class="site-writing-summary">
-              Why coding benchmarks reflect the prompt scaffolding, edit protocol, and feedback harness rather than raw model capability in isolation.
-            </p>
           </article>
 
           <article class="site-writing-entry">
@@ -167,9 +146,6 @@
               <h3 class="vbg-heading-20"><a href="/posts/avo-local-harness.html">Agentic Variation Operators: Evolutionary Search in Local Sandboxes</a></h3>
               <time class="vbg-mono site-date" datetime="2026-08">August 2026</time>
             </div>
-            <p class="site-writing-summary">
-              Using Level-1 git sandboxes for sub-millisecond rollback on failed edits and Level-4 meta-supervisors to break stagnation loops in coding agents.
-            </p>
           </article>
 
           <article class="site-writing-entry">
@@ -177,19 +153,13 @@
               <h3 class="vbg-heading-20"><a href="/posts/zero-build-frontend.html">Building Full-Stack Web Apps Without Bundlers or Build Steps</a></h3>
               <time class="vbg-mono site-date" datetime="2026">2026</time>
             </div>
-            <p class="site-writing-summary">
-              Simplifying web applications using modern browser standards, vanilla JavaScript, and Bun HTTPS servers without build steps or complex toolchains.
-            </p>
           </article>
         </div>
       </section>
 
       <!-- Section 2: Open-Source Systems -->
       <section id="systems" class="vbg-section">
-        <h2 class="vbg-heading-24">02. Open-Source Systems &amp; Tooling</h2>
-        <p class="site-section-intro">
-          Modular developer tooling and agent infrastructure built for declarative execution, repeatable benchmarks, and low latency.
-        </p>
+        <h2 class="vbg-heading-24">Projects</h2>
 
         <div class="site-systems-grid">
           <!-- apicat -->
@@ -197,15 +167,10 @@
             <div>
               <div class="site-system-header">
                 <h3 class="vbg-heading-20"><a href="https://github.com/digplan/apicat">apicat</a></h3>
-                <span class="site-system-tag">YAML → Tool Calling</span>
               </div>
-              <p class="site-system-summary">
-                APIs as executable definitions. Compiles human-readable YAML specifications directly into TypeScript libraries and CLI tools for token-efficient LLM tool calling.
-              </p>
+              <p class="site-system-summary">APIs as tools, from YAML definitions.</p>
             </div>
             <div class="site-system-guide">
-              <span class="vbg-label">When to use:</span>
-              <p>When an agent needs compact, token-efficient YAML schemas for HTTP and WebSocket tool calls instead of verbose SDK wrappers.</p>
               <div class="site-system-links">
                 <a href="https://github.com/digplan/apicat" class="site-link-mono">github.com/digplan/apicat</a>
                 <a href="https://www.npmjs.com/package/apicat" class="site-link-mono">npm: apicat</a>
@@ -218,15 +183,10 @@
             <div>
               <div class="site-system-header">
                 <h3 class="vbg-heading-20"><a href="https://github.com/digplan/prolific">prolific</a></h3>
-                <span class="site-system-tag">Autonomous Coding Agent</span>
               </div>
-              <p class="site-system-summary">
-                Minimal, environment-scoped coding agent runtime in Bun with apicat tool routing, scoped persistence, and <code>/bench</code> harness.
-              </p>
+              <p class="site-system-summary">A coding agent with workspace-scoped memory.</p>
             </div>
             <div class="site-system-guide">
-              <span class="vbg-label">When to use:</span>
-              <p>When building or testing coding agents that require isolated memory (<code>SYSTEM.md</code>, <code>MEMORY.md</code>, <code>tools.yaml</code>) per workspace.</p>
               <div class="site-system-links">
                 <a href="https://github.com/digplan/prolific" class="site-link-mono">github.com/digplan/prolific</a>
               </div>
@@ -238,15 +198,10 @@
             <div>
               <div class="site-system-header">
                 <h3 class="vbg-heading-20"><a href="https://github.com/digplan/benchforge">benchforge</a></h3>
-                <span class="site-system-tag">Evaluation Infrastructure</span>
               </div>
-              <p class="site-system-summary">
-                Benchmark infrastructure and repeatable evaluation workflows for AI systems with deterministic verification and pass@k metrics.
-              </p>
+              <p class="site-system-summary">Repeatable evaluations for coding agents.</p>
             </div>
             <div class="site-system-guide">
-              <span class="vbg-label">When to use:</span>
-              <p>When benchmarking LLM reasoning, coding, or tool use with deterministic verification (compiler exit codes, test passes).</p>
               <div class="site-system-links">
                 <a href="https://github.com/digplan/benchforge" class="site-link-mono">github.com/digplan/benchforge</a>
               </div>
@@ -258,15 +213,10 @@
             <div>
               <div class="site-system-header">
                 <h3 class="vbg-heading-20"><a href="https://github.com/digplan/llm-scorer">llm-scorer</a></h3>
-                <span class="site-system-tag">LLM Judge Primitives</span>
               </div>
-              <p class="site-system-summary">
-                Primitives for scoring model outputs, multi-metric grading, confidence scoring, and step-by-step chain-of-thought verification rubrics.
-              </p>
+              <p class="site-system-summary">Tools for grading model outputs.</p>
             </div>
             <div class="site-system-guide">
-              <span class="vbg-label">When to use:</span>
-              <p>When building automated evaluation pipelines requiring position-bias mitigation and rigorous judge rubrics.</p>
               <div class="site-system-links">
                 <a href="https://github.com/digplan/llm-scorer" class="site-link-mono">github.com/digplan/llm-scorer</a>
               </div>
@@ -278,15 +228,10 @@
             <div>
               <div class="site-system-header">
                 <h3 class="vbg-heading-20"><a href="https://github.com/digplan/compare-llms">compare-llms</a></h3>
-                <span class="site-system-tag">Reasoning Divergence</span>
               </div>
-              <p class="site-system-summary">
-                Tools for empirical model comparison, probing reasoning trajectories, and analyzing output branch divergence across model architectures.
-              </p>
+              <p class="site-system-summary">Compare outputs across models.</p>
             </div>
             <div class="site-system-guide">
-              <span class="vbg-label">When to use:</span>
-              <p>When visualizing reasoning branch paths and comparing outputs across model architectures.</p>
               <div class="site-system-links">
                 <a href="https://github.com/digplan/compare-llms" class="site-link-mono">github.com/digplan/compare-llms</a>
               </div>
@@ -298,15 +243,10 @@
             <div>
               <div class="site-system-header">
                 <h3 class="vbg-heading-20"><a href="https://github.com/digplan/vanilla-light">vanilla-light</a></h3>
-                <span class="site-system-tag">Zero-Build Web Stack</span>
               </div>
-              <p class="site-system-summary">
-                A no-build, dependency-free full-stack web framework on Bun with reactive client-side Proxy bindings and native DOM standards.
-              </p>
+              <p class="site-system-summary">Web apps without a build step.</p>
             </div>
             <div class="site-system-guide">
-              <span class="vbg-label">When to use:</span>
-              <p>When developing web apps without bundlers or build steps using Bun HTTPS + reactive DOM standards.</p>
               <div class="site-system-links">
                 <a href="https://github.com/digplan/vanilla-light" class="site-link-mono">github.com/digplan/vanilla-light</a>
               </div>
@@ -318,15 +258,10 @@
             <div>
               <div class="site-system-header">
                 <h3 class="vbg-heading-20"><a href="https://github.com/digplan/gateway-agent">gateway-agent</a></h3>
-                <span class="site-system-tag">Personal Messaging Gateway</span>
               </div>
-              <p class="site-system-summary">
-                Lightweight daemon bridging Discord and iMessage directly to Antigravity CLI via Unix pipes, SQLite polling in <code>~/Library/Messages/chat.db</code>, and Apple Silicon MLX Whisper transcription.
-              </p>
+              <p class="site-system-summary">Talk to local agents through iMessage and Discord.</p>
             </div>
             <div class="site-system-guide">
-              <span class="vbg-label">When to use:</span>
-              <p>When you want to invoke and interact with local coding agents directly from mobile messaging apps (iMessage/Discord) with zero cloud dependencies.</p>
               <div class="site-system-links">
                 <a href="https://github.com/digplan/gateway-agent" class="site-link-mono">github.com/digplan/gateway-agent</a>
               </div>
@@ -335,71 +270,6 @@
         </div>
       </section>
 
-      <!-- Section 3: Working Principles -->
-      <section id="principles" class="vbg-section">
-        <h2 class="vbg-heading-24">03. Working Principles</h2>
-        <ol class="site-principles-list">
-          <li>
-            <strong>Ground all reasoning in verifiable execution.</strong>
-            Language models generate plausible text; compilers, linters, and unit test suites provide ground truth. Agent reasoning loops must always be verified against deterministic runtime feedback.
-          </li>
-          <li>
-            <strong>Use the smallest useful abstraction.</strong>
-            Frameworks accumulate technical debt and obscure failure modes. Prefer declarative schemas, known APIs, Unix primitives, and inspectable intermediate states.
-          </li>
-          <li>
-            <strong>Empirical benchmarking before optimization.</strong>
-            Never tune prompts or agent architectures based on intuition alone. Build automated evaluation loops, measure baseline variance, and iterate methodically.
-          </li>
-        </ol>
-      </section>
-
-      <!-- Section 4: Machine-Readable Endpoints -->
-      <section id="machine-endpoints" class="vbg-section">
-        <h2 class="vbg-heading-24">04. Agent Interfaces &amp; Machine Endpoints</h2>
-        <p class="site-section-intro">
-          Standardized endpoints for autonomous AI agents, crawlers, and programmatic scrapers.
-        </p>
-
-        <div class="vbg-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Endpoint</th>
-                <th scope="col">Format</th>
-                <th scope="col">Purpose / Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th scope="row"><a href="/llms.txt" class="vbg-mono">/llms.txt</a></th>
-                <td><code class="vbg-mono">Markdown</code></td>
-                <td>Condensed index and systems directory optimized for AI LLMs &amp; agents</td>
-              </tr>
-              <tr>
-                <th scope="row"><a href="/llms-full.txt" class="vbg-mono">/llms-full.txt</a></th>
-                <td><code class="vbg-mono">Markdown</code></td>
-                <td>Comprehensive full-text context of all writing, architectures, and principles</td>
-              </tr>
-              <tr>
-                <th scope="row"><a href="/agent-instructions.md" class="vbg-mono">/agent-instructions.md</a></th>
-                <td><code class="vbg-mono">Markdown</code></td>
-                <td>Operational execution contracts, when-to-use matrix, and tool calling guidance</td>
-              </tr>
-              <tr>
-                <th scope="row"><a href="/index.md" class="vbg-mono">/index.md</a></th>
-                <td><code class="vbg-mono">Markdown</code></td>
-                <td>Pure markdown representation of homepage (HTTP Content-Negotiation fallback)</td>
-              </tr>
-              <tr>
-                <th scope="row"><a href="/sitemap.xml" class="vbg-mono">/sitemap.xml</a></th>
-                <td><code class="vbg-mono">XML</code></td>
-                <td>Canonical URL manifest and crawl directives for search engines and scrapers</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
     </main>
 
     <!-- Footer -->
@@ -409,7 +279,7 @@
         <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
       </div>
       <div>
-        <span class="vbg-mono">borkert.dev</span>
+        <a href="/index.md">Markdown</a> · <a href="/llms.txt">LLM index</a>
       </div>
     </footer>
   </div>
