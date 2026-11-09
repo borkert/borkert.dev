@@ -1,4 +1,4 @@
-# Qwen 4 27B on Terminal-Bench: Initial Benchmarks and with Prompt Enhancer
+# Qwen 4 27B on Terminal Bench: First Benchmarks with and without Minimodel's Prompt Enhancer (PE)
 
 <figure class="figure-box">
   <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Resolution Rate and Tasks Passed (With vs. Without PE)">

@@ -2,7 +2,7 @@
 
 [GitHub](https://github.com/digplan) · [Email](mailto:chris@borkert.dev)
 
-- [Qwen 4 27B on Terminal-Bench: Initial Benchmarks and with Prompt Enhancer](/posts/prompt-enhancer-terminal-bench-qwen4-27b.html)
+- [Qwen 4 27B on Terminal Bench: First Benchmarks with and without Minimodel's Prompt Enhancer (PE)](/posts/prompt-enhancer-terminal-bench-qwen4-27b.html)
 - [A small classifier in Rust and Metal](/posts/minimodels-rust-metal.html)
 - [Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper](/posts/push-to-talk-voice-command-mlx-whisper.html)
 - [Gateway Agent: iMessaging Your Personal Agent](/posts/gateway-agent-imessaging-your-personal-agent.html)
