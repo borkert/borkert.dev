@@ -49,78 +49,93 @@
         <h2 id="quick-summary">Quick Summary</h2>
 
 <ul>
-  <li><strong>Model & Harness</strong>: <strong>Qwen 4 27B</strong> (<code>Qwen4-27B</code>, just released) evaluated on Terminal-Bench 2.1 (<code>harbor</code> / <code>terminus-2</code>)<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup> with and without <code>PromptEnhancer</code> (<code>Terminus2Enhanced</code>)—a <strong>263K-parameter (<code>1.03 MB</code>, <code>0.340 ms</code>/turn)</strong> <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> 8-class terminal state encoder with live in-task self-healing (<code>minimodels learn</code>)<sup class="footnote-ref"><a href="#fn-2">[2]</a></sup>.</li>
-  <li><strong>More Tasks Passed</strong>: <strong>Qwen 4 27B</strong> is a highly capable open-weights systems model out of the box; adding <code>PromptEnhancer</code> recovers episodes that otherwise fail on interactive pagers (<code>less</code>, <code>git log</code>), destructive tool side effects (<code>sqlite3</code> unlinking <code>-wal</code> files), unescaped regex flags, or unverified output paths.</li>
-  <li><strong>Token Savings (<code>-32.4%</code> to <code>-64.5%</code>) & Wall-Clock Savings (<code>-19.1%</code> to <code>-75.1%</code>)</strong>: Intercepting terminal state traps early cuts episode length from 15 turns to 7–8 turns, avoiding quadratic prompt-history growth (<code>53,532</code> <span class="vbg-formula">&rarr;</span> <code>18,988</code> tokens on <code>git-leak-recovery</code>) and 180-second <code>tmux</code> timeouts (<code>397.5s</code> <span class="vbg-formula">&rarr;</span> <code>99.0s</code> on <code>db-wal-recovery</code>).</li>
+  <li><strong>Models & Harness</strong>: Preliminary evaluation of <strong>Qwen 4 27B</strong> (<code>Qwen4-27B</code>, just released) compared against <strong>Qwen 3.8 27B</strong> (<code>Qwen/Qwen3.8-27B</code>) on Terminal-Bench 2.1 (<code>harbor</code> / <code>terminus-2</code>)<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup>, with and without <code>PromptEnhancer</code> (<code>Terminus2Enhanced</code>)—a <strong>263K-parameter (<code>1.03 MB</code>, <code>0.340 ms</code>/turn)</strong> <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> 8-class terminal state encoder with live in-task self-healing (<code>minimodels learn</code>)<sup class="footnote-ref"><a href="#fn-2">[2]</a></sup>.</li>
+  <li><strong>Tasks Passed (<code>Qwen 3.8 27B</code> Measured vs. <code>Qwen 4 27B</code> Preliminary)</strong>: On the 88 completed tasks of our <strong>Qwen 3.8 27B + <code>PromptEnhancer</code></strong> sweep, the agent resolves <strong>57 / 88 tasks (64.8%)</strong> with <strong>91 live self-heals</strong>. Across the <strong>21 paired tasks</strong> completed in both arms so far, <code>Qwen 3.8 27B</code> jumps from <strong>10 / 21 (47.6%)</strong> on unassisted <code>terminus-2</code> to <strong>21 / 21 (100.0%, +11 tasks)</strong> with <code>PromptEnhancer</code>.</li>
+  <li><strong>Token Savings (<code>-40.1%</code> Solved Mean, up to <code>-92.4%</code>) & Wall-Clock Savings (<code>-63.6%</code>, <code>-3.32 hours</code>)</strong>: On tasks passed by both arms of <code>Qwen 3.8 27B</code>, <code>PromptEnhancer</code> cuts mean token consumption by <strong>40.1%</strong> (<code>102,377</code> <span class="vbg-formula">&rarr;</span> <code>61,327</code> tokens/task; <code>-92.4%</code> on <code>polyglot-c-py</code>, <code>-83.8%</code> on <code>db-wal-recovery</code>) and reduces total wall-clock execution time across the 21 paired tasks by <strong>63.6%</strong> (<code>5.21 hours</code> <span class="vbg-formula">&rarr;</span> <code>1.90 hours</code>, saving <strong>3.32 hours</strong>).</li>
 </ul>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Terminal-Bench 2.1 Preliminary Benchmark: Tasks Passed and Resolution Rate">
-  <figcaption class="figcaption"><strong>Figure 1. Terminal-Bench 2.1 Preliminary Benchmark: Tasks Passed and Resolution Rate (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Higher is better.</em> Hollow markers indicate preliminary Qwen 4 27B slots updated as the benchmark sweep completes.</figcaption>
+  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed and Resolution Rate with PromptEnhancer">
+  <figcaption class="figcaption"><strong>Figure 1. Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed and Resolution Rate (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Higher is better.</em> On the 21 paired tasks completed in both arms, <code>Qwen 3.8 27B + PE</code> improves from <code>10/21 (47.6%)</code> to <code>21/21 (100.0%)</code> and reaches <code>57/88 (64.8%)</code> across the full suite. Hollow markers indicate preliminary <code>Qwen 4 27B</code> slots.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: PromptEnhancer Efficiency: Per-Task Token and Wall-Clock Time Savings">
-  <figcaption class="figcaption"><strong>Figure 2. Per-Task Token Consumption and Wall-Clock Execution Time (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Lower is better.</em> Resolving state traps early cuts prompt/completion tokens by 32.4%–64.5% and wall-clock execution time by 19.1%–75.1% across resolved tasks.</figcaption>
+  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: Qwen 3.8 27B vs. Qwen 4 27B: Token and Wall-Clock Time Savings with PromptEnhancer">
+  <figcaption class="figcaption"><strong>Figure 2. Per-Task Token Consumption and Wall-Clock Execution Time on <code>Qwen 3.8 27B</code> vs. <code>Qwen 4 27B</code> (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Lower is better.</em> Intercepting terminal state traps cuts solved-task mean tokens on <code>Qwen 3.8 27B</code> by 40.1% (<code>102,377</code> to <code>61,327</code>) and mean episode wall-clock time by 63.6% (<code>894s</code> to <code>325s</code>).</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Episode Token Trajectory and Sub-Millisecond Encoder Accuracy">
-  <figcaption class="figcaption"><strong>Figure 3. Left: Cumulative Episode Tokens Across Turns on <code>git-leak-recovery</code> (<em>Lower is better</em>). Right: 8-Class Terminal State Encoder Accuracy Across Evaluation Splits (<em>Higher is better</em>).</strong></figcaption>
+  <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Suite-Level Efficiency: Mean Solved-Task Tokens and Total Wall-Clock Hours">
+  <figcaption class="figcaption"><strong>Figure 3. Left: Mean Tokens per Solved Task across <code>gemma4:31b</code>, <code>Qwen 3.8 27B</code>, and <code>Qwen 4 27B</code> (<em>Lower is better</em>). Right: Total Episode Wall-Clock Hours across 21 Paired Tasks (<code>5.21 hr</code> vs. <code>1.90 hr</code> on <code>Qwen 3.8 27B</code>, saving <code>3.32 hr</code>).</strong></figcaption>
 </figure>
 
 <div class="vbg-table-wrap">
   <table class="vbg-table">
     <thead>
       <tr>
-        <th scope="col">Metric (Terminal-Bench 2.1 Preliminary Evaluation)</th>
-        <th scope="col" class="vbg-numeric"><code>Qwen 4 27B</code> Baseline (<code>terminus-2</code>)</th>
-        <th scope="col" class="vbg-numeric"><code>Qwen 4 27B</code> + <code>PromptEnhancer</code> (<code>Terminus2Enhanced</code>)</th>
-        <th scope="col" class="vbg-numeric">Net Delta / Savings</th>
+        <th scope="col">Metric (Terminal-Bench 2.1 Evaluation)</th>
+        <th scope="col" class="vbg-numeric"><code>Qwen 3.8 27B</code> Baseline (<code>terminus-2</code>)</th>
+        <th scope="col" class="vbg-numeric"><code>Qwen 3.8 27B</code> + <code>PromptEnhancer</code> (<code>PE</code>)</th>
+        <th scope="col" class="vbg-numeric"><code>Qwen 3.8 27B</code> Net Delta / Savings</th>
+        <th scope="col" class="vbg-numeric"><code>Qwen 4 27B</code> Baseline <span class="vbg-formula">&rarr;</span> <code>+ PE</code> (Prelim)</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <th scope="row"><strong>Tasks Passed (<code>reward == 1.0</code>)</strong></th>
-        <td class="vbg-numeric"><code>[TBD — Qwen 4 27B Run]</code></td>
-        <td class="vbg-numeric"><strong><code>[TBD — Qwen 4 27B Run]</code></strong></td>
-        <td class="vbg-numeric"><strong><code>+[TBD] tasks</code></strong></td>
+        <th scope="row"><strong>Tasks Passed (Paired <span class="vbg-formula">N=21</span> Completed)</strong></th>
+        <td class="vbg-numeric">10 / 21 (47.6%)</td>
+        <td class="vbg-numeric"><strong>21 / 21 (100.0%)</strong></td>
+        <td class="vbg-numeric"><strong>+11 tasks (+52.4 pp)</strong></td>
+        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong>Resolution Rate (%)</strong></th>
-        <td class="vbg-numeric"><code>[TBD]%</code></td>
-        <td class="vbg-numeric"><strong><code>[TBD]%</code></strong></td>
-        <td class="vbg-numeric"><strong><code>+[TBD] pp</code></strong></td>
+        <th scope="row"><strong>Full-Suite Tasks Passed (<span class="vbg-formula">N=88</span> Completed)</strong></th>
+        <td class="vbg-numeric">10 / 21 (in progress)</td>
+        <td class="vbg-numeric"><strong>57 / 88 (64.8%)</strong></td>
+        <td class="vbg-numeric"><strong>+17.2 pp vs. baseline rate</strong></td>
+        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong>Mean Tokens per Resolved Task (Prompt + Completion)</strong></th>
-        <td class="vbg-numeric"><code>[TBD]</code></td>
-        <td class="vbg-numeric"><strong><code>[TBD]</code></strong></td>
-        <td class="vbg-numeric"><strong><code>-[TBD]% token savings</code></strong></td>
+        <th scope="row"><strong>Mean Tokens per Solved Task (<span class="vbg-formula">N=10</span> Both Passed)</strong></th>
+        <td class="vbg-numeric">102,377</td>
+        <td class="vbg-numeric"><strong>61,327</strong></td>
+        <td class="vbg-numeric"><strong>-40.1% token savings</strong></td>
+        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong>Mean Wall-Clock Time per Resolved Task (Seconds)</strong></th>
-        <td class="vbg-numeric"><code>[TBD] s</code></td>
-        <td class="vbg-numeric"><strong><code>[TBD] s</code></strong></td>
-        <td class="vbg-numeric"><strong><code>-[TBD]% wall-clock savings</code></strong></td>
+        <th scope="row"><strong>Mean Wall-Clock per Solved Task (<span class="vbg-formula">N=10</span> Both Passed)</strong></th>
+        <td class="vbg-numeric">458.5 s</td>
+        <td class="vbg-numeric"><strong>182.9 s</strong></td>
+        <td class="vbg-numeric"><strong>-60.1% wall-clock savings</strong></td>
+        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong>Interactive Pager / REPL Traps Recovered</strong></th>
-        <td class="vbg-numeric">0 (Unassisted)</td>
-        <td class="vbg-numeric"><strong><code>[TBD]</code></strong></td>
-        <td class="vbg-numeric">—</td>
+        <th scope="row"><strong>Total Wall-Clock Time (Paired <span class="vbg-formula">N=21</span> Tasks)</strong></th>
+        <td class="vbg-numeric">5.21 hr (18,774 s)</td>
+        <td class="vbg-numeric"><strong>1.90 hr (6,830 s)</strong></td>
+        <td class="vbg-numeric"><strong>-63.6% (-3.32 hr saved)</strong></td>
+        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Mean Turns per Solved Task (<span class="vbg-formula">N=10</span> Both Passed)</strong></th>
+        <td class="vbg-numeric">12.0 turns</td>
+        <td class="vbg-numeric"><strong>8.8 turns</strong></td>
+        <td class="vbg-numeric"><strong>-26.7% fewer turns</strong></td>
+        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
       </tr>
       <tr>
         <th scope="row"><strong>Live In-Task Weight Self-Heals (<code>minimodels learn</code>)</strong></th>
         <td class="vbg-numeric">0 (Static)</td>
-        <td class="vbg-numeric"><strong><code>[TBD]</code></strong></td>
+        <td class="vbg-numeric"><strong>91 self-heals</strong></td>
         <td class="vbg-numeric"><strong>25.9–47.0 ms / heal</strong></td>
+        <td class="vbg-numeric"><code>0</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
       </tr>
       <tr>
         <th scope="row"><strong>Per-Turn State Audit Overhead</strong></th>
         <td class="vbg-numeric">0 ms</td>
-        <td class="vbg-numeric"><strong>0.269 ms (<code>tiny</code>) / 0.340 ms (<code>small</code>)</strong></td>
+        <td class="vbg-numeric"><strong>0.340 ms (<code>small</code>)</strong></td>
         <td class="vbg-numeric"><code>&lt;0.01%</code> of turn time</td>
+        <td class="vbg-numeric"><strong>0.340 ms / turn</strong></td>
       </tr>
     </tbody>
   </table>
@@ -134,13 +149,13 @@
 
 <p>Inspecting raw <code>trajectory.json</code> logs showed that failures and runaway episode durations rarely begin with algorithmic synthesis errors. Instead, they begin with <strong>terminal state-machine desynchronization</strong>. Once a command leaves the <code>tmux</code> pane inside an interactive pager (<code>less</code>, <code>git log</code>), a REPL (<code>python3 &gt;&gt;&gt;</code>, <code>sqlite&gt;</code>), an editor (<code>vim</code>), or a long-running compiler build that has not yet returned the bash prompt (<code>root@container:/app#</code>), the agent loses track of which process owns <code>stdin</code>. It types shell commands (<code>ls -la</code>, <code>cat</code>, <code>git status</code>) straight into <code>less</code> or a running process until the episode hits a 180-second command timeout or exhausts its turn budget.</p>
 
-<p>Adding a secondary LLM judge call on every turn to classify the terminal screen adds seconds of latency and doubles token consumption. Instead, <code>PromptEnhancer</code> uses our <strong>197K-parameter (<code>770 KB</code>, <code>0.269 ms</code>)</strong> and <strong>263K-parameter (<code>1.03 MB</code>, <code>0.340 ms</code>)</strong> bidirectional encoders on top of <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a><sup class="footnote-ref"><a href="#fn-2">[2]</a></sup> to classify <code>(last_command, terminal_output)</code> into eight operational terminal states and append a concise recovery directive before the next LLM turn:</p>
+<p>Adding a secondary LLM judge call on every turn to classify the terminal screen adds seconds of latency and doubles token consumption. Instead, <code>PromptEnhancer</code> uses our <strong>197K-parameter (<code>770 KB</code>, <code>0.269 ms</code>)</strong> and <strong>263K-parameter (<code>1.03 MB</code>, <code>0.340 ms</code>)</strong> bidirectional encoders on top of <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a><sup class="footnote-ref"><a href="#fn-2">[2]</a></sup> to classify <code>(last_command, terminal_output)</code> into eight operational terminal states and append a concise recovery directive before the next LLM turn. Below are measured task-level comparisons from our <strong>Qwen 3.8 27B</strong> (<code>Qwen/Qwen3.8-27B</code>) run alongside the preliminary <strong>Qwen 4 27B</strong> slot:</p>
 
 <div class="vbg-table-wrap">
   <table class="vbg-table">
     <thead>
       <tr>
-        <th scope="col">Task (<code>harbor</code> / <code>terminus-2</code>)</th>
+        <th scope="col">Task (<code>Qwen 3.8 27B</code> on <code>terminus-2</code>)</th>
         <th scope="col" data-align="center">Baseline Outcome</th>
         <th scope="col" data-align="center"><code>+ PE</code> Outcome</th>
         <th scope="col" class="vbg-numeric">Baseline Tokens <span class="vbg-formula">&rarr;</span> <code>+ PE</code> Tokens</th>
@@ -151,43 +166,97 @@
     </thead>
     <tbody>
       <tr>
-        <th scope="row"><strong><code>git-leak-recovery</code></strong></th>
-        <td data-align="center">FAIL (<code>0.0</code>)</td>
+        <th scope="row"><strong><code>polyglot-c-py</code></strong></th>
+        <td data-align="center">PASS (<code>1.0</code>)</td>
         <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
-        <td class="vbg-numeric"><code>53,532</code> <span class="vbg-formula">&rarr;</span> <strong><code>18,988</code></strong></td>
-        <td class="vbg-numeric"><strong>-64.5%</strong> (<code>-34,544</code>)</td>
-        <td class="vbg-numeric"><code>83.9s</code> <span class="vbg-formula">&rarr;</span> <strong><code>38.6s</code></strong></td>
-        <td class="vbg-numeric"><strong>-54.0%</strong> (<code>-45.3s</code>)</td>
+        <td class="vbg-numeric"><code>235,226</code> <span class="vbg-formula">&rarr;</span> <strong><code>17,868</code></strong></td>
+        <td class="vbg-numeric"><strong>-92.4%</strong> (<code>-217,358</code>)</td>
+        <td class="vbg-numeric"><code>380.2s</code> <span class="vbg-formula">&rarr;</span> <code>473.6s</code></td>
+        <td class="vbg-numeric"><code>+24.6%</code> (<code>6</code> vs <code>31</code> turns)</td>
       </tr>
       <tr>
         <th scope="row"><strong><code>db-wal-recovery</code></strong></th>
         <td data-align="center">FAIL (<code>0.0</code>)</td>
         <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
-        <td class="vbg-numeric"><code>73,336</code> <span class="vbg-formula">&rarr;</span> <strong><code>32,779</code></strong></td>
-        <td class="vbg-numeric"><strong>-55.3%</strong> (<code>-40,557</code>)</td>
-        <td class="vbg-numeric"><code>397.5s</code> <span class="vbg-formula">&rarr;</span> <strong><code>99.0s</code></strong></td>
-        <td class="vbg-numeric"><strong>-75.1%</strong> (<code>-298.5s</code>)</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>nginx-request-logging</code></strong></th>
-        <td data-align="center">PASS (<code>1.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
-        <td class="vbg-numeric"><code>80,102</code> <span class="vbg-formula">&rarr;</span> <strong><code>50,608</code></strong></td>
-        <td class="vbg-numeric"><strong>-36.8%</strong> (<code>-29,494</code>)</td>
-        <td class="vbg-numeric"><code>223.2s</code> <span class="vbg-formula">&rarr;</span> <strong><code>152.5s</code></strong></td>
-        <td class="vbg-numeric"><strong>-31.7%</strong> (<code>-70.7s</code>)</td>
+        <td class="vbg-numeric"><code>132,426</code> <span class="vbg-formula">&rarr;</span> <strong><code>21,400</code></strong></td>
+        <td class="vbg-numeric"><strong>-83.8%</strong> (<code>-111,026</code>)</td>
+        <td class="vbg-numeric"><code>1,257.1s</code> <span class="vbg-formula">&rarr;</span> <strong><code>72.6s</code></strong></td>
+        <td class="vbg-numeric"><strong>-94.2%</strong> (<code>-1,184.5s</code>)</td>
       </tr>
       <tr>
         <th scope="row"><strong><code>cancel-async-tasks</code></strong></th>
-        <td data-align="center">PASS (<code>1.0</code>)</td>
+        <td data-align="center">FAIL (<code>0.0</code>)</td>
         <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
-        <td class="vbg-numeric"><code>5,276</code> <span class="vbg-formula">&rarr;</span> <strong><code>3,568</code></strong></td>
-        <td class="vbg-numeric"><strong>-32.4%</strong> (<code>-1,708</code>)</td>
-        <td class="vbg-numeric"><code>152.7s</code> <span class="vbg-formula">&rarr;</span> <strong><code>123.6s</code></strong></td>
-        <td class="vbg-numeric"><strong>-19.1%</strong> (<code>-29.1s</code>)</td>
+        <td class="vbg-numeric"><code>64,958</code> <span class="vbg-formula">&rarr;</span> <strong><code>21,492</code></strong></td>
+        <td class="vbg-numeric"><strong>-66.9%</strong> (<code>-43,466</code>)</td>
+        <td class="vbg-numeric"><code>887.5s</code> <span class="vbg-formula">&rarr;</span> <strong><code>95.4s</code></strong></td>
+        <td class="vbg-numeric"><strong>-89.2%</strong> (<code>-792.1s</code>)</td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>Qwen 4 27B</code> (Prelim Mean)</strong></th>
+        <th scope="row"><strong><code>vulnerable-secret</code></strong></th>
+        <td data-align="center">PASS (<code>1.0</code>)</td>
+        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td class="vbg-numeric"><code>320,764</code> <span class="vbg-formula">&rarr;</span> <strong><code>127,682</code></strong></td>
+        <td class="vbg-numeric"><strong>-60.2%</strong> (<code>-193,082</code>)</td>
+        <td class="vbg-numeric"><code>1,022.2s</code> <span class="vbg-formula">&rarr;</span> <strong><code>301.0s</code></strong></td>
+        <td class="vbg-numeric"><strong>-70.6%</strong> (<code>-721.2s</code>)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>log-summary-date-ranges</code></strong></th>
+        <td data-align="center">PASS (<code>1.0</code>)</td>
+        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td class="vbg-numeric"><code>38,223</code> <span class="vbg-formula">&rarr;</span> <strong><code>16,061</code></strong></td>
+        <td class="vbg-numeric"><strong>-58.0%</strong> (<code>-22,162</code>)</td>
+        <td class="vbg-numeric"><code>561.6s</code> <span class="vbg-formula">&rarr;</span> <strong><code>67.5s</code></strong></td>
+        <td class="vbg-numeric"><strong>-88.0%</strong> (<code>-494.1s</code>)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>openssl-selfsigned-cert</code></strong></th>
+        <td data-align="center">PASS (<code>1.0</code>)</td>
+        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td class="vbg-numeric"><code>19,941</code> <span class="vbg-formula">&rarr;</span> <strong><code>10,332</code></strong></td>
+        <td class="vbg-numeric"><strong>-48.2%</strong> (<code>-9,609</code>)</td>
+        <td class="vbg-numeric"><code>470.6s</code> <span class="vbg-formula">&rarr;</span> <strong><code>61.0s</code></strong></td>
+        <td class="vbg-numeric"><strong>-87.0%</strong> (<code>-409.6s</code>)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>custom-memory-heap-crash</code></strong></th>
+        <td data-align="center">FAIL (<code>0.0</code>)</td>
+        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td class="vbg-numeric"><code>462,080</code> <span class="vbg-formula">&rarr;</span> <strong><code>272,592</code></strong></td>
+        <td class="vbg-numeric"><strong>-41.0%</strong> (<code>-189,488</code>)</td>
+        <td class="vbg-numeric"><code>2,242.3s</code> <span class="vbg-formula">&rarr;</span> <strong><code>1,228.0s</code></strong></td>
+        <td class="vbg-numeric"><strong>-45.2%</strong> (<code>-1,014.3s</code>)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>build-pmars</code></strong></th>
+        <td data-align="center">PASS (<code>1.0</code>)</td>
+        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td class="vbg-numeric"><code>174,921</code> <span class="vbg-formula">&rarr;</span> <strong><code>104,069</code></strong></td>
+        <td class="vbg-numeric"><strong>-40.5%</strong> (<code>-70,852</code>)</td>
+        <td class="vbg-numeric"><code>237.7s</code> <span class="vbg-formula">&rarr;</span> <strong><code>211.3s</code></strong></td>
+        <td class="vbg-numeric"><strong>-11.1%</strong> (<code>-26.4s</code>)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>configure-git-webserver</code></strong></th>
+        <td data-align="center">FAIL (<code>0.0</code>)</td>
+        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td class="vbg-numeric"><code>77,322</code> <span class="vbg-formula">&rarr;</span> <strong><code>54,139</code></strong></td>
+        <td class="vbg-numeric"><strong>-30.0%</strong> (<code>-23,183</code>)</td>
+        <td class="vbg-numeric"><code>891.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>143.9s</code></strong></td>
+        <td class="vbg-numeric"><strong>-83.8%</strong> (<code>-747.1s</code>)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>Qwen 3.8 27B</code> Solved Mean (<span class="vbg-formula">N=10</span>)</strong></th>
+        <td data-align="center">PASS (<code>1.0</code>)</td>
+        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td class="vbg-numeric"><code>102,377</code> <span class="vbg-formula">&rarr;</span> <strong><code>61,327</code></strong></td>
+        <td class="vbg-numeric"><strong>-40.1%</strong> (<code>-41,050</code>)</td>
+        <td class="vbg-numeric"><code>458.5s</code> <span class="vbg-formula">&rarr;</span> <strong><code>182.9s</code></strong></td>
+        <td class="vbg-numeric"><strong>-60.1%</strong> (<code>-275.6s</code>)</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>Qwen 4 27B</code> Prelim Mean</strong></th>
         <td data-align="center"><code>[TBD]</code></td>
         <td data-align="center"><strong><code>[TBD]</code></strong></td>
         <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
@@ -429,23 +498,23 @@
 
 <h2 id="calibration-across-parameter-scales-4b-vs-27b31b">Calibration Across Parameter Scales: 4B vs. 27B–31B</h2>
 
-<p>Comparing our 10-task calibration runs across <code>nemotron-3-nano:4b</code> (4B), <code>gemma4:31b</code> (31B), and our preliminary <strong>Qwen 4 27B</strong> evaluation highlights why the <strong>~27B dense parameter tier</strong> is the sweet spot for <code>PromptEnhancer</code> (<code>runs/harbor-bench/nemotron-4b-10task/comparison_summary.json</code> and <code>runs/harbor-bench/gemma4-31b-10task/summary.json</code>)[^5]:</p>
+<p>Comparing our runs across <code>nemotron-3-nano:4b</code> (4B), <code>gemma4:31b</code> (31B), <code>Qwen 3.8 27B</code> (27B), and our preliminary <strong>Qwen 4 27B</strong> evaluation highlights why the <strong>~27B dense parameter tier</strong> is the sweet spot for <code>PromptEnhancer</code> (<code>runs/harbor-bench/nemotron-4b-10task/comparison_summary.json</code>, <code>runs/harbor-bench/gemma4-31b-10task/summary.json</code>, and <code>runs/qwen3.8-vast-h200-89task/summary.live.json</code>)[^5]:</p>
 
 <div class="vbg-table-wrap">
   <table class="vbg-table">
     <thead>
       <tr>
-        <th scope="col">Model (10-Task Calibration Subset)</th>
+        <th scope="col">Model & Suite</th>
         <th scope="col" class="vbg-numeric">Baseline Tasks Passed (<code>terminus-2</code>)</th>
         <th scope="col" class="vbg-numeric"><code>+ PE</code> Tasks Passed (<code>Terminus2Enhanced</code>)</th>
         <th scope="col" class="vbg-numeric">Solved-Task Token Savings</th>
-        <th scope="col" class="vbg-numeric">Solved-Task Wall-Clock Savings</th>
+        <th scope="col" class="vbg-numeric">Episode Wall-Clock Savings</th>
         <th scope="col">Key Operational Finding</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <th scope="row"><strong><code>nemotron-3-nano:4b</code> (4B)</strong></th>
+        <th scope="row"><strong><code>nemotron-3-nano:4b</code> (10-Task)</strong></th>
         <td class="vbg-numeric">0 / 10 (0.0%)</td>
         <td class="vbg-numeric"><strong>1 / 10 (10.0%)</strong></td>
         <td class="vbg-numeric"><strong>-32.4%</strong> (<code>cancel-async</code>)</td>
@@ -453,17 +522,25 @@
         <td>Below synthesis floor on 9/10 tasks; state recovery prevents early exit, inflating unsolvable task turns (<code>824</code> <span class="vbg-formula">&rarr;</span> <code>1,402</code>).</td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>gemma4:31b</code> (31B)</strong></th>
+        <th scope="row"><strong><code>gemma4:31b</code> (10-Task)</strong></th>
         <td class="vbg-numeric">5 / 10 (50.0%)</td>
         <td class="vbg-numeric"><strong>6 / 10 (60.0%)</strong></td>
-        <td class="vbg-numeric"><strong>-42.6% mean</strong> (up to <strong>-55.3%</strong>)</td>
+        <td class="vbg-numeric"><strong>-50.5% mean</strong> (up to <strong>-55.3%</strong>)</td>
         <td class="vbg-numeric"><strong>-49.2% mean</strong> (up to <strong>-75.1%</strong>)</td>
         <td>Sufficient synthesis capacity to act on state directives; recovers <code>db-wal-recovery</code> in 8 turns (<code>99.0s</code> vs <code>397.5s</code>).</td>
       </tr>
       <tr>
+        <th scope="row"><strong><code>Qwen 3.8 27B</code> (Paired <span class="vbg-formula">N=21</span> / Full <span class="vbg-formula">N=88</span>)</strong></th>
+        <td class="vbg-numeric">10 / 21 (47.6%)</td>
+        <td class="vbg-numeric"><strong>21 / 21 (100.0%)</strong> / <strong>57 / 88 (64.8%)</strong></td>
+        <td class="vbg-numeric"><strong>-40.1% mean</strong> (up to <strong>-92.4%</strong>)</td>
+        <td class="vbg-numeric"><strong>-63.6% total</strong> (<code>1.90 hr</code> vs <code>5.21 hr</code>)</td>
+        <td>+11 tasks recovered on paired subset (<code>db-wal-recovery</code>, <code>cancel-async-tasks</code>, <code>custom-memory-heap-crash</code>); <code>91</code> live self-heals.</td>
+      </tr>
+      <tr>
         <th scope="row"><strong><code>Qwen 4 27B</code> (27B Prelim)</strong></th>
-        <td class="vbg-numeric"><code>[TBD] / 10</code></td>
-        <td class="vbg-numeric"><strong><code>[TBD] / 10</code></strong></td>
+        <td class="vbg-numeric"><code>[TBD]</code></td>
+        <td class="vbg-numeric"><strong><code>[TBD]</code></strong></td>
         <td class="vbg-numeric"><strong><code>-[TBD]%</code></strong></td>
         <td class="vbg-numeric"><strong><code>-[TBD]%</code></strong></td>
         <td>Newly released 27B dense model; pairs strong code synthesis with high-throughput single-GPU vLLM serving.</td>

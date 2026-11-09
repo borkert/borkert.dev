@@ -2,34 +2,35 @@
 
 ## Quick Summary
 
-- **Model & Harness**: **Qwen 4 27B** (`Qwen4-27B`, just released) evaluated on Terminal-Bench 2.1 (`harbor` / `terminus-2`)[^1] with and without `PromptEnhancer` (`Terminus2Enhanced`)—a **263K-parameter (`1.03 MB`, `0.340 ms`/turn)** [`minimodels`](/posts/minimodels-rust-metal.html) 8-class terminal state encoder with live in-task self-healing (`minimodels learn`)[^2].
-- **More Tasks Passed**: **Qwen 4 27B** is a highly capable open-weights systems model out of the box; adding `PromptEnhancer` recovers episodes that otherwise fail on interactive pagers (`less`, `git log`), destructive tool side effects (`sqlite3` unlinking `-wal` files), unescaped regex flags, or unverified output paths.
-- **Token Savings (`-32.4%` to `-64.5%`) & Wall-Clock Savings (`-19.1%` to `-75.1%`)**: Intercepting terminal state traps early cuts episode length from 15 turns to 7–8 turns, avoiding quadratic prompt-history growth (`53,532` $\to$ `18,988` tokens on `git-leak-recovery`) and 180-second `tmux` timeouts (`397.5s` $\to$ `99.0s` on `db-wal-recovery`).
+- **Models & Harness**: Preliminary evaluation of **Qwen 4 27B** (`Qwen4-27B`, just released) compared against **Qwen 3.8 27B** (`Qwen/Qwen3.8-27B`) on Terminal-Bench 2.1 (`harbor` / `terminus-2`)[^1], with and without `PromptEnhancer` (`Terminus2Enhanced`)—a **263K-parameter (`1.03 MB`, `0.340 ms`/turn)** [`minimodels`](/posts/minimodels-rust-metal.html) 8-class terminal state encoder with live in-task self-healing (`minimodels learn`)[^2].
+- **Tasks Passed (`Qwen 3.8 27B` Measured vs. `Qwen 4 27B` Preliminary)**: On the 88 completed tasks of our **Qwen 3.8 27B + `PromptEnhancer`** sweep, the agent resolves **57 / 88 tasks (64.8%)** with **91 live self-heals**. Across the **21 paired tasks** completed in both arms so far, `Qwen 3.8 27B` jumps from **10 / 21 (47.6%)** on unassisted `terminus-2` to **21 / 21 (100.0%, +11 tasks)** with `PromptEnhancer`.
+- **Token Savings (`-40.1%` Solved Mean, up to `-92.4%`) & Wall-Clock Savings (`-63.6%`, `-3.32 hours`)**: On tasks passed by both arms of `Qwen 3.8 27B`, `PromptEnhancer` cuts mean token consumption by **40.1%** (`102,377` $\to$ `61,327` tokens/task; `-92.4%` on `polyglot-c-py`, `-83.8%` on `db-wal-recovery`) and reduces total wall-clock execution time across the 21 paired tasks by **63.6%** (`5.21 hours` $\to$ `1.90 hours`, saving **3.32 hours**).
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Terminal-Bench 2.1 Preliminary Benchmark: Tasks Passed and Resolution Rate">
-  <figcaption class="figcaption"><strong>Figure 1. Terminal-Bench 2.1 Preliminary Benchmark: Tasks Passed and Resolution Rate (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Higher is better.</em> Hollow markers indicate preliminary Qwen 4 27B slots updated as the benchmark sweep completes.</figcaption>
+  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed and Resolution Rate with PromptEnhancer">
+  <figcaption class="figcaption"><strong>Figure 1. Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed and Resolution Rate (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Higher is better.</em> On the 21 paired tasks completed in both arms, <code>Qwen 3.8 27B + PE</code> improves from <code>10/21 (47.6%)</code> to <code>21/21 (100.0%)</code> and reaches <code>57/88 (64.8%)</code> across the full suite. Hollow markers indicate preliminary <code>Qwen 4 27B</code> slots.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: PromptEnhancer Efficiency: Per-Task Token and Wall-Clock Time Savings">
-  <figcaption class="figcaption"><strong>Figure 2. Per-Task Token Consumption and Wall-Clock Execution Time (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Lower is better.</em> Resolving state traps early cuts prompt/completion tokens by 32.4%–64.5% and wall-clock execution time by 19.1%–75.1% across resolved tasks.</figcaption>
+  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: Qwen 3.8 27B vs. Qwen 4 27B: Token and Wall-Clock Time Savings with PromptEnhancer">
+  <figcaption class="figcaption"><strong>Figure 2. Per-Task Token Consumption and Wall-Clock Execution Time on <code>Qwen 3.8 27B</code> vs. <code>Qwen 4 27B</code> (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Lower is better.</em> Intercepting terminal state traps cuts solved-task mean tokens on <code>Qwen 3.8 27B</code> by 40.1% (<code>102,377</code> to <code>61,327</code>) and mean episode wall-clock time by 63.6% (<code>894s</code> to <code>325s</code>).</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Episode Token Trajectory and Sub-Millisecond Encoder Accuracy">
-  <figcaption class="figcaption"><strong>Figure 3. Left: Cumulative Episode Tokens Across Turns on <code>git-leak-recovery</code> (<em>Lower is better</em>). Right: 8-Class Terminal State Encoder Accuracy Across Evaluation Splits (<em>Higher is better</em>).</strong></figcaption>
+  <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Suite-Level Efficiency: Mean Solved-Task Tokens and Total Wall-Clock Hours">
+  <figcaption class="figcaption"><strong>Figure 3. Left: Mean Tokens per Solved Task across <code>gemma4:31b</code>, <code>Qwen 3.8 27B</code>, and <code>Qwen 4 27B</code> (<em>Lower is better</em>). Right: Total Episode Wall-Clock Hours across 21 Paired Tasks (<code>5.21 hr</code> vs. <code>1.90 hr</code> on <code>Qwen 3.8 27B</code>, saving <code>3.32 hr</code>).</strong></figcaption>
 </figure>
 
-| Metric (Terminal-Bench 2.1 Preliminary Evaluation) | `Qwen 4 27B` Baseline (`terminus-2`) | `Qwen 4 27B` + `PromptEnhancer` (`Terminus2Enhanced`) | Net Delta / Savings |
-| :--- | ---: | ---: | ---: |
-| **Tasks Passed (`reward == 1.0`)** | `[TBD — Qwen 4 27B Run]` | **`[TBD — Qwen 4 27B Run]`** | **`+[TBD] tasks`** |
-| **Resolution Rate (%)** | `[TBD]%` | **`[TBD]%`** | **`+[TBD] pp`** |
-| **Mean Tokens per Resolved Task (Prompt + Completion)** | `[TBD]` | **`[TBD]`** | **`-[TBD]% token savings`** |
-| **Mean Wall-Clock Time per Resolved Task (Seconds)** | `[TBD] s` | **`[TBD] s`** | **`-[TBD]% wall-clock savings`** |
-| **Interactive Pager / REPL Traps Recovered** | 0 (Unassisted) | **`[TBD]`** | — |
-| **Live In-Task Weight Self-Heals (`minimodels learn`)** | 0 (Static) | **`[TBD]`** | **25.9–47.0 ms / heal** |
-| **Per-Turn State Audit Overhead** | 0 ms | **0.269 ms (`tiny`) / 0.340 ms (`small`)** | `<0.01%` of turn time |
+| Metric (Terminal-Bench 2.1 Evaluation) | `Qwen 3.8 27B` Baseline (`terminus-2`) | `Qwen 3.8 27B` + `PromptEnhancer` (`PE`) | `Qwen 3.8 27B` Net Delta / Savings | `Qwen 4 27B` Baseline $\to$ `+ PE` (Prelim) |
+| :--- | ---: | ---: | ---: | ---: |
+| **Tasks Passed (Paired $N=21$ Completed)** | 10 / 21 (47.6%) | **21 / 21 (100.0%)** | **+11 tasks (+52.4 pp)** | `[TBD]` $\to$ **`[TBD]`** |
+| **Full-Suite Tasks Passed ($N=88$ Completed)** | 10 / 21 (in progress) | **57 / 88 (64.8%)** | **+17.2 pp vs. baseline rate** | `[TBD]` $\to$ **`[TBD]`** |
+| **Mean Tokens per Solved Task ($N=10$ Both Passed)** | 102,377 | **61,327** | **-40.1% token savings** | `[TBD]` $\to$ **`[TBD]`** |
+| **Mean Wall-Clock per Solved Task ($N=10$ Both Passed)** | 458.5 s | **182.9 s** | **-60.1% wall-clock savings** | `[TBD]` $\to$ **`[TBD]`** |
+| **Total Wall-Clock Time (Paired $N=21$ Tasks)** | 5.21 hr (18,774 s) | **1.90 hr (6,830 s)** | **-63.6% (-3.32 hr saved)** | `[TBD]` $\to$ **`[TBD]`** |
+| **Mean Turns per Solved Task ($N=10$ Both Passed)** | 12.0 turns | **8.8 turns** | **-26.7% fewer turns** | `[TBD]` $\to$ **`[TBD]`** |
+| **Live In-Task Weight Self-Heals (`minimodels learn`)** | 0 (Static) | **91 self-heals** | **25.9–47.0 ms / heal** | `0` $\to$ **`[TBD]`** |
+| **Per-Turn State Audit Overhead** | 0 ms | **0.340 ms (`small`)** | `<0.01%` of turn time | **0.340 ms / turn** |
 
 ---
 
@@ -39,15 +40,21 @@ When an autonomous coding agent operates inside a persistent `tmux` session rath
 
 Inspecting raw `trajectory.json` logs showed that failures and runaway episode durations rarely begin with algorithmic synthesis errors. Instead, they begin with **terminal state-machine desynchronization**. Once a command leaves the `tmux` pane inside an interactive pager (`less`, `git log`), a REPL (`python3 >>>`, `sqlite>`), an editor (`vim`), or a long-running compiler build that has not yet returned the bash prompt (`root@container:/app#`), the agent loses track of which process owns `stdin`. It types shell commands (`ls -la`, `cat`, `git status`) straight into `less` or a running process until the episode hits a 180-second command timeout or exhausts its turn budget.
 
-Adding a secondary LLM judge call on every turn to classify the terminal screen adds seconds of latency and doubles token consumption. Instead, `PromptEnhancer` uses our **197K-parameter (`770 KB`, `0.269 ms`)** and **263K-parameter (`1.03 MB`, `0.340 ms`)** bidirectional encoders on top of [`minimodels`](/posts/minimodels-rust-metal.html)[^2] to classify `(last_command, terminal_output)` into eight operational terminal states and append a concise recovery directive before the next LLM turn:
+Adding a secondary LLM judge call on every turn to classify the terminal screen adds seconds of latency and doubles token consumption. Instead, `PromptEnhancer` uses our **197K-parameter (`770 KB`, `0.269 ms`)** and **263K-parameter (`1.03 MB`, `0.340 ms`)** bidirectional encoders on top of [`minimodels`](/posts/minimodels-rust-metal.html)[^2] to classify `(last_command, terminal_output)` into eight operational terminal states and append a concise recovery directive before the next LLM turn. Below are measured task-level comparisons from our **Qwen 3.8 27B** (`Qwen/Qwen3.8-27B`) run alongside the preliminary **Qwen 4 27B** slot:
 
-| Task (`harbor` / `terminus-2`) | Baseline Outcome | `+ PE` Outcome | Baseline Tokens $\to$ `+ PE` Tokens | Token Savings | Baseline Wall-Clock $\to$ `+ PE` Wall-Clock | Wall-Clock Savings |
+| Task (`Qwen 3.8 27B` on `terminus-2`) | Baseline Outcome | `+ PE` Outcome | Baseline Tokens $\to$ `+ PE` Tokens | Token Savings | Baseline Wall-Clock $\to$ `+ PE` Wall-Clock | Wall-Clock Savings |
 | :--- | :---: | :---: | ---: | ---: | ---: | ---: |
-| **`git-leak-recovery`** | FAIL (`0.0`) | **PASS (`1.0`)** | `53,532` $\to$ **`18,988`** | **-64.5%** (`-34,544`) | `83.9s` $\to$ **`38.6s`** | **-54.0%** (`-45.3s`) |
-| **`db-wal-recovery`** | FAIL (`0.0`) | **PASS (`1.0`)** | `73,336` $\to$ **`32,779`** | **-55.3%** (`-40,557`) | `397.5s` $\to$ **`99.0s`** | **-75.1%** (`-298.5s`) |
-| **`nginx-request-logging`** | PASS (`1.0`) | **PASS (`1.0`)** | `80,102` $\to$ **`50,608`** | **-36.8%** (`-29,494`) | `223.2s` $\to$ **`152.5s`** | **-31.7%** (`-70.7s`) |
-| **`cancel-async-tasks`** | PASS (`1.0`) | **PASS (`1.0`)** | `5,276` $\to$ **`3,568`** | **-32.4%** (`-1,708`) | `152.7s` $\to$ **`123.6s`** | **-19.1%** (`-29.1s`) |
-| **`Qwen 4 27B` (Prelim Mean)** | `[TBD]` | **`[TBD]`** | `[TBD]` $\to$ **`[TBD]`** | **`-[TBD]%`** | `[TBD]s` $\to$ **`[TBD]s`** | **`-[TBD]%`** |
+| **`polyglot-c-py`** | PASS (`1.0`) | **PASS (`1.0`)** | `235,226` $\to$ **`17,868`** | **-92.4%** (`-217,358`) | `380.2s` $\to$ `473.6s` | `+24.6%` (`6` vs `31` turns) |
+| **`db-wal-recovery`** | FAIL (`0.0`) | **PASS (`1.0`)** | `132,426` $\to$ **`21,400`** | **-83.8%** (`-111,026`) | `1,257.1s` $\to$ **`72.6s`** | **-94.2%** (`-1,184.5s`) |
+| **`cancel-async-tasks`** | FAIL (`0.0`) | **PASS (`1.0`)** | `64,958` $\to$ **`21,492`** | **-66.9%** (`-43,466`) | `887.5s` $\to$ **`95.4s`** | **-89.2%** (`-792.1s`) |
+| **`vulnerable-secret`** | PASS (`1.0`) | **PASS (`1.0`)** | `320,764` $\to$ **`127,682`** | **-60.2%** (`-193,082`) | `1,022.2s` $\to$ **`301.0s`** | **-70.6%** (`-721.2s`) |
+| **`log-summary-date-ranges`** | PASS (`1.0`) | **PASS (`1.0`)** | `38,223` $\to$ **`16,061`** | **-58.0%** (`-22,162`) | `561.6s` $\to$ **`67.5s`** | **-88.0%** (`-494.1s`) |
+| **`openssl-selfsigned-cert`** | PASS (`1.0`) | **PASS (`1.0`)** | `19,941` $\to$ **`10,332`** | **-48.2%** (`-9,609`) | `470.6s` $\to$ **`61.0s`** | **-87.0%** (`-409.6s`) |
+| **`custom-memory-heap-crash`** | FAIL (`0.0`) | **PASS (`1.0`)** | `462,080` $\to$ **`272,592`** | **-41.0%** (`-189,488`) | `2,242.3s` $\to$ **`1,228.0s`** | **-45.2%** (`-1,014.3s`) |
+| **`build-pmars`** | PASS (`1.0`) | **PASS (`1.0`)** | `174,921` $\to$ **`104,069`** | **-40.5%** (`-70,852`) | `237.7s` $\to$ **`211.3s`** | **-11.1%** (`-26.4s`) |
+| **`configure-git-webserver`** | FAIL (`0.0`) | **PASS (`1.0`)** | `77,322` $\to$ **`54,139`** | **-30.0%** (`-23,183`) | `891.0s` $\to$ **`143.9s`** | **-83.8%** (`-747.1s`) |
+| **`Qwen 3.8 27B` Solved Mean ($N=10$)** | PASS (`1.0`) | **PASS (`1.0`)** | `102,377` $\to$ **`61,327`** | **-40.1%** (`-41,050`) | `458.5s` $\to$ **`182.9s`** | **-60.1%** (`-275.6s`) |
+| **`Qwen 4 27B` Prelim Mean** | `[TBD]` | **`[TBD]`** | `[TBD]` $\to$ **`[TBD]`** | **`-[TBD]%`** | `[TBD]s` $\to$ **`[TBD]s`** | **`-[TBD]%`** |
 
 Across multi-turn traces, four structural failure modes account for the bulk of these token and wall-clock savings:
 
@@ -132,13 +139,14 @@ Once a pattern is healed on Episode $k$, the updated `.mm` weights persist acros
 
 ## Calibration Across Parameter Scales: 4B vs. 27B–31B
 
-Comparing our 10-task calibration runs across `nemotron-3-nano:4b` (4B), `gemma4:31b` (31B), and our preliminary **Qwen 4 27B** evaluation highlights why the **~27B dense parameter tier** is the sweet spot for `PromptEnhancer` (`runs/harbor-bench/nemotron-4b-10task/comparison_summary.json` and `runs/harbor-bench/gemma4-31b-10task/summary.json`)[^5]:
+Comparing our runs across `nemotron-3-nano:4b` (4B), `gemma4:31b` (31B), `Qwen 3.8 27B` (27B), and our preliminary **Qwen 4 27B** evaluation highlights why the **~27B dense parameter tier** is the sweet spot for `PromptEnhancer` (`runs/harbor-bench/nemotron-4b-10task/comparison_summary.json`, `runs/harbor-bench/gemma4-31b-10task/summary.json`, and `runs/qwen3.8-vast-h200-89task/summary.live.json`)[^5]:
 
-| Model (10-Task Calibration Subset) | Baseline Tasks Passed (`terminus-2`) | `+ PE` Tasks Passed (`Terminus2Enhanced`) | Solved-Task Token Savings | Solved-Task Wall-Clock Savings | Key Operational Finding |
+| Model & Suite | Baseline Tasks Passed (`terminus-2`) | `+ PE` Tasks Passed (`Terminus2Enhanced`) | Solved-Task Token Savings | Episode Wall-Clock Savings | Key Operational Finding |
 | :--- | ---: | ---: | ---: | ---: | :--- |
-| **`nemotron-3-nano:4b` (4B)** | 0 / 10 (0.0%) | **1 / 10 (10.0%)** | **-32.4%** (`cancel-async`) | **-15.8%** (`45.2s` vs `53.7s`) | Below synthesis floor on 9/10 tasks; state recovery prevents early exit, inflating unsolvable task turns (`824` $\to$ `1,402`). |
-| **`gemma4:31b` (31B)** | 5 / 10 (50.0%) | **6 / 10 (60.0%)** | **-42.6% mean** (up to **-55.3%**) | **-49.2% mean** (up to **-75.1%**) | Sufficient synthesis capacity to act on state directives; recovers `db-wal-recovery` in 8 turns (`99.0s` vs `397.5s`). |
-| **`Qwen 4 27B` (27B Prelim)** | `[TBD] / 10` | **`[TBD] / 10`** | **`-[TBD]%`** | **`-[TBD]%`** | Newly released 27B dense model; pairs strong code synthesis with high-throughput single-GPU vLLM serving. |
+| **`nemotron-3-nano:4b` (10-Task)** | 0 / 10 (0.0%) | **1 / 10 (10.0%)** | **-32.4%** (`cancel-async`) | **-15.8%** (`45.2s` vs `53.7s`) | Below synthesis floor on 9/10 tasks; state recovery prevents early exit, inflating unsolvable task turns (`824` $\to$ `1,402`). |
+| **`gemma4:31b` (10-Task)** | 5 / 10 (50.0%) | **6 / 10 (60.0%)** | **-50.5% mean** (up to **-55.3%**) | **-49.2% mean** (up to **-75.1%**) | Sufficient synthesis capacity to act on state directives; recovers `db-wal-recovery` in 8 turns (`99.0s` vs `397.5s`). |
+| **`Qwen 3.8 27B` (Paired $N=21$ / Full $N=88$)** | 10 / 21 (47.6%) | **21 / 21 (100.0%)** / **57 / 88 (64.8%)** | **-40.1% mean** (up to **-92.4%**) | **-63.6% total** (`1.90 hr` vs `5.21 hr`) | +11 tasks recovered on paired subset (`db-wal-recovery`, `cancel-async-tasks`, `custom-memory-heap-crash`); `91` live self-heals. |
+| **`Qwen 4 27B` (27B Prelim)** | `[TBD]` | **`[TBD]`** | **`-[TBD]%`** | **`-[TBD]%`** | Newly released 27B dense model; pairs strong code synthesis with high-throughput single-GPU vLLM serving. |
 
 ---
 

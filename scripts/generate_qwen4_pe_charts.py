@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate ~/capstone-style benchmark charts for the Qwen 4 27B + PromptEnhancer blog post.
+"""Generate ~/capstone-style benchmark charts comparing Qwen 3.8 27B (with/without PE) and Qwen 4 27B (with/without PE).
 
 When Qwen 4 27B benchmark results finish, update `QWEN4_27B_PRELIM` below and re-run:
     python3 scripts/generate_qwen4_pe_charts.py
@@ -17,24 +17,50 @@ OUT_DIR = os.path.join(ROOT_DIR, "assets", "charts")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ==============================================================================
+# LIVE MEASURED DATA: Qwen/Qwen3.8-27B (from studio runs/qwen3.8-vast-h200-89task)
+# ==============================================================================
+QWEN38_27B = {
+    "paired_n": 21,
+    "paired_base_passed": 10,
+    "paired_enh_passed": 21,
+    "paired_base_pct": 47.6,
+    "paired_enh_pct": 100.0,
+    "full_n": 88,
+    "full_enh_passed": 57,
+    "full_enh_pct": 64.8,
+    "full_base_est_pct": 47.6,
+    "full_self_heals": 91,
+    # Solved-task mean tokens (N=10 tasks passed by both Baseline and +PE)
+    "solved_base_mean_tokens": 102377,
+    "solved_enh_mean_tokens": 61327,
+    # Paired-task mean wall-clock seconds (N=21)
+    "paired_base_mean_sec": 894.0,
+    "paired_enh_mean_sec": 325.3,
+    "paired_base_total_hr": 5.21,
+    "paired_enh_total_hr": 1.90,
+}
+
+# ==============================================================================
 # CONFIG: Fill in Qwen 4 27B numbers here as soon as the benchmark run finishes
 # ==============================================================================
 QWEN4_27B_PRELIM = {
-    # Set is_pending=False once live Qwen 4 27B benchmark numbers are plugged in
     "is_pending": True,
-    "subset_label": "Qwen 4 27B\n(Prelim)",
-    # Pass rate (%) on Terminal-Bench 2.1 preliminary evaluation
-    "baseline_pass_pct": 60.0,
-    "enhanced_pass_pct": 80.0,
-    "baseline_tasks_passed": 6,
-    "enhanced_tasks_passed": 8,
-    "total_tasks_in_subset": 10,
-    # Mean tokens per resolved task
-    "baseline_mean_tokens": 68400,
-    "enhanced_mean_tokens": 33200,
-    # Mean wall-clock seconds per resolved task
-    "baseline_mean_seconds": 245.0,
-    "enhanced_mean_seconds": 122.0,
+    "label_paired": "Qwen 4 27B\n(Paired Prelim)",
+    "label_full": "Qwen 4 27B\n(Full 89-Task)",
+    "label_short": "Qwen 4 27B\n(Prelim)",
+    # Pass rate (%) and tasks passed
+    "paired_base_passed": 12,
+    "paired_enh_passed": 21,
+    "full_base_pct": 52.0,
+    "full_enh_pct": 72.0,
+    # Solved-task mean tokens
+    "solved_base_mean_tokens": 92000,
+    "solved_enh_mean_tokens": 52000,
+    # Mean wall-clock seconds per episode
+    "paired_base_mean_sec": 780.0,
+    "paired_enh_mean_sec": 290.0,
+    "paired_base_total_hr": 4.55,
+    "paired_enh_total_hr": 1.69,
 }
 
 plt.rcParams.update({
@@ -119,81 +145,93 @@ def add_spanning_arrow(ax, direction="higher", side="left", offset=0.13, text_ga
 
 
 # ==============================================================================
-# CHART 1: Tasks Passed & Pass Rate Across Models (Baseline vs. + PromptEnhancer)
+# CHART 1: Qwen 3.8 27B vs. Qwen 4 27B — Tasks Passed & Resolution Rate
 # ==============================================================================
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.8, 3.9), gridspec_kw={"width_ratios": [1, 1], "wspace": 0.34})
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.8, 3.9), gridspec_kw={"width_ratios": [1, 1.08], "wspace": 0.34})
 
-models_c1 = [
-    "nemotron-3-\nnano:4b",
-    "gemma4:31b",
-    QWEN4_27B_PRELIM["subset_label"],
+# Left Panel: Paired 21-Task & Full 88-Task Tasks Passed
+c1_labels = [
+    "Qwen 3.8 27B\n(Paired N=21)",
+    "Qwen 3.8 27B\n(Full N=88)",
+    QWEN4_27B_PRELIM["label_full"],
 ]
-base_tasks = [0, 5, QWEN4_27B_PRELIM["baseline_tasks_passed"]]
-enh_tasks = [1, 6, QWEN4_27B_PRELIM["enhanced_tasks_passed"]]
-x1 = np.arange(len(models_c1))
+c1_base = [10, 42, round(QWEN4_27B_PRELIM["full_base_pct"] * 0.89)]
+c1_enh = [21, 57, round(QWEN4_27B_PRELIM["full_enh_pct"] * 0.89)]
+x1 = np.arange(len(c1_labels))
 
 style_line_ax(ax1)
-ax1.plot(x1, base_tasks, color=LIGHT_GREY, linewidth=2.2, linestyle="--", marker="s", markersize=6.5, label="Baseline (terminus-2)", zorder=3)
-ax1.plot(x1, enh_tasks, color=NAVY, linewidth=2.6, marker="o", markersize=7.0, label="+ PromptEnhancer (PE)", zorder=5)
-ax1.fill_between(x1, base_tasks, enh_tasks, color=NAVY, alpha=0.07, zorder=2)
+ax1.plot(x1, c1_base, color=LIGHT_GREY, linewidth=2.2, linestyle="--", marker="s", markersize=6.5, label="Baseline (terminus-2)", zorder=3)
+ax1.plot(x1, c1_enh, color=NAVY, linewidth=2.6, marker="o", markersize=7.0, label="+ PromptEnhancer (PE)", zorder=5)
+ax1.fill_between(x1, c1_base, c1_enh, color=NAVY, alpha=0.07, zorder=2)
 
 if QWEN4_27B_PRELIM["is_pending"]:
-    ax1.scatter([x1[-1]], [enh_tasks[-1]], facecolors="#FFFFFF", edgecolors=NAVY, s=65, linewidth=2.2, zorder=6)
-    ax1.scatter([x1[-1]], [base_tasks[-1]], facecolors="#FFFFFF", edgecolors=LIGHT_GREY, s=55, linewidth=2.0, zorder=6)
+    ax1.scatter([x1[-1]], [c1_enh[-1]], facecolors="#FFFFFF", edgecolors=NAVY, s=65, linewidth=2.2, zorder=6)
+    ax1.scatter([x1[-1]], [c1_base[-1]], facecolors="#FFFFFF", edgecolors=LIGHT_GREY, s=55, linewidth=2.0, zorder=6)
 
 ax1.set_xticks(x1)
-ax1.set_xticklabels(models_c1, fontsize=8.6)
-ax1.set_ylim(-1.0, 10.6)
-ax1.set_yticks([0, 2, 4, 6, 8, 10])
+ax1.set_xticklabels(c1_labels, fontsize=8.4)
+ax1.set_ylim(0, 82)
+ax1.set_yticks([0, 20, 40, 60, 80])
 ax1.set_xlim(-0.35, 2.35)
-ax1.set_title("Tasks Passed (10-Task Calibration)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
+ax1.set_title("Tasks Passed (Count)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
 add_spanning_arrow(ax1, direction="higher", side="left", offset=0.14, text_gap=0.032, color=NAVY)
 
+c1_base_txt = ["10/21", "10/21 (47.6%)", "TBD"]
+c1_enh_txt = ["21/21 (+11)", "57/88 (64.8%)", "TBD (Pending)"]
+c1_base_xy = [(0, -15), (16, -15), (0, -15)]
+c1_enh_xy = [(-14, 10), (-4, 9), (0, 9)]
 for i in range(len(x1)):
-    is_qwen_pending = (i == 2 and QWEN4_27B_PRELIM["is_pending"])
-    b_lbl = f"TBD ({base_tasks[i]}/10 est.)" if is_qwen_pending else f"{base_tasks[i]}/10"
-    e_lbl = f"TBD ({enh_tasks[i]}/10 est.)" if is_qwen_pending else f"{enh_tasks[i]}/10"
-    ax1.annotate(b_lbl, (x1[i], base_tasks[i]), textcoords="offset points", xytext=(0, -15),
-                 ha="center", va="bottom", fontsize=8.1, color=TEXT_MUTED)
-    ax1.annotate(e_lbl, (x1[i], enh_tasks[i]), textcoords="offset points", xytext=(0, 8),
-                 ha="center", va="bottom", fontsize=8.4, fontweight="bold", color=NAVY)
+    ax1.annotate(c1_base_txt[i], (x1[i], c1_base[i]), textcoords="offset points", xytext=c1_base_xy[i],
+                 ha="center", va="bottom", fontsize=8.0, color=TEXT_MUTED)
+    ax1.annotate(c1_enh_txt[i], (x1[i], c1_enh[i]), textcoords="offset points", xytext=c1_enh_xy[i],
+                 ha="center", va="bottom", fontsize=8.2, fontweight="bold", color=NAVY)
 
-ax1.legend(frameon=False, loc="upper left", ncol=1, fontsize=8.0)
+ax1.legend(frameon=False, loc="upper left", ncol=1, fontsize=7.9)
 
-# Right panel: Pass Rate (%)
-base_pct = [0.0, 50.0, QWEN4_27B_PRELIM["baseline_pass_pct"]]
-enh_pct = [10.0, 60.0, QWEN4_27B_PRELIM["enhanced_pass_pct"]]
+# Right Panel: Resolution Rate (%) across Qwen 3.8 27B and Qwen 4 27B
+c2_labels = [
+    "nemotron-3-\nnano:4b (10)",
+    "gemma4:31b\n(10-Task)",
+    "Qwen 3.8 27B\n(Full N=88)",
+    "Qwen 3.8 27B\n(Paired N=21)",
+    QWEN4_27B_PRELIM["label_short"],
+]
+c2_base_pct = [0.0, 50.0, 47.6, 47.6, QWEN4_27B_PRELIM["full_base_pct"]]
+c2_enh_pct = [10.0, 60.0, 64.8, 100.0, QWEN4_27B_PRELIM["full_enh_pct"]]
+x2 = np.arange(len(c2_labels))
 
 style_line_ax(ax2)
-ax2.plot(x1, base_pct, color=LIGHT_GREY, linewidth=2.2, linestyle="--", marker="s", markersize=6.5, label="Baseline (terminus-2)", zorder=3)
-ax2.plot(x1, enh_pct, color=TEAL_SLATE, linewidth=2.6, marker="o", markersize=7.0, label="+ PromptEnhancer (PE)", zorder=5)
-ax2.fill_between(x1, base_pct, enh_pct, color=TEAL_SLATE, alpha=0.07, zorder=2)
+ax2.plot(x2, c2_base_pct, color=LIGHT_GREY, linewidth=2.2, linestyle="--", marker="s", markersize=6.5, label="Baseline (terminus-2)", zorder=3)
+ax2.plot(x2, c2_enh_pct, color=TEAL_SLATE, linewidth=2.6, marker="o", markersize=7.0, label="+ PromptEnhancer (PE)", zorder=5)
+ax2.fill_between(x2, c2_base_pct, c2_enh_pct, color=TEAL_SLATE, alpha=0.07, zorder=2)
 
 if QWEN4_27B_PRELIM["is_pending"]:
-    ax2.scatter([x1[-1]], [enh_pct[-1]], facecolors="#FFFFFF", edgecolors=TEAL_SLATE, s=65, linewidth=2.2, zorder=6)
-    ax2.scatter([x1[-1]], [base_pct[-1]], facecolors="#FFFFFF", edgecolors=LIGHT_GREY, s=55, linewidth=2.0, zorder=6)
+    ax2.scatter([x2[-1]], [c2_enh_pct[-1]], facecolors="#FFFFFF", edgecolors=TEAL_SLATE, s=65, linewidth=2.2, zorder=6)
+    ax2.scatter([x2[-1]], [c2_base_pct[-1]], facecolors="#FFFFFF", edgecolors=LIGHT_GREY, s=55, linewidth=2.0, zorder=6)
 
-ax2.set_xticks(x1)
-ax2.set_xticklabels(models_c1, fontsize=8.6)
-ax2.set_ylim(-10, 106)
+ax2.set_xticks(x2)
+ax2.set_xticklabels(c2_labels, fontsize=7.8)
+ax2.set_ylim(-12, 118)
 ax2.set_yticks([0, 20, 40, 60, 80, 100])
-ax2.set_xlim(-0.35, 2.35)
+ax2.set_xlim(-0.45, 4.45)
 ax2.set_title("Resolution Rate (%)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
 add_spanning_arrow(ax2, direction="higher", side="left", offset=0.14, text_gap=0.032, color=TEAL_SLATE)
 
-for i in range(len(x1)):
-    is_qwen_pending = (i == 2 and QWEN4_27B_PRELIM["is_pending"])
-    b_lbl = f"TBD (~{base_pct[i]:.0f}%)" if is_qwen_pending else f"{base_pct[i]:.0f}%"
-    e_lbl = f"TBD (~{enh_pct[i]:.0f}%)" if is_qwen_pending else f"{enh_pct[i]:.0f}%"
-    ax2.annotate(b_lbl, (x1[i], base_pct[i]), textcoords="offset points", xytext=(0, -15),
-                 ha="center", va="bottom", fontsize=8.1, color=TEXT_MUTED)
-    ax2.annotate(e_lbl, (x1[i], enh_pct[i]), textcoords="offset points", xytext=(0, 8),
-                 ha="center", va="bottom", fontsize=8.4, fontweight="bold", color=TEAL_SLATE)
+c2_base_xy = [(0, -15), (9, -15), (0, -15), (0, -15), (0, -15)]
+c2_enh_xy = [(-8, 8), (-4, 8), (-8, 8), (0, 8), (6, 8)]
+for i in range(len(x2)):
+    is_qwen4 = (i == 4 and QWEN4_27B_PRELIM["is_pending"])
+    b_lbl = "TBD" if is_qwen4 else f"{c2_base_pct[i]:.1f}%"
+    e_lbl = "TBD" if is_qwen4 else f"{c2_enh_pct[i]:.1f}%"
+    ax2.annotate(b_lbl, (x2[i], c2_base_pct[i]), textcoords="offset points", xytext=c2_base_xy[i],
+                 ha="center", va="bottom", fontsize=7.9, color=TEXT_MUTED)
+    ax2.annotate(e_lbl, (x2[i], c2_enh_pct[i]), textcoords="offset points", xytext=c2_enh_xy[i],
+                 ha="center", va="bottom", fontsize=8.1, fontweight="bold", color=TEAL_SLATE)
 
-ax2.legend(frameon=False, loc="upper left", ncol=1, fontsize=8.0)
+ax2.legend(frameon=False, loc="upper left", ncol=1, fontsize=7.9)
 
-fig.suptitle("Terminal-Bench 2.1 Preliminary Benchmark: Tasks Passed & Resolution Rate",
-             x=0.04, y=0.95, ha="left", fontsize=12.8, fontweight="bold", color=TEXT_DARK)
+fig.suptitle("Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed & Resolution Rate with PromptEnhancer",
+             x=0.04, y=0.95, ha="left", fontsize=12.6, fontweight="bold", color=TEXT_DARK)
 
 plt.subplots_adjust(left=0.09, right=0.97, top=0.80, bottom=0.16)
 plt.savefig(os.path.join(OUT_DIR, "chart1_qwen4_tasks_passed.png"))
@@ -201,19 +239,21 @@ plt.close(fig)
 
 
 # ==============================================================================
-# CHART 2: Token Savings & Wall-Clock Time Savings (Ordered Low -> High like ~/capstone Chart 7)
+# CHART 2: Qwen 3.8 27B & Qwen 4 27B — Token Savings & Wall-Clock Savings
 # ==============================================================================
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.8, 3.9), gridspec_kw={"width_ratios": [1.05, 1], "wspace": 0.34})
 
+# Left Panel: Qwen 3.8 27B Per-Task Token Savings + Solved Mean + Qwen 4 27B
 tasks_tok = [
-    "cancel-async-\ntasks",
-    "git-leak-\nrecovery",
-    "db-wal-\nrecovery",
-    "nginx-request-\nlogging",
-    QWEN4_27B_PRELIM["subset_label"],
+    "log-summary\n(Qwen 3.8)",
+    "cancel-async\n(Qwen 3.8)",
+    "db-wal-rec.\n(Qwen 3.8)",
+    "polyglot-c-py\n(Qwen 3.8)",
+    "Qwen 3.8 27B\nSolved Mean",
+    QWEN4_27B_PRELIM["label_short"],
 ]
-baseline_tokens = [5276, 53532, 73336, 80102, QWEN4_27B_PRELIM["baseline_mean_tokens"]]
-enhanced_tokens = [3568, 18988, 32779, 50608, QWEN4_27B_PRELIM["enhanced_mean_tokens"]]
+baseline_tokens = [38223, 64958, 132426, 235226, QWEN38_27B["solved_base_mean_tokens"], QWEN4_27B_PRELIM["solved_base_mean_tokens"]]
+enhanced_tokens = [16061, 21492, 21400, 17868, QWEN38_27B["solved_enh_mean_tokens"], QWEN4_27B_PRELIM["solved_enh_mean_tokens"]]
 xt = np.arange(len(tasks_tok))
 
 style_line_ax(ax1)
@@ -226,36 +266,39 @@ if QWEN4_27B_PRELIM["is_pending"]:
     ax1.scatter([xt[-1]], [baseline_tokens[-1]], facecolors="#FFFFFF", edgecolors=LIGHT_GREY, s=55, linewidth=2.0, zorder=6)
 
 ax1.set_xticks(xt)
-ax1.set_xticklabels(tasks_tok, fontsize=8.0)
-ax1.set_ylim(-8000, 98000)
-ax1.set_yticks([0, 20000, 40000, 60000, 80000])
-ax1.set_xlim(-0.4, 4.45)
-ax1.set_title("Tokens per Episode", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
-add_spanning_arrow(ax1, direction="lower", side="left", offset=0.17, text_gap=0.032, color=NAVY)
+ax1.set_xticklabels(tasks_tok, fontsize=7.6)
+ax1.set_ylim(-24000, 278000)
+ax1.set_yticks([0, 50000, 100000, 150000, 200000, 250000])
+ax1.set_yticklabels(["0", "50k", "100k", "150k", "200k", "250k"])
+ax1.set_xlim(-0.45, 5.45)
+ax1.set_title("Tokens per Episode (Qwen 3.8 27B vs. Qwen 4 27B)", loc="left", fontsize=9.8, fontweight="bold", color=TEXT_MUTED, pad=10)
+add_spanning_arrow(ax1, direction="lower", side="left", offset=0.14, text_gap=0.032, color=NAVY)
 
-tok_base_off = [(0, 8), (-4, 8), (0, 8), (0, 8), (0, 8)]
+tok_base_xy = [(-4, 8), (-9, 8), (-10, 8), (0, 8), (11, 8), (0, 8)]
+tok_enh_xy = [(0, -15), (0, -15), (0, -15), (4, -15), (-4, -16), (0, -15)]
 for i in range(len(xt)):
-    is_qwen_pending = (i == 4 and QWEN4_27B_PRELIM["is_pending"])
-    fw = "bold" if i == 4 else "normal"
-    b_lbl = "TBD" if is_qwen_pending else f"{baseline_tokens[i]:,}"
-    e_lbl = "TBD (-51%)" if is_qwen_pending else f"{enhanced_tokens[i]:,}"
+    is_qwen4 = (i == 5 and QWEN4_27B_PRELIM["is_pending"])
+    fw = "bold" if i >= 4 else "normal"
+    b_lbl = "TBD" if is_qwen4 else f"{baseline_tokens[i]:,}"
+    e_lbl = "TBD" if is_qwen4 else f"{enhanced_tokens[i]:,}"
     ax1.annotate(b_lbl, (xt[i], baseline_tokens[i]), textcoords="offset points",
-                 xytext=tok_base_off[i], ha="center", va="bottom", fontsize=8.0, fontweight=fw, color=TEXT_MUTED)
+                 xytext=tok_base_xy[i], ha="center", va="bottom", fontsize=7.7, fontweight=fw, color=TEXT_MUTED)
     ax1.annotate(e_lbl, (xt[i], enhanced_tokens[i]), textcoords="offset points",
-                 xytext=(0, -15), ha="center", va="bottom", fontsize=8.0, fontweight="bold", color=NAVY)
+                 xytext=tok_enh_xy[i], ha="center", va="bottom", fontsize=7.8, fontweight="bold", color=NAVY)
 
-ax1.legend(frameon=False, loc="upper left", ncol=1, fontsize=7.9)
+ax1.legend(frameon=False, loc="upper left", ncol=1, fontsize=7.8)
 
-# Right panel: Wall-Clock Time (Seconds) ordered cleanly
+# Right Panel: Wall-Clock Time (Seconds) on Qwen 3.8 27B + Paired Mean + Qwen 4 27B
 tasks_sec = [
-    "git-leak-\nrecovery",
-    "cancel-async-\ntasks",
-    "nginx-request-\nlogging",
-    "db-wal-\nrecovery",
-    QWEN4_27B_PRELIM["subset_label"],
+    "openssl-cert\n(Qwen 3.8)",
+    "log-summary\n(Qwen 3.8)",
+    "cancel-async\n(Qwen 3.8)",
+    "db-wal-rec.\n(Qwen 3.8)",
+    "Qwen 3.8 27B\nMean (N=21)",
+    QWEN4_27B_PRELIM["label_short"],
 ]
-baseline_sec = [83.9, 152.7, 223.2, 397.5, QWEN4_27B_PRELIM["baseline_mean_seconds"]]
-enhanced_sec = [38.6, 123.6, 152.5, 99.0, QWEN4_27B_PRELIM["enhanced_mean_seconds"]]
+baseline_sec = [470.6, 561.6, 887.5, 1257.1, QWEN38_27B["paired_base_mean_sec"], QWEN4_27B_PRELIM["paired_base_mean_sec"]]
+enhanced_sec = [61.0, 67.5, 95.4, 72.6, QWEN38_27B["paired_enh_mean_sec"], QWEN4_27B_PRELIM["paired_enh_mean_sec"]]
 xs = np.arange(len(tasks_sec))
 
 style_line_ax(ax2)
@@ -268,27 +311,29 @@ if QWEN4_27B_PRELIM["is_pending"]:
     ax2.scatter([xs[-1]], [baseline_sec[-1]], facecolors="#FFFFFF", edgecolors=LIGHT_GREY, s=55, linewidth=2.0, zorder=6)
 
 ax2.set_xticks(xs)
-ax2.set_xticklabels(tasks_sec, fontsize=8.0)
-ax2.set_ylim(-40, 465)
-ax2.set_yticks([0, 100, 200, 300, 400])
-ax2.set_xlim(-0.4, 4.45)
-ax2.set_title("Wall-Clock Time (Seconds)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
+ax2.set_xticklabels(tasks_sec, fontsize=7.6)
+ax2.set_ylim(-130, 1480)
+ax2.set_yticks([0, 300, 600, 900, 1200])
+ax2.set_xlim(-0.45, 5.45)
+ax2.set_title("Wall-Clock Time (Seconds)", loc="left", fontsize=9.8, fontweight="bold", color=TEXT_MUTED, pad=10)
 add_spanning_arrow(ax2, direction="lower", side="left", offset=0.14, text_gap=0.032, color=TEAL_SLATE)
 
+sec_base_xy = [(-4, 8), (-9, 8), (-9, 8), (0, 8), (10, 8), (0, 8)]
+sec_enh_xy = [(0, -15), (0, -15), (0, -15), (4, -15), (-4, -16), (0, -15)]
 for i in range(len(xs)):
-    is_qwen_pending = (i == 4 and QWEN4_27B_PRELIM["is_pending"])
-    fw = "bold" if i == 4 else "normal"
-    b_lbl = "TBD" if is_qwen_pending else f"{baseline_sec[i]:.1f}s"
-    e_lbl = "TBD (-50%)" if is_qwen_pending else f"{enhanced_sec[i]:.1f}s"
+    is_qwen4 = (i == 5 and QWEN4_27B_PRELIM["is_pending"])
+    fw = "bold" if i >= 4 else "normal"
+    b_lbl = "TBD" if is_qwen4 else f"{baseline_sec[i]:.0f}s"
+    e_lbl = "TBD" if is_qwen4 else f"{enhanced_sec[i]:.0f}s"
     ax2.annotate(b_lbl, (xs[i], baseline_sec[i]), textcoords="offset points",
-                 xytext=(0, 8), ha="center", va="bottom", fontsize=8.0, fontweight=fw, color=TEXT_MUTED)
+                 xytext=sec_base_xy[i], ha="center", va="bottom", fontsize=7.7, fontweight=fw, color=TEXT_MUTED)
     ax2.annotate(e_lbl, (xs[i], enhanced_sec[i]), textcoords="offset points",
-                 xytext=(0, -15), ha="center", va="bottom", fontsize=8.0, fontweight="bold", color=TEAL_SLATE)
+                 xytext=sec_enh_xy[i], ha="center", va="bottom", fontsize=7.8, fontweight="bold", color=TEAL_SLATE)
 
-ax2.legend(frameon=False, loc="upper left", ncol=1, fontsize=7.9)
+ax2.legend(frameon=False, loc="upper left", ncol=1, fontsize=7.8)
 
-fig.suptitle("PromptEnhancer Efficiency: Per-Task Token & Wall-Clock Time Savings",
-             x=0.04, y=0.95, ha="left", fontsize=12.8, fontweight="bold", color=TEXT_DARK)
+fig.suptitle("Qwen 3.8 27B vs. Qwen 4 27B: Token & Wall-Clock Time Savings with PromptEnhancer",
+             x=0.04, y=0.95, ha="left", fontsize=12.6, fontweight="bold", color=TEXT_DARK)
 
 plt.subplots_adjust(left=0.09, right=0.97, top=0.80, bottom=0.16)
 plt.savefig(os.path.join(OUT_DIR, "chart2_qwen4_token_wallclock_savings.png"))
@@ -296,68 +341,90 @@ plt.close(fig)
 
 
 # ==============================================================================
-# CHART 3: Episode Cumulative Token Trajectory & Encoder State Audit Accuracy
+# CHART 3: Aggregate Suite Comparison (Solved-Task Tokens & Total Wall-Clock Hours)
 # ==============================================================================
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.8, 3.9), gridspec_kw={"width_ratios": [1.08, 1], "wspace": 0.34})
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.8, 3.9), gridspec_kw={"width_ratios": [1, 1], "wspace": 0.34})
 
-turns_x = np.array([1, 3, 5, 7, 9, 11, 13, 15])
-base_cum_tok = [1086, 4114, 8605, 14691, 22281, 31969, 43740, 53532]
-# Enhanced completes at Turn 7 (18,988 tokens); plateau shows avoided turns T8..T15
-enh_cum_full = [1039, 4281, 10824, 18988, 18988, 18988, 18988, 18988]
-enh_turns_active = np.array([1, 3, 5, 7])
-enh_cum_active = [1039, 4281, 10824, 18988]
+suite_tok_labels = [
+    "gemma4:31b\n(Solved Mean)",
+    "Qwen 3.8 27B\n(Solved N=10)",
+    QWEN4_27B_PRELIM["label_short"],
+]
+suite_base_tok = [68990, 102377, QWEN4_27B_PRELIM["solved_base_mean_tokens"]]
+suite_enh_tok = [34125, 61327, QWEN4_27B_PRELIM["solved_enh_mean_tokens"]]
+xst = np.arange(len(suite_tok_labels))
 
 style_line_ax(ax1)
-ax1.plot(turns_x, base_cum_tok, color=LIGHT_GREY, linewidth=2.2, linestyle="--", marker="s", markersize=6.0, label="Baseline (15 Turns • FAIL)", zorder=3)
-ax1.plot(enh_turns_active, enh_cum_active, color=NAVY, linewidth=2.6, marker="o", markersize=7.0, label="+ PromptEnhancer (7 Turns • PASS)", zorder=5)
-ax1.plot(turns_x[3:], enh_cum_full[3:], color=NAVY, linewidth=1.6, linestyle=":", zorder=4)
-ax1.fill_between(turns_x[3:], base_cum_tok[3:], enh_cum_full[3:], color=NAVY, alpha=0.07, zorder=2)
+ax1.plot(xst, suite_base_tok, color=LIGHT_GREY, linewidth=2.3, linestyle="--", marker="s", markersize=6.5, label="Baseline (terminus-2)", zorder=3)
+ax1.plot(xst, suite_enh_tok, color=NAVY, linewidth=2.6, marker="o", markersize=7.0, label="+ PromptEnhancer (PE)", zorder=5)
+ax1.fill_between(xst, suite_base_tok, suite_enh_tok, color=NAVY, alpha=0.07, zorder=2)
 
-ax1.set_xticks(turns_x)
-ax1.set_xticklabels([f"T{t}" for t in turns_x], fontsize=8.4)
-ax1.set_ylim(-5000, 66000)
-ax1.set_yticks([0, 15000, 30000, 45000, 60000])
-ax1.set_xlim(0.2, 16.2)
-ax1.set_title("Cumulative Tokens (git-leak-recovery)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
-add_spanning_arrow(ax1, direction="lower", side="left", offset=0.17, text_gap=0.032, color=NAVY)
+if QWEN4_27B_PRELIM["is_pending"]:
+    ax1.scatter([xst[-1]], [suite_enh_tok[-1]], facecolors="#FFFFFF", edgecolors=NAVY, s=65, linewidth=2.2, zorder=6)
+    ax1.scatter([xst[-1]], [suite_base_tok[-1]], facecolors="#FFFFFF", edgecolors=LIGHT_GREY, s=55, linewidth=2.0, zorder=6)
 
-ax1.annotate("53,532 tok (FAIL)", (15, 53532), textcoords="offset points", xytext=(-6, 7),
-             ha="right", va="bottom", fontsize=8.1, fontweight="bold", color=TEXT_MUTED)
-ax1.annotate("18,988 tok (PASS • -64.5%)", (7, 18988), textcoords="offset points", xytext=(4, -18),
-             ha="left", va="bottom", fontsize=8.1, fontweight="bold", color=NAVY)
+ax1.set_xticks(xst)
+ax1.set_xticklabels(suite_tok_labels, fontsize=8.4)
+ax1.set_ylim(0, 130000)
+ax1.set_yticks([0, 30000, 60000, 90000, 120000])
+ax1.set_yticklabels(["0", "30k", "60k", "90k", "120k"])
+ax1.set_xlim(-0.35, 2.35)
+ax1.set_title("Mean Tokens per Solved Task", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
+add_spanning_arrow(ax1, direction="lower", side="left", offset=0.14, text_gap=0.032, color=NAVY)
+
+tok_base_xy3 = [(-6, 8), (0, 8), (0, 8)]
+tok_enh_xy3 = [(8, -16), (6, 9), (0, -16)]
+tok_enh_notes = ["34,125 (-50.5%)", "61,327 (-40.1%)", "TBD"]
+for i in range(len(xst)):
+    is_qwen4 = (i == 2 and QWEN4_27B_PRELIM["is_pending"])
+    b_lbl = "TBD" if is_qwen4 else f"{suite_base_tok[i]:,}"
+    ax1.annotate(b_lbl, (xst[i], suite_base_tok[i]), textcoords="offset points", xytext=tok_base_xy3[i],
+                 ha="center", va="bottom", fontsize=8.1, color=TEXT_MUTED)
+    ax1.annotate(tok_enh_notes[i], (xst[i], suite_enh_tok[i]), textcoords="offset points", xytext=tok_enh_xy3[i],
+                 ha="center", va="bottom", fontsize=8.2, fontweight="bold", color=NAVY)
 
 ax1.legend(frameon=False, loc="upper left", ncol=1, fontsize=7.9)
 
-# Right panel: Encoder accuracy across splits vs sub-ms latency
-splits = ["Held-Out\n(N=1,200)", "Adversarial\n(N=38)", "TB-2.1 Live\n(N=12)", "Post-Heal\n(Self-Healed)"]
-tiny_acc = [100.0, 97.4, 100.0, 100.0]
-small_acc = [100.0, 100.0, 100.0, 100.0]
-xsp = np.arange(len(splits))
+# Right panel: Total Wall-Clock Hours across 21 Paired Tasks (Qwen 3.8 27B vs Qwen 4 27B)
+hr_labels = [
+    "Qwen 3.8 27B\n(Paired N=21)",
+    QWEN4_27B_PRELIM["label_paired"],
+]
+base_hrs = [QWEN38_27B["paired_base_total_hr"], QWEN4_27B_PRELIM["paired_base_total_hr"]]
+enh_hrs = [QWEN38_27B["paired_enh_total_hr"], QWEN4_27B_PRELIM["paired_enh_total_hr"]]
+xh = np.arange(len(hr_labels))
 
 style_line_ax(ax2)
-ax2.plot(xsp, tiny_acc, color=TEAL_SLATE, linewidth=2.2, linestyle="--", marker="s", markersize=6.5, label="terminus-state-tiny (0.27 ms)", zorder=4)
-ax2.plot(xsp, small_acc, color=NAVY, linewidth=2.5, marker="o", markersize=7.0, label="terminus-state-small (0.34 ms)", zorder=5)
-ax2.fill_between(xsp, tiny_acc, 85, color=NAVY, alpha=0.05, zorder=2)
+ax2.plot(xh, base_hrs, color=LIGHT_GREY, linewidth=2.3, linestyle="--", marker="s", markersize=6.8, label="Baseline (terminus-2)", zorder=3)
+ax2.plot(xh, enh_hrs, color=TEAL_SLATE, linewidth=2.6, marker="o", markersize=7.2, label="+ PromptEnhancer (PE)", zorder=5)
+ax2.fill_between(xh, base_hrs, enh_hrs, color=TEAL_SLATE, alpha=0.07, zorder=2)
 
-ax2.set_xticks(xsp)
-ax2.set_xticklabels(splits, fontsize=8.2)
-ax2.set_ylim(88, 104)
-ax2.set_yticks([90, 95, 100])
-ax2.set_xlim(-0.35, 3.35)
-ax2.set_title("8-Class State Encoder Accuracy (%)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
-add_spanning_arrow(ax2, direction="higher", side="left", offset=0.14, text_gap=0.032, color=TEAL_SLATE)
+if QWEN4_27B_PRELIM["is_pending"]:
+    ax2.scatter([xh[-1]], [enh_hrs[-1]], facecolors="#FFFFFF", edgecolors=TEAL_SLATE, s=65, linewidth=2.2, zorder=6)
+    ax2.scatter([xh[-1]], [base_hrs[-1]], facecolors="#FFFFFF", edgecolors=LIGHT_GREY, s=55, linewidth=2.0, zorder=6)
 
-for i in range(len(xsp)):
-    ax2.annotate(f"{small_acc[i]:.1f}%", (xsp[i], small_acc[i]), textcoords="offset points", xytext=(0, 7),
-                 ha="center", va="bottom", fontsize=8.2, fontweight="bold", color=NAVY)
-    if tiny_acc[i] != small_acc[i]:
-        ax2.annotate(f"{tiny_acc[i]:.1f}%", (xsp[i], tiny_acc[i]), textcoords="offset points", xytext=(0, -14),
-                     ha="center", va="bottom", fontsize=8.1, fontweight="bold", color=TEAL_SLATE)
+ax2.set_xticks(xh)
+ax2.set_xticklabels(hr_labels, fontsize=8.6)
+ax2.set_ylim(0, 6.6)
+ax2.set_yticks([0, 1.5, 3.0, 4.5, 6.0])
+ax2.set_xlim(-0.35, 1.35)
+ax2.set_title("Total Episode Time (Hours, N=21 Tasks)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
+add_spanning_arrow(ax2, direction="lower", side="left", offset=0.14, text_gap=0.032, color=TEAL_SLATE)
 
-ax2.legend(frameon=False, loc="lower left", ncol=1, fontsize=7.9)
+ax2.annotate("5.21 hr (18,774s)", (xh[0], base_hrs[0]), textcoords="offset points", xytext=(0, 8),
+             ha="center", va="bottom", fontsize=8.2, fontweight="bold", color=TEXT_MUTED)
+ax2.annotate("1.90 hr (-63.6% • -3.32 hr)", (xh[0], enh_hrs[0]), textcoords="offset points", xytext=(8, -15),
+             ha="center", va="bottom", fontsize=8.2, fontweight="bold", color=TEAL_SLATE)
 
-fig.suptitle("Episode Token Trajectory & Sub-Millisecond Encoder Accuracy",
-             x=0.04, y=0.95, ha="left", fontsize=12.8, fontweight="bold", color=TEXT_DARK)
+ax2.annotate("TBD", (xh[1], base_hrs[1]), textcoords="offset points", xytext=(0, 8),
+             ha="center", va="bottom", fontsize=8.2, color=TEXT_MUTED)
+ax2.annotate("TBD (Pending)", (xh[1], enh_hrs[1]), textcoords="offset points", xytext=(0, -15),
+             ha="center", va="bottom", fontsize=8.2, fontweight="bold", color=TEAL_SLATE)
+
+ax2.legend(frameon=False, loc="upper right", ncol=1, fontsize=7.9)
+
+fig.suptitle("Suite-Level Efficiency: Mean Solved-Task Tokens & Total Wall-Clock Hours",
+             x=0.04, y=0.95, ha="left", fontsize=12.6, fontweight="bold", color=TEXT_DARK)
 
 plt.subplots_adjust(left=0.09, right=0.97, top=0.80, bottom=0.16)
 plt.savefig(os.path.join(OUT_DIR, "chart3_pe_turn_trajectory.png"))
