@@ -2,20 +2,26 @@
 
 *By Chris Borkert · November 2026*
 
-**Qwen 4 27B** (`Qwen4-27B`) was just released. We ran a preliminary evaluation on Terminal-Bench 2.1 (`harbor` / `terminus-2`)[^1] comparing vanilla `terminus-2` against `Terminus2Enhanced`—which pairs **Qwen 4 27B** with our **263,176-parameter (`1.03 MB`)** `minimodels` 8-class terminal state encoder (`PromptEnhancer`, **0.340 ms** per turn on Apple M5) and online weight self-healing (`minimodels learn`)[^2].
+## Quick Summary
 
-Even in preliminary runs, **Qwen 4 27B** is a remarkably capable open-weights model for multi-turn Linux systems engineering. Pairing it with `PromptEnhancer` (PE) compounds that capability across three operational dimensions:
-
-1. **More Tasks Passed**: Recovers episodes that otherwise fail on interactive pagers (`less`, `git log`), destructive tool side effects (`sqlite3` unlinking `-wal` files), unescaped regex flags, or unverified output paths.
-2. **Substantial Token Savings (`-32.4%` to `-64.5%` on resolved tasks)**: Because every `terminus-2` turn appends the full `tmux` screen capture to a growing conversation history, cutting an episode from 15 turns to 7–8 turns avoids the quadratic tail of prompt tokens (`53,532` $\to$ `18,988` tokens on `git-leak-recovery`; `73,336` $\to$ `32,779` tokens on `db-wal-recovery`).
-3. **Wall-Clock Time Savings (`-19.1%` to `-75.1%` per resolved episode)**: Preventing a single hung interactive command or redundant 8-turn debugging loop eliminates 180-second `tmux` timeouts and tens of seconds of LLM generation (`397.5s` $\to$ `99.0s` on `db-wal-recovery`; `223.2s` $\to$ `152.5s` on `nginx-request-logging`) at a classifier cost of **0.269–0.340 ms** per turn.
+- **Model & Harness**: **Qwen 4 27B** (`Qwen4-27B`, just released) evaluated on Terminal-Bench 2.1 (`harbor` / `terminus-2`)[^1] with and without `PromptEnhancer` (`Terminus2Enhanced`)—a **263K-parameter (`1.03 MB`, `0.340 ms`/turn)** [`minimodels`](/posts/minimodels-rust-metal.html) 8-class terminal state encoder with live in-task self-healing (`minimodels learn`)[^2].
+- **More Tasks Passed**: **Qwen 4 27B** is a highly capable open-weights systems model out of the box; adding `PromptEnhancer` recovers episodes that otherwise fail on interactive pagers (`less`, `git log`), destructive tool side effects (`sqlite3` unlinking `-wal` files), unescaped regex flags, or unverified output paths.
+- **Token Savings (`-32.4%` to `-64.5%`) & Wall-Clock Savings (`-19.1%` to `-75.1%`)**: Intercepting terminal state traps early cuts episode length from 15 turns to 7–8 turns, avoiding quadratic prompt-history growth (`53,532` $\to$ `18,988` tokens on `git-leak-recovery`) and 180-second `tmux` timeouts (`397.5s` $\to$ `99.0s` on `db-wal-recovery`).
 
 <figure class="figure-box">
   <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Terminal-Bench 2.1 Preliminary Benchmark: Tasks Passed and Resolution Rate">
   <figcaption class="figcaption"><strong>Figure 1. Terminal-Bench 2.1 Preliminary Benchmark: Tasks Passed and Resolution Rate (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Higher is better.</em> Hollow markers indicate preliminary Qwen 4 27B slots updated as the benchmark sweep completes.</figcaption>
 </figure>
 
-### Preliminary Summary: Qwen 4 27B (`terminus-2` Baseline vs. `+ PromptEnhancer`)
+<figure class="figure-box">
+  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: PromptEnhancer Efficiency: Per-Task Token and Wall-Clock Time Savings">
+  <figcaption class="figcaption"><strong>Figure 2. Per-Task Token Consumption and Wall-Clock Execution Time (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Lower is better.</em> Resolving state traps early cuts prompt/completion tokens by 32.4%–64.5% and wall-clock execution time by 19.1%–75.1% across resolved tasks.</figcaption>
+</figure>
+
+<figure class="figure-box">
+  <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Episode Token Trajectory and Sub-Millisecond Encoder Accuracy">
+  <figcaption class="figcaption"><strong>Figure 3. Left: Cumulative Episode Tokens Across Turns on <code>git-leak-recovery</code> (<em>Lower is better</em>). Right: 8-Class Terminal State Encoder Accuracy Across Evaluation Splits (<em>Higher is better</em>).</strong></figcaption>
+</figure>
 
 | Metric (Terminal-Bench 2.1 Preliminary Evaluation) | `Qwen 4 27B` Baseline (`terminus-2`) | `Qwen 4 27B` + `PromptEnhancer` (`Terminus2Enhanced`) | Net Delta / Savings |
 | :--- | ---: | ---: | ---: |
@@ -29,16 +35,11 @@ Even in preliminary runs, **Qwen 4 27B** is a remarkably capable open-weights mo
 
 ---
 
-## Token and Wall-Clock Savings: Why State Classification Pays for Itself
+## Why State Classification Pays for Itself in Tokens and Wall-Clock Time
 
 When an autonomous coding agent operates inside a persistent `tmux` session rather than a stateless single-command tool call, the failure modes change. On Terminal-Bench 2.1 (`harbor` / `terminus-2`, $N=89$ containerized Linux tasks)[^1], the agent emits a JSON batch of keystrokes and wait durations (`{"analysis", "plan", "commands": [{"keystrokes": "...\n", "duration": 1.0}], "task_complete": false}`) and receives a raw capture of the `tmux` pane.
 
 Inspecting raw `trajectory.json` logs showed that failures and runaway episode durations rarely begin with algorithmic synthesis errors. Instead, they begin with **terminal state-machine desynchronization**. Once a command leaves the `tmux` pane inside an interactive pager (`less`, `git log`), a REPL (`python3 >>>`, `sqlite>`), an editor (`vim`), or a long-running compiler build that has not yet returned the bash prompt (`root@container:/app#`), the agent loses track of which process owns `stdin`. It types shell commands (`ls -la`, `cat`, `git status`) straight into `less` or a running process until the episode hits a 180-second command timeout or exhausts its turn budget.
-
-<figure class="figure-box">
-  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: PromptEnhancer Efficiency: Per-Task Token and Wall-Clock Time Savings">
-  <figcaption class="figcaption"><strong>Figure 2. Per-Task Token Consumption and Wall-Clock Execution Time (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Lower is better.</em> Resolving state traps early cuts prompt/completion tokens by 32.4%–64.5% and wall-clock execution time by 19.1%–75.1% across resolved tasks.</figcaption>
-</figure>
 
 Adding a secondary LLM judge call on every turn to classify the terminal screen adds seconds of latency and doubles token consumption. Instead, `PromptEnhancer` uses our **197K-parameter (`770 KB`, `0.269 ms`)** and **263K-parameter (`1.03 MB`, `0.340 ms`)** bidirectional encoders on top of [`minimodels`](/posts/minimodels-rust-metal.html)[^2] to classify `(last_command, terminal_output)` into eight operational terminal states and append a concise recovery directive before the next LLM turn:
 
@@ -68,11 +69,6 @@ General-purpose subword tokenizers (such as 50,257-token BPE vocabularies) are p
 - **Domain Vocabulary (`2,048` entries)**: Assigns dedicated token IDs to shell executables (`git`, `grep`, `sqlite3`, `pytest`, `cargo`, `gcc`, `apt-get`), flags (`--no-pager`, `-F`, `--prune`, `--inplace`), error tokens (`SyntaxError`, `IndentationError`, `ModuleNotFoundError`, `EADDRINUSE`, `ENOENT`, `locked`), and interactive prompt markers (`(END)`, `--More--`, `>>>`, `sqlite>`, `postgres=#`, `(gdb)`, `[y/N]`).
 - **Identifier Hash Bucketing (`<IDENT_0..63>` and `<NUM>`)**: Unseen repository-specific identifiers and file basenames hash deterministically into 64 `<IDENT_k>` buckets (`MD5(token) mod 64`), and arbitrary numeric literals map to `<NUM>`. This prevents unseen variable names or commit hashes from polluting pooling representations while still letting self-attention see repeated identifier references across a turn.
 - **Head-Tail Windowing ($N=128$)**: Normalizes container prompt strings (`user@host:/path# ` $\to$ `root@container:/app# `) and retains the first **40 tokens** (`CMD: <command>\nOUT:\n<head>`) concatenated with the final **88 tokens** of the terminal capture. In a terminal pane, the executed verb is always at the top and the resulting prompt or interactive trap is always at the bottom.
-
-<figure class="figure-box">
-  <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Episode Token Trajectory and Sub-Millisecond Encoder Accuracy">
-  <figcaption class="figcaption"><strong>Figure 3. Left: Cumulative Episode Tokens Across Turns on <code>git-leak-recovery</code> (<em>Lower is better</em>). Right: 8-Class Terminal State Encoder Accuracy Across Evaluation Splits (<em>Higher is better</em>).</strong></figcaption>
-</figure>
 
 Tokenization runs in **$13.83\ \mu\text{s}$ mean** per turn in pure Python. We trained two encoder sizes on an 8-class synthetic and trace-derived terminal state dataset (`6,400` training turns, `1,200` validation turns, `1,200` held-out test turns, plus a 38-case adversarial contrast set and 12 Terminal-Bench scenarios)[^3]:
 
