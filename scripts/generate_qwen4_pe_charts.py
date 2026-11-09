@@ -196,6 +196,7 @@ fig.suptitle("Qwen 3.8 27B vs. Qwen 4 27B: Resolution Rate & Tasks Passed (With 
 
 plt.subplots_adjust(left=0.09, right=0.97, top=0.80, bottom=0.16)
 plt.savefig(os.path.join(OUT_DIR, "chart1_qwen4_tasks_passed.png"))
+plt.savefig(os.path.join(OUT_DIR, "qwen38_vs_qwen4_chart1.png"))
 plt.close(fig)
 
 
@@ -261,6 +262,7 @@ fig.suptitle("Qwen 3.8 27B vs. Qwen 4 27B: Token & Wall-Clock Savings (With vs. 
 
 plt.subplots_adjust(left=0.09, right=0.97, top=0.80, bottom=0.16)
 plt.savefig(os.path.join(OUT_DIR, "chart2_qwen4_token_wallclock_savings.png"))
+plt.savefig(os.path.join(OUT_DIR, "qwen38_vs_qwen4_chart2.png"))
 plt.close(fig)
 
 
@@ -330,6 +332,7 @@ fig.suptitle("Task-Level Breakdown: Token & Wall-Clock Time Reductions with Prom
 
 plt.subplots_adjust(left=0.09, right=0.97, top=0.80, bottom=0.16)
 plt.savefig(os.path.join(OUT_DIR, "chart3_pe_turn_trajectory.png"))
+plt.savefig(os.path.join(OUT_DIR, "qwen38_vs_qwen4_chart3.png"))
 plt.close(fig)
 
 print(f"Generated 3 charts in {OUT_DIR}")
