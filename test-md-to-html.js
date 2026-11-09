@@ -47,6 +47,9 @@ testSection('1. Inline Formatting, Code, Links & Math', () => {
   assert(parseInline('$pass@1$') === '<span class="vbg-formula">pass@1</span>', 'Parses simple inline math');
   assert(parseInline('$\\text{Model} \\times \\text{Harness}$') === '<span class="vbg-formula">Model &times; Harness</span>', 'Parses and cleans LaTeX inline formula');
   assert(parseInline('variable_name_with_underscores') === 'variable_name_with_underscores', 'Preserves snake_case variables without italic corruption');
+  assert(parseInline('Claim[^1]') === 'Claim<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup>', 'Parses inline footnote reference');
+  const fnParsed = parseMarkdown('Claim.[^1]\n\n## References\n\n[^1]: First source.\n[^2]: Second source.');
+  assert(fnParsed.contentHtml.includes('<ol class="footnotes-list">') && fnParsed.contentHtml.includes('<li id="fn-1">First source.</li>'), 'Parses footnote definitions into ordered list');
 });
 
 // 2. Test Headings & Anchor Slugs

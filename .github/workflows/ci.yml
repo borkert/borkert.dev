@@ -1,0 +1,25 @@
+name: Build & Verify Posts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build posts and verify sitemap sync
+        run: npm run build
+
+      - name: Run Markdown parser and Agent Readiness test suites
+        run: npm test

@@ -577,6 +577,36 @@ pre code, .code-block code {
   margin-block: var(--vbg-space-5);
 }
 
+.footnote-ref {
+  font-family: var(--vbg-font-mono);
+  font-size: 0.75em;
+  line-height: 0;
+  margin-inline-start: 2px;
+}
+
+.footnote-ref a {
+  color: var(--vbg-text-secondary);
+  text-decoration: none;
+}
+
+.footnote-ref a:hover {
+  color: var(--vbg-text-primary);
+  text-decoration: underline;
+}
+
+.post-content .footnotes-list {
+  font-size: var(--vbg-type-compact);
+  line-height: var(--vbg-leading-compact);
+  color: var(--vbg-text-secondary);
+}
+
+.post-content .footnotes-list li {
+  font-size: var(--vbg-type-compact);
+  line-height: var(--vbg-leading-compact);
+  color: var(--vbg-text-secondary);
+  margin-block-end: var(--vbg-space-2);
+}
+
 /* Post full-width container for benchmark tables and figures */
 .post-wide-wrap {
   width: 100%;

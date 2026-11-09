@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sub-Millisecond Terminal State Classification for Coding Agents: Benchmarking PromptEnhancer on Terminal-Bench 2.1 with Qwen 4 27B — Chris Borkert</title>
+  <meta name="description" content="When an autonomous coding agent operates inside a persistent tmux session rather than a stateless single-command tool call, the failure modes change. On Termina...">
+  <meta name="author" content="Chris Borkert">
+  <link rel="canonical" href="https://borkert.dev/posts/prompt-enhancer-terminal-bench-qwen4-27b.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Sub-Millisecond Terminal State Classification for Coding Agents: Benchmarking PromptEnhancer on Terminal-Bench 2.1 with Qwen 4 27B">
+  <meta property="og:description" content="When an autonomous coding agent operates inside a persistent tmux session rather than a stateless single-command tool call, the failure modes change. On Termina...">
+  <meta property="og:url" content="https://borkert.dev/posts/prompt-enhancer-terminal-bench-qwen4-27b.html">
+  <meta property="og:type" content="article">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- Geist Typography (Vercel Brand Guideline) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..600&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" referrerpolicy="no-referrer">
+
+  <!-- Vercel Brand Stylesheet -->
+  <link rel="stylesheet" href="/assets/vercel-brand.css?v=2">
+  <link rel="stylesheet" href="/styles.css?v=2">
+</head>
+<body class="vbg-report">
+  <div class="vbg-shell">
+    <a class="vbg-skip-link" href="#main">Skip to main content</a>
+
+    <header class="vbg-header">
+      <div class="vbg-masthead">
+        <div class="vbg-identity">
+          <a href="/" class="site-link-mono">← borkert.dev</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <article class="post-content">
+        <header class="post-header">
+          <h1 class="vbg-title">Sub-Millisecond Terminal State Classification for Coding Agents: Benchmarking PromptEnhancer on Terminal-Bench 2.1 with Qwen 4 27B</h1>
+          <div class="post-meta">By Chris Borkert · November 2026</div>
+        </header>
+
+        <blockquote>
+  <p><em>Note: The <code>minimodels</code> 8-class <code>PromptEnhancer</code> encoder, in-task weight self-healing loop, and high-concurrency Terminal-Bench 2.1 execution harness described below are complete and verified on calibration runs. We are holding the full 89-task paired evaluation for <strong>Qwen 4 27B</strong>, which is scheduled for release shortly, and will run and publish the complete 89-task tables as soon as the weights drop.</em></p>
+</blockquote>
+
+<p>When an autonomous coding agent operates inside a persistent <code>tmux</code> session rather than a stateless single-command tool call, the failure modes change. On Terminal-Bench 2.1 (<code>harbor</code> / <code>terminus-2</code>, <span class="vbg-formula">N=89</span> containerized Linux tasks)<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup>, the agent emits a JSON batch of keystrokes and wait durations (<code>{&quot;analysis&quot;, &quot;plan&quot;, &quot;commands&quot;: [{&quot;keystrokes&quot;: &quot;...\n&quot;, &quot;duration&quot;: 1.0}], &quot;task_complete&quot;: false}</code>) and receives a raw capture of the <code>tmux</code> pane.</p>
+
+<p>I initially expected task failures on open-weight models to stem from algorithmic synthesis errors. Inspecting raw <code>trajectory.json</code> logs showed a more mechanical problem: <strong>terminal state-machine desynchronization</strong>. Once a command leaves the <code>tmux</code> pane inside an interactive pager (<code>less</code>, <code>git log</code>), a REPL (<code>python3 &gt;&gt;&gt;</code>, <code>sqlite&gt;</code>), an editor (<code>vim</code>), or a long-running compiler build that has not yet returned the bash prompt (<code>root@container:/app#</code>), smaller and mid-sized models lose track of which process owns <code>stdin</code>. They type shell commands (<code>ls -la</code>, <code>cat</code>, <code>git status</code>) straight into <code>less</code> or a running process until the episode hits the turn or timeout limit.</p>
+
+<p>Adding a secondary LLM judge call on every turn to classify the terminal screen adds seconds of latency and doubles token consumption. Instead, I trained a <strong>263,176-parameter (<code>1.03 MB</code>)</strong> 4-layer bidirectional encoder (<code>terminus-state-small</code>) on top of <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a>—my zero-framework Rust and Metal/CPU engine<sup class="footnote-ref"><a href="#fn-2">[2]</a></sup>—to classify <code>(last_command, terminal_output)</code> into eight operational terminal states in <strong>0.340 ms</strong> per turn (<code>2,936 turns/s</code> on Apple M5) and append a deterministic recovery directive before the agent's next LLM call.</p>
+
+<hr>
+
+<h2 id="state-machine-desynchronization-in-persistent-tmux-loops">State-Machine Desynchronization in Persistent tmux Loops</h2>
+
+<p>In Harbor's <code>terminus-2</code> harness<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup>, every turn captures the active <code>tmux</code> pane via <code>capture-pane</code> and feeds it back to the model as a plain text block prefixed with <code>New Terminal Output:</code> or <code>Current Terminal Screen:</code>. Across multi-turn traces, four structural failure modes recur:</p>
+
+<ol>
+  <li><strong>Interactive Pager and REPL Traps (<code>InteractiveTrap</code>)</strong>: Commands such as <code>git log</code>, <code>git diff</code>, <code>man</code>, <code>sqlite3</code>, <code>gdb</code>, or <code>apt-get install</code> without <code>-y</code> hold the terminal open at <code>(END)</code>, <code>--More--</code>, <code>sqlite&gt;</code>, <code>(gdb)</code>, or <code>[Y/n]</code>. Because the capture contains valid source diffs or package metadata above the final line, the LLM treats the screen as completed shell output and emits bash commands that are swallowed as pager keystrokes.</li>
+  <li><strong>Unfinished Foreground Processes (<code>StillRunningOrHung</code>)</strong>: When a command exceeds its requested <code>duration</code> (e.g., <code>cargo build --release</code>, <code>make -j4</code>, or <code>apt-get update</code>), <code>terminus-2</code> returns the partial stdout before the shell prompt (<code>#</code> or <code>$</code>) reappears. Sending the next shell command injects characters into the active process's <code>stdin</code> buffer rather than waiting with <code>{&quot;keystrokes&quot;: &quot;&quot;, &quot;duration&quot;: 5.0}</code>.</li>
+  <li><strong>Unescaped Flag/Regex Syntax Errors and Destructive Tool Side Effects (<code>CompileOrSyntaxOrTestError</code>)</strong>: In <code>git-leak-recovery</code>, running <code>git log -p | grep &#39;secret[&#39;</code> fails because <code>[</code> is an unescaped character class (<code>grep: Invalid regular expression</code>). Without explicit error framing, the baseline agent interprets non-zero exit output as "zero matches found," writes <code>Secret not found</code> to <code>/app/secret.txt</code>, and wastes its remaining turns rewriting git history. Similarly, in <code>db-wal-recovery</code>, invoking <code>sqlite3 /app/main.db</code> before copying <code>/app/main.db-wal</code> causes SQLite to unlink a corrupted or encrypted <code>-wal</code> file on close.</li>
+  <li><strong>Premature Completion Declarations (<code>ReadyForVerification</code>)</strong>: After a build succeeds or a file is written, the agent sets <code>&quot;task_complete&quot;: true</code> on the same turn without checking whether the artifact was written to <code>/app/&lt;target&gt;</code> (rather than a working subdirectory like <code>/app/repo/&lt;target&gt;</code>) or whether <code>git fsck</code> still reports unreachable objects.</li>
+</ol>
+
+<hr>
+
+<h2 id="closed-vocabulary-head-tail-tokenization-1383-mutexts-and-the-103-mb-encoder">Closed-Vocabulary Head-Tail Tokenization (<span class="vbg-formula">13.83\ \mus</span>) and the 1.03 MB Encoder</h2>
+
+<p>General-purpose subword tokenizers (such as 50,257-token BPE vocabularies) are poorly matched to 128-token terminal state classification. A single compiler traceback or hex dump fragments into hundreds of subword tokens, pushing the command header (<code>CMD: ...</code>) and the trailing prompt line out of a compact context window while inflating the embedding table to <span class="vbg-formula">&gt;12 MB</span>.</p>
+
+<p><code>HeadTailTerminusTokenizer</code> (<code>scripts/synth_terminus_state.py</code>)<sup class="footnote-ref"><a href="#fn-3">[3]</a></sup> replaces subword tokenization with a closed <strong>2,048-token structural vocabulary</strong> and fixed <strong>128-token head-tail windowing</strong>:</p>
+
+<ul>
+  <li><strong>Domain Vocabulary (<code>2,048</code> entries)</strong>: Assigns dedicated token IDs to shell executables (<code>git</code>, <code>grep</code>, <code>sqlite3</code>, <code>pytest</code>, <code>cargo</code>, <code>gcc</code>, <code>apt-get</code>), flags (<code>--no-pager</code>, <code>-F</code>, <code>--prune</code>, <code>--inplace</code>), error tokens (<code>SyntaxError</code>, <code>IndentationError</code>, <code>ModuleNotFoundError</code>, <code>EADDRINUSE</code>, <code>ENOENT</code>, <code>locked</code>), and interactive prompt markers (<code>(END)</code>, <code>--More--</code>, <code>&gt;&gt;&gt;</code>, <code>sqlite&gt;</code>, <code>postgres=#</code>, <code>(gdb)</code>, <code>[y/N]</code>).</li>
+  <li><strong>Identifier Hash Bucketing (<code>&lt;IDENT_0..63&gt;</code> and <code>&lt;NUM&gt;</code>)</strong>: Unseen repository-specific identifiers and file basenames hash deterministically into 64 <code>&lt;IDENT_k&gt;</code> buckets (<code>MD5(token) mod 64</code>), and arbitrary numeric literals map to <code>&lt;NUM&gt;</code>. This prevents unseen variable names or commit hashes from polluting pooling representations while still letting self-attention see repeated identifier references across a turn.</li>
+  <li><strong>Head-Tail Windowing (<span class="vbg-formula">N=128</span>)</strong>: Normalizes container prompt strings (<code>user@host:/path# </code> <span class="vbg-formula">&rarr;</span> <code>root@container:/app# </code>) and retains the first <strong>40 tokens</strong> (<code>CMD: &lt;command&gt;\nOUT:\n&lt;head&gt;</code>) concatenated with the final <strong>88 tokens</strong> of the terminal capture. In a terminal pane, the executed verb is always at the top and the resulting prompt or interactive trap is always at the bottom.</li>
+</ul>
+
+<p>Tokenization runs in <strong><span class="vbg-formula">13.83\ \mus</span> mean</strong> per turn in pure Python. We trained two encoder sizes on an 8-class synthetic and trace-derived terminal state dataset (<code>6,400</code> training turns, <code>1,200</code> validation turns, <code>1,200</code> held-out test turns, plus a 38-case adversarial contrast set and 12 Terminal-Bench scenarios)[^3]:</p>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Terminal State ID</th>
+        <th scope="col">Class Name</th>
+        <th scope="col">Operational Condition & Injected Directive Summary</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong><code>0</code></strong></th>
+        <td><code>CleanProgress</code></td>
+        <td>Command succeeded and returned to <code>#</code>/<code>$</code>; proceed without repeating commands; preserve <code>-wal</code> files before <code>sqlite3</code>; inspect reflog (<code>git --no-pager log -g -p</code>) if standard log is empty.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>1</code></strong></th>
+        <td><code>InteractiveTrap</code></td>
+        <td>Stuck in pager (<code>(END)</code>, <code>--More--</code>), REPL (<code>&gt;&gt;&gt;</code>, <code>sqlite&gt;</code>, <code>(gdb)</code>), <code>vim</code>, or <code>[y/N]</code> prompt; send <code>&quot;q&quot;</code>, <code>&quot;C-d&quot;</code>, <code>&quot;:q!\n&quot;</code>, or <code>&quot;C-c&quot;</code> before any bash command.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>2</code></strong></th>
+        <td><code>StillRunningOrHung</code></td>
+        <td>Command has not returned to shell prompt; do not type into <code>stdin</code>; send <code>{&quot;keystrokes&quot;: &quot;&quot;, &quot;duration&quot;: 5.0}</code> to poll or <code>&quot;C-c&quot;</code> if hung.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>3</code></strong></th>
+        <td><code>PathOrRepoError</code></td>
+        <td><code>No such file or directory</code>, <code>cannot stat</code>, <code>not a git repository</code>; inspect actual layout with <code>pwd &amp;&amp; ls -la</code> or <code>find . -maxdepth 3</code>.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>4</code></strong></th>
+        <td><code>MissingToolOrModule</code></td>
+        <td><code>command not found</code>, <code>ModuleNotFoundError</code>, <code>externally-managed-environment</code>; install only the failing package or use <code>python3</code> directly.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>5</code></strong></th>
+        <td><code>CompileOrSyntaxOrTestError</code></td>
+        <td>Compiler/linker failure, <code>SyntaxError</code>, invalid regex (<code>grep -F</code>), or <code>FAILED</code> test assertion; fix syntax/flag or inspect exact file/line before retrying.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>6</code></strong></th>
+        <td><code>ServiceOrResourceOrPermError</code></td>
+        <td><code>EADDRINUSE</code>, <code>database is locked</code>, <code>dpkg</code> lock, <code>Permission denied</code>; diagnose active processes/locks (<code>lsof -i</code>, <code>ps aux</code>, <code>rm -f *.lock</code>).</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>7</code></strong></th>
+        <td><code>ReadyForVerification</code></td>
+        <td>Build, install, or mutation completed cleanly at prompt; verify target path (<code>/app/...</code>), <code>git status</code>/<code>git fsck</code>, or test suite before setting <code>&quot;task_complete&quot;: true</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 id="classifier-benchmark-vs-regex-and-naive-bayes-baselines">Classifier Benchmark vs. Regex and Naive Bayes Baselines</h3>
+
+<p>Why use a neural sequence encoder instead of substring regex rules or a bag-of-tokens classifier? When an agent runs <code>cat /app/src/parser.py</code> or <code>grep -rn &quot;Error&quot; src/</code>, the terminal output legitimately contains strings like <code>&quot;SyntaxError&quot;</code>, <code>&quot;No such file or directory&quot;</code>, or <code>&quot;Permission denied&quot;</code> inside the printed source code while returning cleanly to <code>root@container:/app#</code>. A substring heuristic fires a false-positive error directive on clean file inspection.</p>
+
+<p>To test whether the encoder learns the joint relation between the command verb at the head (<code>cat</code>/<code>grep</code> without redirection vs. <code>python3</code>/<code>pytest</code>/<code>gcc</code>), the body tokens, and the prompt signature at the tail, we evaluated four classifiers across all three evaluation splits on an Apple M5 (<code>runs/terminus-state-summary.json</code>)[^3]:</p>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Classifier Variant</th>
+        <th scope="col" class="vbg-numeric">Params / Size</th>
+        <th scope="col" class="vbg-numeric">Held-Out Test (<span class="vbg-formula">N=1,200</span>) Acc / Macro-<span class="vbg-formula">F_1</span></th>
+        <th scope="col" class="vbg-numeric">Adversarial Contrast (<span class="vbg-formula">N=38</span>) Acc / Macro-<span class="vbg-formula">F_1</span></th>
+        <th scope="col" class="vbg-numeric">Terminal-Bench Scenarios (<span class="vbg-formula">N=12</span>) Acc / Macro-<span class="vbg-formula">F_1</span></th>
+        <th scope="col" class="vbg-numeric">Warm Latency Mean / p95 (ms)</th>
+        <th scope="col" class="vbg-numeric">Throughput (turns/s)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Substring / Regex Rules</strong></th>
+        <td class="vbg-numeric">—</td>
+        <td class="vbg-numeric">84.75% / 0.8467</td>
+        <td class="vbg-numeric">86.84% / 0.8854</td>
+        <td class="vbg-numeric">91.67% / 0.8500</td>
+        <td class="vbg-numeric">—</td>
+        <td class="vbg-numeric">—</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Bag-of-Tokens Naive Bayes</strong></th>
+        <td class="vbg-numeric">16K floats</td>
+        <td class="vbg-numeric">97.75% / 0.9770</td>
+        <td class="vbg-numeric">94.74% / 0.9478</td>
+        <td class="vbg-numeric">83.33% / 0.7333</td>
+        <td class="vbg-numeric">—</td>
+        <td class="vbg-numeric">—</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>terminus-state-tiny</code> (2L, <span class="vbg-formula">d=64</span>)</strong></th>
+        <td class="vbg-numeric"><strong>197K / 770 KB</strong></td>
+        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
+        <td class="vbg-numeric">97.37% / 0.9747</td>
+        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
+        <td class="vbg-numeric"><strong>0.269 / 0.288 ms</strong></td>
+        <td class="vbg-numeric"><strong>3,705 / s</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>terminus-state-small</code> (4L, <span class="vbg-formula">d=64</span>)</strong></th>
+        <td class="vbg-numeric"><strong>263K / 1.03 MB</strong></td>
+        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
+        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
+        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
+        <td class="vbg-numeric"><strong>0.340 / 0.365 ms</strong></td>
+        <td class="vbg-numeric"><strong>2,936 / s</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>The 4-layer <code>terminus-state-small</code> checkpoint (<code>1.03 MB</code>) separates inspection commands from execution failures across all 38 adversarial contrast pairs and all 12 Terminal-Bench scenario fixtures at <strong>0.340 ms</strong> per turn.</p>
+
+<hr>
+
+<h2 id="online-weight-self-healing-via-structural-invariants-and-next-turn-counterfactuals">Online Weight Self-Healing via Structural Invariants and Next-Turn Counterfactuals</h2>
+
+<p>Even a classifier that scores 100% on held-out synthetic and scenario splits will encounter out-of-distribution terminal screens during 89-task agent runs. For example, during our <code>gemma4:31b</code> calibration run on <code>cancel-async-tasks</code>, the agent wrote <code>/app/run.py</code> using a multi-line <code>cat &lt;&lt;EOF &gt; /app/run.py ... EOF &amp;&amp; ls -l /app/run.py</code> heredoc. Because the raw <code>tmux</code> capture contained 24 lines of indented Python code without standard command output formatting, <code>terminus-state-small</code> initially predicted class <code>1</code> (<code>InteractiveTrap</code>) despite a valid <code>root@container:/app#</code> prompt at the tail.</p>
+
+<p>If the harness injects <code>[Terminus State: INTERACTIVE_TRAP_DETECTED]</code> when the shell prompt is actually ready, the agent sends <code>q</code> or <code>C-c</code> into bash—creating the exact failure the enhancer was built to prevent.</p>
+
+<p>Because <code>minimodels</code> implements full reverse-mode differentiation and AdamW directly in its Rust/Metal binary (<code>minimodels learn &lt;checkpoint.mm&gt; &lt;ids&gt; &lt;true_label&gt;</code>), <code>Terminus2Enhanced</code> (<code>scripts/terminus_2_enhanced.py</code>)<sup class="footnote-ref"><a href="#fn-4">[4]</a></sup> pairs the encoder with a two-stage online self-healing loop that updates the <code>1.03 MB</code> checkpoint in-place under an <code>flock</code> file lock in <strong>25–47 ms</strong>:</p>
+
+<div class="diagram-block">
+  <div class="diagram-caption">Diagram</div>
+  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart LR
+    A[&quot;tmux capture-pane (Turn t)&quot;] --&gt; B[&quot;Clean Echoed Commands &amp; Normalize Prompt&quot;]
+    B --&gt; C[&quot;Counterfactual Audit on Turn t-1&quot;]
+    C -- &quot;q / :q! -&gt; bash: command not found&quot; --&gt; D[&quot;minimodels learn (Heal t-1 -&gt; Class 0)&quot;]
+    C -- &quot;Screen ends in (END) or :&quot; --&gt; E[&quot;minimodels learn (Heal t-1 -&gt; Class 1)&quot;]
+    B --&gt; F[&quot;HeadTailTokenizer (13.8 us) + minimodels predict (0.34 ms)&quot;]
+    F --&gt; G{&quot;Structural Invariant Audit&quot;}
+    G -- &quot;Contradiction (e.g. Class 1/2 at # prompt)&quot; --&gt; H[&quot;minimodels learn (2-5 AdamW steps, ~33 ms)&quot;]
+    G -- &quot;Consistent&quot; --&gt; I[&quot;Append [Terminus State] Directive to Prompt&quot;]
+    H --&gt; I</code></pre>
+</div>
+
+<p>The online self-healing logic enforces two complementary invariants:</p>
+
+<pre class="code-block"><code class="language-python"># Invariant pseudocode: per-turn classification + hot weight self-healing
+def classify_and_heal(prev_turn, last_cmd, clean_out, timeout_flag):
+    # 1. Retrospective counterfactual check on Turn t-1
+    if prev_turn and prev_turn.cls == INTERACTIVE_TRAP:
+        if last_cmd in {&quot;q&quot;, &quot;C-c&quot;, &quot;:q!&quot;, &quot;exit()&quot;} and &quot;command not found&quot; in clean_out:
+            minimodels_learn(prev_turn.ids, true_label=CLEAN_PROGRESS)
+    elif prev_turn and prev_turn.cls in {CLEAN_PROGRESS, READY_FOR_VERIFICATION}:
+        if clean_out.endswith((&quot;\n:&quot;, &quot;(END)&quot;)):
+            minimodels_learn(prev_turn.ids, true_label=INTERACTIVE_TRAP)
+
+    # 2. Forward prediction + current-turn structural invariant check
+    ids = tokenizer.encode_head_tail(last_cmd, clean_out)
+    cls = minimodels_predict(checkpoint, ids)
+    has_prompt = is_shell_prompt(clean_out.splitlines()[-1])
+
+    audit_cls = audit_ground_truth(last_cmd, clean_out, timeout_flag, has_prompt)
+    if audit_cls is not None and audit_cls != cls:
+        cls = minimodels_learn(ids, true_label=audit_cls).after_class
+    elif has_prompt and cls in {INTERACTIVE_TRAP, STILL_RUNNING}:
+        cls = minimodels_learn(ids, true_label=CLEAN_PROGRESS).after_class
+    return cls, DIRECTIVES[cls]</code></pre>
+
+<p>Here are four real self-healing events logged during live container episodes (<code>runs/terminus-self-healing.jsonl</code> and <code>runs/harbor-bench/gemma4-31b-10task/terminus-self-healing.jsonl</code>)[^4]:</p>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Task / Episode</th>
+        <th scope="col">Triggering Command</th>
+        <th scope="col">Initial Prediction</th>
+        <th scope="col">Healed State (<code>true_label</code>)</th>
+        <th scope="col">Invariant Reason</th>
+        <th scope="col" class="vbg-numeric">AdamW Steps</th>
+        <th scope="col" class="vbg-numeric">Post-Update Loss</th>
+        <th scope="col" class="vbg-numeric">Heal Time (<code>learn_ms</code>)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><code>git-leak-recovery</code> (ep 1)</th>
+        <td>`cd repo && git log -p \</td>
+        <td>grep 'secret['`</td>
+        <td><code>0</code> (<code>CleanProgress</code>)</td>
+        <td><strong><code>5</code> (<code>CompileOrSyntaxOrTestError</code>)</strong></td>
+        <td class="vbg-numeric">Explicit regex error at shell prompt</td>
+        <td class="vbg-numeric">5</td>
+        <td class="vbg-numeric">0.15968</td>
+      </tr>
+      <tr>
+        <th scope="row"><code>git-leak-recovery</code> (ep 2)</th>
+        <td>`git log -p \</td>
+        <td>grep -F 'secret['`</td>
+        <td><code>1</code> (<code>InteractiveTrap</code>)</td>
+        <td><strong><code>0</code> (<code>CleanProgress</code>)</strong></td>
+        <td class="vbg-numeric">Shell prompt ready at tail; cannot be pager</td>
+        <td class="vbg-numeric">3</td>
+        <td class="vbg-numeric">0.05399</td>
+      </tr>
+      <tr>
+        <th scope="row"><code>cancel-async-tasks</code> (ep 2)</th>
+        <td><code>cat &lt;&lt;EOF &gt; /app/run.py ... EOF &amp;&amp; ls -l /app/run.py</code></td>
+        <td><code>1</code> (<code>InteractiveTrap</code>)</td>
+        <td><strong><code>0</code> (<code>CleanProgress</code>)</strong></td>
+        <td>Shell prompt ready at tail; cannot be pager</td>
+        <td class="vbg-numeric">2</td>
+        <td class="vbg-numeric">0.02520</td>
+        <td class="vbg-numeric"><strong>33.7 ms</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><code>db-wal-recovery</code> (ep 3)</th>
+        <td><code>sqlite3 /app/main.db &quot;SELECT...&quot; &amp;&amp; hexdump -C ...</code></td>
+        <td><code>0</code> (<code>CleanProgress</code>)</td>
+        <td><strong><code>4</code> (<code>MissingToolOrModule</code>)</strong></td>
+        <td>Explicit missing command error at prompt</td>
+        <td class="vbg-numeric">5</td>
+        <td class="vbg-numeric">0.06917</td>
+        <td class="vbg-numeric"><strong>47.0 ms</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Once a pattern is healed on Episode <span class="vbg-formula">k</span>, the updated <code>.mm</code> weights persist for all subsequent turns and tasks.</p>
+
+<hr>
+
+<h2 id="forensic-trace-recovering-unreachable-git-objects-in-7-turns-vs-15-turn-exhaustion">Forensic Trace: Recovering Unreachable Git Objects in 7 Turns vs. 15-Turn Exhaustion</h2>
+
+<p>Before scaling to the full 89-task suite, I ran a controlled single-task A/B trace on <code>terminal-bench/git-leak-recovery</code> using <code>openai/gpt-4o-mini</code> at temperature <code>0.0</code> with a 15-turn cap inside an isolated <code>apple-container</code> Linux arm64 VM (<code>runs/harbor-bench/comparison-summary.json</code>)<sup class="footnote-ref"><a href="#fn-5">[5]</a></sup>. The task requires recovering a leaked secret from an unreachable git commit (<code>secret[lost_and_found_in_git]</code>), writing it to <code>/app/secret.txt</code>, and purging the secret from all repository objects while preserving good commits.</p>
+
+<p>Both the baseline (<code>terminus-2</code>) and enhanced (<code>Terminus2Enhanced</code>) agents issued the exact same command on Turn 1:</p>
+
+<pre class="code-block"><code class="language-bash">cd repo &amp;&amp; git log -p | grep &#39;secret[&#39;</code></pre>
+
+<p>Because <code>secret[</code> contains an unclosed bracket, <code>grep</code> exited with <code>grep: Invalid regular expression</code>. From Turn 2 onward, the trajectories diverged completely:</p>
+
+<ul>
+  <li><strong>Baseline <code>terminus-2</code> (FAIL, 15 turns, 53,532 tokens)</strong>: On Turn 2, the agent changed its query to <code>grep &#39;secret&#39;</code>, which only searched reachable branch commits and returned nothing. Over Turns 3–8, it inspected reachable commits (<code>1fea098</code>, <code>e897283</code>) and <code>git branch -a</code>. Convinced the secret did not exist, it executed <code>echo &#39;Secret not found&#39; &gt; /app/secret.txt</code> on Turn 9 and spent Turns 10–15 installing and running <code>git-filter-repo</code>. It passed 4 of 5 verifier checks but failed <code>test_flag_file_exists_and_correct</code>.</li>
+  <li><strong><code>Terminus2Enhanced</code> (PASS, 7 turns, 18,988 tokens)</strong>: On Turn 1, <code>PromptEnhancer</code> classified the failed <code>grep</code> output as <code>CompileOrSyntaxOrTestError</code> (<code>[Terminus State: BUILD_OR_TEST_FAILURE]</code>) and directed the agent to escape regex brackets or pass <code>grep -F</code>. On Turn 2, <code>git log -p | grep -F &#39;secret[&#39;</code> completed cleanly with empty output, triggering <code>CleanProgress</code> (<code>[Terminus State: CLEAN_PROGRESS]</code>), which prompted the agent to inspect reflog diffs (<code>git --no-pager log -g -p</code>) on Turn 3. That immediately exposed the dangling commit containing <code>secret[lost_and_found_in_git]</code>. On Turn 4, the agent wrote <code>/app/secret.txt</code> and pruned unreachable objects (<code>git reflog expire --expire=now --all &amp;&amp; git gc --prune=now --aggressive</code>), which the encoder classified as <code>ReadyForVerification</code> (<code>7</code>), prompting a final <code>ls -la /app/secret.txt &amp;&amp; git status &amp;&amp; git fsck</code> check on Turn 5 before completing.</li>
+</ul>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Metric (<code>git-leak-recovery</code>, <span class="vbg-formula">T=0.0</span>)</th>
+        <th scope="col" class="vbg-numeric"><code>terminus-2</code> (Baseline)</th>
+        <th scope="col" class="vbg-numeric"><code>Terminus2Enhanced</code> (<code>minimodels</code> 1.03 MB)</th>
+        <th scope="col" class="vbg-numeric">Delta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Verifier Outcome (<code>pytest</code>)</strong></th>
+        <td class="vbg-numeric"><strong>FAIL (0.0 — 4/5 tests)</strong></td>
+        <td class="vbg-numeric"><strong>PASS (1.0 — 5/5 tests)</strong></td>
+        <td class="vbg-numeric"><strong>+1.0 reward</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Total Turns</strong></th>
+        <td class="vbg-numeric">15</td>
+        <td class="vbg-numeric"><strong>7</strong></td>
+        <td class="vbg-numeric"><strong>-8 turns (-53.3%)</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Input Tokens (Cached)</strong></th>
+        <td class="vbg-numeric">50,520 (46,208)</td>
+        <td class="vbg-numeric"><strong>17,652 (13,440)</strong></td>
+        <td class="vbg-numeric"><strong>-65.1%</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Output Tokens</strong></th>
+        <td class="vbg-numeric">3,012</td>
+        <td class="vbg-numeric"><strong>1,336</strong></td>
+        <td class="vbg-numeric"><strong>-55.6%</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Total Tokens</strong></th>
+        <td class="vbg-numeric">53,532</td>
+        <td class="vbg-numeric"><strong>18,988</strong></td>
+        <td class="vbg-numeric"><strong>-34,544 (-64.5%)</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>API Cost (USD)</strong></th>
+        <td class="vbg-numeric">$0.00592</td>
+        <td class="vbg-numeric"><strong>$0.00244</strong></td>
+        <td class="vbg-numeric"><strong>-58.8%</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Enhancer Subprocess Time (mean / call)</strong></th>
+        <td class="vbg-numeric">0 ms (0 calls)</td>
+        <td class="vbg-numeric"><strong>34.5 ms</strong> (5 calls; 0.34 ms kernel)</td>
+        <td class="vbg-numeric">+172.6 ms total</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<h2 id="the-capability-floor-10-task-calibration-on-4b-vs-31b-local-models">The Capability Floor: 10-Task Calibration on 4B vs. 31B Local Models</h2>
+
+<p>To see where external state classification stops helping, I ran a 10-task Terminal-Bench 2.1 calibration subset (<code>cancel-async-tasks</code>, <code>cobol-modernization</code>, <code>db-wal-recovery</code>, <code>fix-code-vulnerability</code>, <code>fix-git</code>, <code>git-leak-recovery</code>, <code>nginx-request-logging</code>, <code>polyglot-c-py</code>, <code>regex-log</code>, <code>sqlite-db-truncate</code>) on two local models served on an Apple M5 Ultra (<code>studio</code>) with a 200-turn limit and 30-minute per-task timeout (<code>runs/harbor-bench/nemotron-4b-10task/comparison_summary.json</code> and <code>runs/harbor-bench/gemma4-31b-10task/summary.json</code>)[^5]:</p>
+
+<ol>
+  <li><strong><code>nemotron-3-nano:4b</code> (4B parameters)</strong>:
+  <ul>
+    <li><strong>Pass rate</strong>: Baseline scored <strong>0 / 10 (0.0%)</strong>; <code>Terminus2Enhanced</code> scored <strong>1 / 10 (10.0%)</strong>, solving <code>cancel-async-tasks</code> in 2 turns (<code>3,568</code> tokens, <code>45.2 s</code>) where baseline failed (<code>0.0</code>).</li>
+    <li><strong>Negative finding (turn inflation on unsolvable tasks)</strong>: Across all 10 tasks, <code>Terminus2Enhanced</code> consumed <strong>1,402 total turns (<code>14.07M</code> tokens)</strong> versus <strong>824 baseline turns (<code>8.33M</code> tokens)</strong>. Why? Without the enhancer, the 4B model frequently emitted malformed JSON or prematurely declared <code>task_complete: true</code> after 2–9 turns on tasks it could not solve (<code>fix-git</code>, <code>git-leak-recovery</code>, <code>nginx-request-logging</code>, <code>regex-log</code>, <code>sqlite-db-truncate</code>). Because <code>Terminus2Enhanced</code> recovers from truncation errors, re-injects JSON schema reminders on empty command batches, and blocks premature completion via <code>ReadyForVerification</code>, it kept the 4B model alive in the loop for all 200 turns when the model lacked the underlying C, COBOL, or SQLite binary knowledge to solve the task.</li>
+  </ul>
+</li>
+  <li><strong><code>gemma4:31b</code> (31B parameters)</strong>:
+  <ul>
+    <li><strong>Pass rate</strong>: Baseline scored <strong>5 / 10 (50.0%)</strong>; <code>Terminus2Enhanced</code> scored <strong>6 / 10 (60.0%)</strong>, recovering <code>db-wal-recovery</code> (<code>8</code> turns, <code>99.0 s</code>, <code>32,779</code> tokens) and <code>sqlite-db-truncate</code> where the 31B model had sufficient synthesis capacity to act on the state directives.</li>
+  </ul>
+</li>
+</ol>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Model (10-Task Calibration Subset)</th>
+        <th scope="col" class="vbg-numeric">Baseline Pass Rate (<code>terminus-2</code>)</th>
+        <th scope="col" class="vbg-numeric">Enhanced Pass Rate (<code>Terminus2Enhanced</code>)</th>
+        <th scope="col" class="vbg-numeric">Net Task Delta</th>
+        <th scope="col" class="vbg-numeric">Online Self-Heals Triggered</th>
+        <th scope="col">Key Observation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong><code>nemotron-3-nano:4b</code></strong></th>
+        <td class="vbg-numeric">0 / 10 (0.0%)</td>
+        <td class="vbg-numeric"><strong>1 / 10 (10.0%)</strong></td>
+        <td class="vbg-numeric">+1 (<code>+10.0%</code>)</td>
+        <td class="vbg-numeric">1</td>
+        <td>Below capability floor; state recovery prevents early exit, inflating turns (<code>824</code> <span class="vbg-formula">&rarr;</span> <code>1,402</code>) on tasks the 4B model cannot synthesize.</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>gemma4:31b</code></strong></th>
+        <td class="vbg-numeric">5 / 10 (50.0%)</td>
+        <td class="vbg-numeric"><strong>6 / 10 (60.0%)</strong></td>
+        <td class="vbg-numeric">+1 (<code>+10.0%</code>)</td>
+        <td class="vbg-numeric">3</td>
+        <td>Crosses capability threshold; directives + 3 live self-heals recover <code>db-wal-recovery</code> and <code>sqlite-db-truncate</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>This calibration result motivates our model choice for the full 89-task evaluation: <strong>4B models lack the synthesis floor for multi-step systems debugging, whereas the ~27B–32B dense parameter tier has the code competence to exploit terminal state guidance while remaining fast enough for high-concurrency local or single-GPU serving.</strong></p>
+
+<hr>
+
+<h2 id="high-concurrency-terminal-bench-21-without-docker-rootless-proot-and-vllm-guardrails">High-Concurrency Terminal-Bench 2.1 Without Docker: Rootless PRoot and vLLM Guardrails</h2>
+
+<p>Running all 89 Terminal-Bench 2.1 tasks across two experimental arms (<code>178</code> full container episodes, up to 200 turns and 65,536 context tokens per episode) sequentially at concurrency <span class="vbg-formula">n=1</span> takes days. To benchmark <strong>Qwen 4 27B</strong> across all 89 tasks within hours of its release at <span class="vbg-formula">n=16..32</span> concurrency, we built two execution topologies (<code>docs/vast_ai_benchmark_guide.md</code>)[^6]:</p>
+
+<ol>
+  <li><strong>Hybrid Studio Docker + SSH-Tunneled vLLM (<code>scripts/run_studio_vast_h200_bench.py</code>)</strong>: Runs native Docker task containers on <code>studio</code> (Apple M5 Ultra) while tunneling OpenAI-compatible vLLM requests (<code>http://127.0.0.1:18000/v1</code>) over SSH to a remote H200/H100 GPU instance.</li>
+  <li><strong>Self-Contained Rootless <code>ProotEnvironment</code> on Unprivileged Cloud GPU Containers (<code>scripts/proot_env.py</code>)</strong>: Cloud GPU instances (such as Vast.ai H100/H200 nodes) execute inside unprivileged Docker containers (<code>!CAP_SYS_ADMIN</code>, <code>unshare</code> syscall blocked, no <code>dockerd</code> daemon). Standard <code>harbor run --env docker</code> fails immediately.</li>
+</ol>
+
+<p>To run 32 concurrent Terminal-Bench containers inside an unprivileged GPU container without <code>dockerd</code> or <code>CAP_SYS_ADMIN</code>, I implemented a custom Harbor backend, <code>ProotEnvironment(BaseEnvironment)</code> (<code>scripts/proot_env.py</code>)<sup class="footnote-ref"><a href="#fn-6">[6]</a></sup>, solving five operational bottlenecks discovered during bring-up:</p>
+
+<ul>
+  <li><strong>RAM-Disk OCI Caching (<code>skopeo</code> + <code>umoci</code>) and a 12 GiB <code>/</code> Overlay Quota Guard</strong>: All 89 task images (<code>~90 GB</code> total) are prefetched in parallel into <code>/dev/shm/hb_oci_cache</code> via <code>skopeo copy</code>. Because <code>/dev/shm</code> is mounted <code>noexec</code>, active rootfses must unpack onto <code>/tmp/hb_containers/&lt;session_id&gt;</code> on the <code>/</code> overlayfs. While typical task images unpack to <code>~480 MB</code>, compiler and ML tasks (<code>caffe-cifar-10</code>, <code>gpt2-codegolf</code>, <code>hf-model-inference</code>, <code>mteb-leaderboard</code>, <code>fix-ocaml-gc</code>) unpack to <code>2–6 GB</code> each. Unpacking 32 large rootfses simultaneously exceeds a standard 64 GB <code>/</code> overlay quota and crashes the host instance. <code>ProotEnvironment.start()</code> enforces an automatic <code>12 GiB</code> free-space guard (<code>shutil.disk_usage(&quot;/&quot;)</code>) that pauses new rootfs extraction until a running trial finishes and deletes its rootfs.</li>
+  <li><strong><code>PRoot v5.5.0</code> Compiled from Source for <code>statx</code> Translation</strong>: Ubuntu 22.04's apt package (<code>proot 5.1.0</code> from 2018) lacks <code>statx</code> syscall translation (<code>__NR_statx = 332</code>), causing Debian Bookworm binaries (<code>ls</code>, <code>stat</code>, <code>uv</code>, <code>uvx</code>) inside task containers to fail. Compiling <code>PRoot v5.5.0</code> from source adds <code>statx</code> translation, <code>--link2symlink</code> (<code>-l</code>, required for <code>dpkg</code> hardlinks in <code>libc6</code>), and per-container port remapping (<code>-p</code>).</li>
+  <li><strong>Dynamic Per-Container Port Remapping (<code>40000..59999</code>)</strong>: Concurrent web-server and SSH tasks (<code>nginx-request-logging</code>, <code>pypi-server</code>, <code>fix-code-vulnerability</code>, <code>configure-git-webserver</code>, <code>git-multibranch</code>) bind to ports <code>8000</code>, <code>8080</code>, <code>3000</code>, <code>5000</code>, <code>8888</code>, <code>8443</code>, <code>9000</code>, and <code>22</code>. Without network namespaces, 32 concurrent containers collide on localhost ports and conflict with host <code>jupyter</code>/<code>sshd</code> daemons. <code>ProotEnvironment</code> assigns each trial a unique port block in <code>40000..59999</code> via <code>proot -p &lt;guest_port&gt;:&lt;host_port&gt;</code>.</li>
+  <li><strong>Host Environment Sanitization and Pre-Seeded <code>uv</code>/<code>uvx</code></strong>: Host GPU containers inject <code>UV_OVERRIDE=/etc/uv-overrides.txt</code>, which breaks <code>uvx pytest</code> inside Harbor's <code>verifier/test.sh</code>. Furthermore, when 32 trials finish near-simultaneously and run <code>curl -LsSf https://astral.sh/uv/install.sh</code>, <code>astral.sh</code> rate-limits the shared IP, causing false verifier failures. <code>ProotEnvironment</code> strips host <code>UV_*</code> variables and pre-seeds <code>/root/.local/bin/{uv,uvx}</code> directly into every unpacked rootfs before starting the agent.</li>
+  <li><strong>vLLM <code>max_tokens</code> Default Trap on 262k Context Windows</strong>: When vLLM serves a model with <code>max_model_len = 262144</code> (or <code>65536</code>), any chat completion request that omits an explicit <code>max_tokens</code> defaults to <code>max_model_len - prompt_tokens</code> (<code>~258,000</code> output tokens). A single repetition loop on one turn can stall a GPU worker for 40 minutes generating 250k tokens. <code>Terminus2Enhanced</code> explicitly injects <code>&quot;max_tokens&quot;: 4096</code> and <code>&quot;chat_template_kwargs&quot;: {&quot;enable_thinking&quot;: False}</code> inside <code>extra_body</code> on every request, and intercepts <code>OutputLengthExceededError</code> with a single-retry conciseness directive (<code>&lt;80 words</code>) rather than <code>terminus-2</code>'s default 11 consecutive empty retries.</li>
+</ul>
+
+<hr>
+
+<h2 id="pre-registered-89-task-evaluation-protocol-for-qwen-4-27b">Pre-Registered 89-Task Evaluation Protocol for Qwen 4 27B</h2>
+
+<p>With the <code>PromptEnhancer</code> checkpoint (<code>runs/terminus-state-small/epoch-3.mm</code>, <code>1.03 MB</code>), online self-healing loop, and high-concurrency Terminal-Bench 2.1 runner frozen, our next step is the full 89-task evaluation on <strong>Qwen 4 27B</strong> as soon as the model weights are released.</p>
+
+<p>To prevent post-hoc cherry-picking, both arms will run under an identical locked protocol (<code>scripts/run_studio_vast_h200_bench.py</code> / <code>scripts/run_vast_concurrency_bench.py</code>)[^6]:</p>
+
+<ul>
+  <li><strong>Dataset</strong>: All <strong>89 tasks</strong> in <code>terminal-bench@2.1</code> (<code>harbor</code>).</li>
+  <li><strong>Model & Decoding</strong>: <strong>Qwen 4 27B</strong> (<code>temperature = 0.0</code>, <code>max_model_len = 65,536</code>, <code>max_tokens = 4,096</code>, <code>enable_thinking = False</code>, <code>max_turns = 200</code>).</li>
+  <li><strong>Stage 1 (<code>Terminus2Enhanced</code>)</strong>: <code>terminus-2</code> subclassed with <code>TerminusPromptEnhancer</code> (<code>terminus-state-small</code>, 4 layers, width 64, 263K parameters, <code>1.03 MB</code>) and live in-task self-healing (<code>minimodels learn</code>).</li>
+  <li><strong>Stage 2 (<code>terminus-2</code> Baseline)</strong>: Unmodified Harbor <code>terminus-2</code> agent against the identical vLLM endpoint and container environment.</li>
+</ul>
+
+<h3 id="full-89-task-terminal-bench-21-results-matrix-awaiting-qwen-4-27b-release">Full 89-Task Terminal-Bench 2.1 Results Matrix (Awaiting Qwen 4 27B Release)</h3>
+
+<div class="vbg-table-wrap">
+  <table class="vbg-table">
+    <thead>
+      <tr>
+        <th scope="col">Evaluation Metric (<span class="vbg-formula">N=89</span> Tasks, <code>terminal-bench@2.1</code>)</th>
+        <th scope="col">Stage 2: Vanilla <code>terminus-2</code> (Qwen 4 27B)</th>
+        <th scope="col">Stage 1: <code>Terminus2Enhanced</code> + <code>PromptEnhancer</code> (Qwen 4 27B)</th>
+        <th scope="col">Paired Delta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row"><strong>Completed Tasks</strong></th>
+        <td><em>[Pending Qwen 4 27B Release]</em> / 89</td>
+        <td><em>[Pending Qwen 4 27B Release]</em> / 89</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Verified Pass Count (<code>reward == 1.0</code>)</strong></th>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Overall Pass Rate (%)</strong></th>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Median Turns per Solved Task</strong></th>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Total Tokens Consumed (Input + Output)</strong></th>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Interactive Pager / REPL Traps Recovered</strong></th>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td><em>[Pending]</em></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Live In-Task Weight Self-Heals (<code>minimodels learn</code>)</strong></th>
+        <td>0 (Static baseline)</td>
+        <td><em>[Pending Qwen 4 27B Release]</em></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <th scope="row"><strong>Mean <code>PromptEnhancer</code> Latency per Turn</strong></th>
+        <td>0 ms</td>
+        <td><strong>0.340 ms</strong> (warm Metal kernel) / <strong>~33 ms</strong> (CLI subprocess)</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>The two questions this 89-task run will answer are:</p>
+
+<ol>
+  <li>Does a <code>1.03 MB</code>, sub-millisecond structural state classifier materially lift full-suite Terminal-Bench 2.1 pass rates on a 27B dense model, or do the gains concentrate only in specific failure categories (interactive pagers, git reflog recovery, SQLite WAL handling, and build verification)?</li>
+  <li>Does online weight self-healing (<code>minimodels learn</code> across episodes) monotonically reduce state-classification errors over the course of an 89-task sweep without introducing class drift on later tasks?</li>
+</ol>
+
+<p>As soon as <strong>Qwen 4 27B</strong> is available, I will run both 89-task stages and update the table above with the full task-by-task breakdown, failure traces, and self-healing logs.</p>
+
+<hr>
+
+<h2 id="references">References</h2>
+
+<ol class="footnotes-list">
+  <li id="fn-1">Terminal-Bench 2.1 and the Harbor evaluation framework (<code>terminus-2</code> agent loop and <code>tmux</code> session driver). Task definitions and verifier scripts (<code>verifier/test.sh</code>) execute inside per-task Linux containers.</li>
+  <li id="fn-2">Chris Borkert, <a href="/posts/minimodels-rust-metal.html">"A small classifier in Rust and Metal"</a>, November 2026. Documents the zero-framework Rust and Apple Metal bidirectional encoder and training engine (<code>minimodels</code>).</li>
+  <li id="fn-3">Local experiment artifacts in <code>minimodels</code>: <code>scripts/synth_terminus_state.py</code>, <code>configs/terminus-state-tiny.json</code>, <code>configs/terminus-state-small.json</code>, and <code>runs/terminus-state-summary.json</code> (November 2026). Evaluated on Apple M5 across <code>heldout_test_1600</code> (<span class="vbg-formula">N=1,200</span>), <code>adversarial_contrast_38</code> (<span class="vbg-formula">N=38</span>), and <code>terminalbench_scenarios_12</code> (<span class="vbg-formula">N=12</span>).</li>
+  <li id="fn-4">Online self-healing implementation and logs in <code>minimodels</code>: <code>scripts/terminus_prompt_enhancer.py</code>, <code>scripts/terminus_2_enhanced.py</code>, <code>runs/terminus-self-healing.jsonl</code>, and <code>runs/harbor-bench/gemma4-31b-10task/terminus-self-healing.jsonl</code> (November 2026).</li>
+  <li id="fn-5">Calibration benchmark records in <code>minimodels</code>: <code>runs/harbor-bench/comparison-summary.json</code> (<code>git-leak-recovery</code> on <code>openai/gpt-4o-mini</code>, <span class="vbg-formula">T=0.0</span>, 15-turn cap), <code>runs/harbor-bench/nemotron-4b-10task/comparison_summary.json</code> (<code>nemotron-3-nano:4b</code> on Apple M5 Ultra), and <code>runs/harbor-bench/gemma4-31b-10task/summary.json</code> (<code>gemma4:31b</code> on Apple M5 Ultra).</li>
+  <li id="fn-6">High-concurrency Terminal-Bench 2.1 harness and rootless container backend in <code>minimodels</code>: <code>docs/vast_ai_benchmark_guide.md</code>, <code>scripts/proot_env.py</code>, <code>scripts/run_vast_concurrency_bench.py</code>, <code>scripts/run_studio_vast_h200_bench.py</code>, and <code>scripts/setup_llm_server.sh</code> (November 2026).</li>
+</ol>
+
+      </article>
+    </main>
+
+    <footer class="vbg-footer">
+      <div class="site-footer-brand">
+        <span class="site-logo-mark" aria-hidden="true">▲</span>
+        <span>Chris Borkert · <a href="https://github.com/digplan">github.com/digplan</a> · <a href="mailto:chris@borkert.dev">chris@borkert.dev</a></span>
+      </div>
+      <div>
+        <a href="/" class="site-link-mono">borkert.dev</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/main.js?v=2"></script>
+</body>
+</html>

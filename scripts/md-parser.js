@@ -115,6 +115,12 @@ export function parseInline(text) {
     return addPlaceholder(`<img src="${escapeHtml(safeUrl)}" alt="${escapeHtml(alt)}"${titleAttr}>`);
   });
 
+  // 3b. Footnote references: [^1]
+  processed = processed.replace(/\[\^([a-zA-Z0-9_-]+)\](?!:)/g, (match, id) => {
+    const safeId = escapeHtml(id);
+    return addPlaceholder(`<sup class="footnote-ref"><a href="#fn-${safeId}">[${safeId}]</a></sup>`);
+  });
+
   // 4. Links: [text](url "title")
   processed = processed.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g, (match, label, url, title) => {
     const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
@@ -467,6 +473,42 @@ export function parseMarkdown(markdownText, options = {}) {
       continue;
     }
 
+    // 9b. Footnote Definitions ([^1]: ...)
+    const footnoteDefMatch = trimmed.match(/^\[\^([a-zA-Z0-9_-]+)\]:\s+(.+)$/);
+    if (footnoteDefMatch) {
+      const fnItems = [];
+      while (i < lines.length) {
+        const curTrim = lines[i].trim();
+        if (curTrim === '') {
+          // Peek ahead to see if another footnote definition follows
+          let nextNonEmpty = i + 1;
+          while (nextNonEmpty < lines.length && lines[nextNonEmpty].trim() === '') {
+            nextNonEmpty++;
+          }
+          if (nextNonEmpty < lines.length && /^\[\^([a-zA-Z0-9_-]+)\]:\s+/.test(lines[nextNonEmpty].trim())) {
+            i = nextNonEmpty;
+            continue;
+          }
+          break;
+        }
+        const m = curTrim.match(/^\[\^([a-zA-Z0-9_-]+)\]:\s+(.+)$/);
+        if (m) {
+          fnItems.push({ id: escapeHtml(m[1]), text: m[2].trim() });
+          i++;
+        } else if (fnItems.length > 0 && !curTrim.startsWith('#') && !curTrim.startsWith('```') && !curTrim.startsWith('>')) {
+          fnItems[fnItems.length - 1].text += ' ' + curTrim;
+          i++;
+        } else {
+          break;
+        }
+      }
+      const listItemsHtml = fnItems
+        .map(fn => `  <li id="fn-${fn.id}">${parseInline(fn.text)}</li>`)
+        .join('\n');
+      outputBlocks.push(`<ol class="footnotes-list">\n${listItemsHtml}\n</ol>`);
+      continue;
+    }
+
     // 10. Regular Paragraph
     const paraLines = [trimmed];
     i++;
@@ -476,6 +518,7 @@ export function parseMarkdown(markdownText, options = {}) {
       if (nextTrimmed === '') break;
       if (nextLine.startsWith('#') || nextLine.startsWith('>') || nextLine.startsWith('```') ||
           /^(\s*)([*+-]|\d+\.)\s+/.test(nextLine) || /^(?:---|\*\*\*|___)\s*$/.test(nextTrimmed) ||
+          /^\[\^([a-zA-Z0-9_-]+)\]:\s+/.test(nextTrimmed) ||
           (nextTrimmed.startsWith('|') && isTableDelimiter(lines[i + 1] || ''))) {
         break;
       }

@@ -50,17 +50,20 @@
 
 <p>The current model has 3.35 million parameters, four encoder layers, and a 512-token limit. The engine handles differentiation and AdamW directly, without a tensor framework. The saved weights occupy 13.42 MB.</p>
 
-<p>The interesting result came from changing the runtime around the model. Reusing GPU buffers, keeping a compute encoder open across dispatches, and changing the matrix multiplication and reduction kernels brought warm inference from <strong>2.465 to 0.630 ms per email</strong> on an Apple M5. Those are medians of five run means, each over the same 256 validation emails. Tokenization and loading are excluded.[^1]</p>
+<p>The interesting result came from changing the runtime around the model. Reusing GPU buffers, keeping a compute encoder open across dispatches, and changing the matrix multiplication and reduction kernels brought warm inference from <strong>2.465 to 0.630 ms per email</strong> on an Apple M5. Those are medians of five run means, each over the same 256 validation emails. Tokenization and loading are excluded.<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup></p>
 
-<p>That is a combined change, so I can’t assign the improvement to one optimization. Full validation accuracy stayed at <strong>72.45% across 3,982 emails</strong>. Independent CPU reference checks agreed within 1.43e-6 logits at sequence lengths 1, 17, and 512.[^1]</p>
+<p>That is a combined change, so I can’t assign the improvement to one optimization. Full validation accuracy stayed at <strong>72.45% across 3,982 emails</strong>. Independent CPU reference checks agreed within 1.43e-6 logits at sequence lengths 1, 17, and 512.<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup></p>
 
-<p>The replacement check was less encouraging. Against the shipped classifier, the small model scored <strong>71.62% versus 88.05%</strong> on the same 3,982 email identities. Urgent-email recall was <strong>37.10% versus 81.45%</strong>. This was a practical regression screen: the shipped model may have historical training overlap, so those numbers do not establish a clean generalization comparison.[^2]</p>
+<p>The replacement check was less encouraging. Against the shipped classifier, the small model scored <strong>71.62% versus 88.05%</strong> on the same 3,982 email identities. Urgent-email recall was <strong>37.10% versus 81.45%</strong>. This was a practical regression screen: the shipped model may have historical training overlap, so those numbers do not establish a clean generalization comparison.<sup class="footnote-ref"><a href="#fn-2">[2]</a></sup></p>
 
 <p>The engine is fast enough to keep exploring. The checkpoint still misses too many urgent messages to replace the existing classifier.</p>
 
 <h2 id="references">References</h2>
 
-<p>[^1]: Local experiment records, November 2026: <code>runs/engine-check-v1/results.json</code> and <code>README-handoff.md</code> in minimodels. Warm, synchronized, batch-one inference; unchanged checkpoint. Records are not yet published. [^2]: Local replacement assessment: <code>runs/dart-feasibility-v1/REPORT.md</code>. The comparison used the shipped DART model and the custom checkpoint on Apple M5 Ultra, with each model’s own tokenizer and context limit. Records are not yet published.</p>
+<ol class="footnotes-list">
+  <li id="fn-1">Local experiment records, November 2026: <code>runs/engine-check-v1/results.json</code> and <code>README-handoff.md</code> in minimodels. Warm, synchronized, batch-one inference; unchanged checkpoint. Records are not yet published.</li>
+  <li id="fn-2">Local replacement assessment: <code>runs/dart-feasibility-v1/REPORT.md</code>. The comparison used the shipped DART model and the custom checkpoint on Apple M5 Ultra, with each model’s own tokenizer and context limit. Records are not yet published.</li>
+</ol>
 
       </article>
     </main>
