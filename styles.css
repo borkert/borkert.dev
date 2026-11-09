@@ -613,6 +613,41 @@ pre code, .code-block code {
   margin-block: var(--vbg-space-4);
 }
 
+/* Capstone-style benchmark chart figures */
+.figure-box {
+  margin-block: var(--vbg-space-5);
+  text-align: center;
+}
+
+.figure-box img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-inline: auto;
+  background: #FFFFFF;
+  border: 1px solid var(--vbg-border-default);
+  border-radius: var(--vbg-radius);
+  padding: var(--vbg-space-2);
+}
+
+.figcaption {
+  font-size: var(--vbg-type-compact);
+  line-height: var(--vbg-leading-compact);
+  text-align: center;
+  color: var(--vbg-text-secondary);
+  margin-block-start: var(--vbg-space-2);
+}
+
+.figcaption strong {
+  color: var(--vbg-text-primary);
+  font-weight: var(--vbg-weight-semibold);
+}
+
+.figcaption em {
+  font-style: italic;
+}
+
 /* --------------------------------------------------------------------------
    9. Footer
    -------------------------------------------------------------------------- */

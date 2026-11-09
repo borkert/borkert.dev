@@ -2,7 +2,7 @@
 
 [GitHub](https://github.com/digplan) · [Email](mailto:chris@borkert.dev)
 
-- [Sub-Millisecond Terminal State Classification for Coding Agents: Benchmarking PromptEnhancer on Terminal-Bench 2.1 with Qwen 4 27B](/posts/prompt-enhancer-terminal-bench-qwen4-27b.html)
+- [Qwen 4 27B on Terminal-Bench 2.1: Preliminary Benchmark with a Sub-Millisecond PromptEnhancer](/posts/prompt-enhancer-terminal-bench-qwen4-27b.html)
 - [A small classifier in Rust and Metal](/posts/minimodels-rust-metal.html)
 - [Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper](/posts/push-to-talk-voice-command-mlx-whisper.html)
 - [Gateway Agent: iMessaging Your Personal Agent](/posts/gateway-agent-imessaging-your-personal-agent.html)
