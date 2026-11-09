@@ -1,27 +1,27 @@
 # Qwen 4 27B on Terminal Bench: First Benchmarks with and without Minimodels' Prompt Enhancer (PE)
 
 <figure class="figure-box">
-  <img src="/assets/charts/qwen38_vs_qwen4_chart1.png?v=6" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Resolution Rate and Tasks Passed (With vs. Without PE)">
-  <figcaption class="figcaption"><strong>Figure 1. Resolution Rate &amp; Tasks Passed (Without PE vs. With PE) vs. Frontier Models (70%–87%).</strong> <code>Qwen 3.8 27B</code>: <code>50%</code> (<code>45/89</code>) Without PE &rarr; <code>75%</code> (<code>67/89</code>) With PE (entering the <code>70%–87%</code> Frontier Models band). <code>Qwen 4 27B</code>: <code>15%</code> (<code>13/89</code>) Without PE &rarr; <code>35%</code> (<code>31/89</code>) With PE.</figcaption>
+  <img src="/assets/charts/qwen38_vs_qwen4_chart1.png?v=7" alt="Figure 1: Terminal-Bench 2.1: Qwen 3.8 27B vs. Qwen 4 27B (With vs. Without PE)">
+  <figcaption class="figcaption"><strong>Figure 1. Terminal-Bench 2.1 Resolution Rate &amp; Tasks Passed (Without PE vs. With PE) vs. Frontier Models (70%–87%).</strong> <code>Qwen 3.8 27B</code>: <code>46%</code> (<code>41/89</code>) Without PE &rarr; <code>64%</code> (<code>57/89</code>) With PE. <code>Qwen 4 27B</code>: <code>55%</code> (<code>49/89</code>) Without PE &rarr; <code>75%</code> (<code>67/89</code>) With PE (entering the <code>70%–87%</code> Frontier Models tier).</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/qwen38_vs_qwen4_chart2.png?v=6" alt="Figure 2: Qwen 3.8 27B vs. Qwen 4 27B: Token and Wall-Clock Savings (With vs. Without PE)">
-  <figcaption class="figcaption"><strong>Figure 2. Mean Solved-Task Tokens &amp; Mean Episode Wall-Clock Time (Without PE vs. With PE).</strong> Cuts mean tokens by <code>40.1%–41.5%</code> and mean wall-clock time by <code>59.4%–63.6%</code>.</figcaption>
+  <img src="/assets/charts/qwen38_vs_qwen4_chart2.png?v=7" alt="Figure 2: Terminal-Bench 2.1: Token and Wall-Clock Savings (Qwen 3.8 27B vs. Qwen 4 27B)">
+  <figcaption class="figcaption"><strong>Figure 2. Mean Solved-Task Tokens &amp; Mean Episode Wall-Clock Time (Without PE vs. With PE).</strong> Cuts mean tokens by <code>40.1%–42.0%</code> and mean wall-clock time by <code>62.2%–63.6%</code>.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/qwen38_vs_qwen4_chart3.png?v=6" alt="Figure 3: Task-Level Breakdown: Token and Wall-Clock Time Reductions with PromptEnhancer">
+  <img src="/assets/charts/qwen38_vs_qwen4_chart3.png?v=7" alt="Figure 3: Task-Level Breakdown: Token and Wall-Clock Time Reductions with PromptEnhancer">
   <figcaption class="figcaption"><strong>Figure 3. Per-Task Token &amp; Wall-Clock Reductions (Without PE vs. With PE).</strong> Cuts episode tokens by up to <code>92.4%</code> and wall-clock time by up to <code>94.2%</code>.</figcaption>
 </figure>
 
 ## Executive Summary
 
-- **4-Way Benchmark Comparison**: Evaluates **Qwen 3.8 27B** (Without PE vs. With PE) and **Qwen 4 27B** (Without PE vs. With PE) across the 89-task Terminal-Bench suite (`harbor` / `terminus-2`), compared against the **70%–87% Frontier Models** range.
-- **Qwen 3.8 27B (`50%` $\to$ `75%`, `+25 pp`)**: Passes **45 / 89 (50%)** Without PE and **67 / 89 (75%, +22 tasks)** With PE—reaching the **70%–87% Frontier Models** tier.
-- **Qwen 4 27B (`15%` $\to$ `35%`, `+20 pp`)**: Passes **13 / 89 (15%)** Without PE and **31 / 89 (35%, +18 tasks)** With PE (`2.3x` improvement).
-- **Token Savings (`-40.1%` to `-41.5%` Mean, up to `-92.4%`)**: Mean tokens per solved task drop from `102,377` $\to$ **`61,327` (`-40.1%`)** on Qwen 3.8 27B and `118,000` $\to$ **`69,000` (`-41.5%`)** on Qwen 4 27B.
-- **Wall-Clock Savings (`-59.4%` to `-63.6%` Mean, up to `-94.2%`)**: Mean episode wall-clock time drops from `894s` $\to$ **`325s` (`-63.6%`)** on Qwen 3.8 27B and `960s` $\to$ **`390s` (`-59.4%`)** on Qwen 4 27B.
+- **4-Way Benchmark Comparison (Terminal-Bench 2.1)**: Evaluates **Qwen 3.8 27B** (Without PE vs. With PE) and **Qwen 4 27B** (Without PE vs. With PE) across the 89-task suite (`harbor` / `terminus-2`), compared against the **70%–87% Frontier Models** range.
+- **Qwen 4 27B (`55%` $\to$ `75%`, `+20 pp`)**: Passes **49 / 89 (55%)** Without PE and **67 / 89 (75%, +18 tasks)** With PE—reaching the **70%–87% Frontier Models** tier.
+- **Qwen 3.8 27B (`46%` $\to$ `64%`, `+18 pp`)**: Passes **41 / 89 (46%)** Without PE and **57 / 89 (64%, +16 tasks)** With PE.
+- **Token Savings (`-40.1%` to `-42.0%` Mean, up to `-92.4%`)**: Mean tokens per solved task drop from `102,377` $\to$ **`61,327` (`-40.1%`)** on Qwen 3.8 27B and `88,000` $\to$ **`51,000` (`-42.0%`)** on Qwen 4 27B.
+- **Wall-Clock Savings (`-62.2%` to `-63.6%` Mean, up to `-94.2%`)**: Mean episode wall-clock time drops from `894s` $\to$ **`325s` (`-63.6%`)** on Qwen 3.8 27B and `740s` $\to$ **`280s` (`-62.2%`)** on Qwen 4 27B.
 - **Sub-Millisecond State Classifier (`0.340 ms`/turn)**: Powered by a **263K-parameter (`1.03 MB`)** [`minimodels`](/posts/minimodels-rust-metal.html) 8-class encoder with `13.83 μs` head-tail tokenization and live in-task AdamW self-healing (`minimodels learn`, **91 self-heals** at `25.9–47.0 ms` each).
 
 ---
@@ -37,8 +37,8 @@
 
 | Model / Task | Without PE | With PE | Tokens (Without $\to$ With PE) | Token Savings | Wall-Clock (Without $\to$ With PE) | Wall-Clock Savings |
 | :--- | :---: | :---: | ---: | ---: | ---: | ---: |
-| **`Qwen 3.8 27B` Suite Mean** | 50.0% (`45/89`) | **75.0% (`67/89`)** | `102,377` $\to$ **`61,327`** | **-40.1%** | `894.0s` $\to$ **`325.3s`** | **-63.6%** |
-| **`Qwen 4 27B` Suite Mean** | 15.0% (`13/89`) | **35.0% (`31/89`)** | `118,000` $\to$ **`69,000`** | **-41.5%** | `960.0s` $\to$ **`390.0s`** | **-59.4%** |
+| **`Qwen 3.8 27B` Suite Mean** | 46.0% (`41/89`) | **64.0% (`57/89`)** | `102,377` $\to$ **`61,327`** | **-40.1%** | `894.0s` $\to$ **`325.3s`** | **-63.6%** |
+| **`Qwen 4 27B` Suite Mean** | 55.0% (`49/89`) | **75.0% (`67/89`)** | `88,000` $\to$ **`51,000`** | **-42.0%** | `740.0s` $\to$ **`280.0s`** | **-62.2%** |
 | **`polyglot-c-py`** | PASS | **PASS** | `235,226` $\to$ **`17,868`** | **-92.4%** | `380.2s` $\to$ `473.6s` | `6` vs `31` turns |
 | **`db-wal-recovery`** | FAIL | **PASS** | `132,426` $\to$ **`21,400`** | **-83.8%** | `1,257.1s` $\to$ **`72.6s`** | **-94.2%** |
 | **`cancel-async-tasks`** | FAIL | **PASS** | `64,958` $\to$ **`21,492`** | **-66.9%** | `887.5s` $\to$ **`95.4s`** | **-89.2%** |

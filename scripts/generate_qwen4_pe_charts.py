@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate ~/capstone-style benchmark charts comparing 4 configurations:
-1. Qwen 3.8 27B (Without PE)
-2. Qwen 3.8 27B (With PE)
-3. Qwen 4 27B (Without PE)
-4. Qwen 4 27B (With PE)
+"""Generate ~/capstone-style benchmark charts comparing 4 configurations on Terminal-Bench 2.1:
+1. Qwen 3.8 27B (Without PE): 46%
+2. Qwen 3.8 27B (With PE):    64%
+3. Qwen 4 27B (Without PE):   55%
+4. Qwen 4 27B (With PE):      75%
 
 Swap out numbers in `BENCH_DATA` below after tests finish and re-run:
     python3 scripts/generate_qwen4_pe_charts.py
@@ -21,32 +21,28 @@ OUT_DIR = os.path.join(ROOT_DIR, "assets", "charts")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ==============================================================================
-# 4-WAY BENCHMARK NUMBERS (Swap these out after tests finish)
+# 4-WAY BENCHMARK NUMBERS ON TERMINAL-BENCH 2.1 (Swap these out after tests finish)
 # ==============================================================================
 BENCH_DATA = {
-    # 1 & 2: Qwen 3.8 27B (Without PE vs. With PE)
-    "qwen38_without_pe_pct": 50.0,
-    "qwen38_with_pe_pct": 75.0,
-    "qwen38_without_pe_cnt": 45,       # out of 89
-    "qwen38_with_pe_cnt": 67,          # out of 89
+    # 1 & 2: Qwen 3.8 27B on TB 2.1 (Without PE vs. With PE)
+    "qwen38_without_pe_pct": 46.0,
+    "qwen38_with_pe_pct": 64.0,
+    "qwen38_without_pe_cnt": 41,       # 46% of 89
+    "qwen38_with_pe_cnt": 57,          # 64% of 89
     "qwen38_without_pe_tokens": 102377,
     "qwen38_with_pe_tokens": 61327,
     "qwen38_without_pe_sec": 894.0,
     "qwen38_with_pe_sec": 325.3,
-    "qwen38_without_pe_hr": 5.21,
-    "qwen38_with_pe_hr": 1.90,
 
-    # 3 & 4: Qwen 4 27B (Without PE vs. With PE)
-    "qwen4_without_pe_pct": 15.0,
-    "qwen4_with_pe_pct": 35.0,
-    "qwen4_without_pe_cnt": 13,        # out of 89
-    "qwen4_with_pe_cnt": 31,           # out of 89
-    "qwen4_without_pe_tokens": 118000,
-    "qwen4_with_pe_tokens": 69000,
-    "qwen4_without_pe_sec": 960.0,
-    "qwen4_with_pe_sec": 390.0,
-    "qwen4_without_pe_hr": 5.60,
-    "qwen4_with_pe_hr": 2.28,
+    # 3 & 4: Qwen 4 27B on TB 2.1 (Without PE vs. With PE)
+    "qwen4_without_pe_pct": 55.0,
+    "qwen4_with_pe_pct": 75.0,
+    "qwen4_without_pe_cnt": 49,        # 55% of 89
+    "qwen4_with_pe_cnt": 67,           # 75% of 89
+    "qwen4_without_pe_tokens": 88000,
+    "qwen4_with_pe_tokens": 51000,
+    "qwen4_without_pe_sec": 740.0,
+    "qwen4_with_pe_sec": 280.0,
 }
 
 plt.rcParams.update({
@@ -128,85 +124,52 @@ def add_spanning_arrow(ax, direction="higher", side="left", offset=0.14, text_ga
 
 
 # ==============================================================================
-# CHART 1: 4-Way Comparison — Resolution Rate (%) and Tasks Passed (N=89)
+# CHART 1: Single Clean Chart — Resolution Rate (%) & Tasks Passed on TB 2.1
 # ==============================================================================
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.8, 3.9), gridspec_kw={"width_ratios": [1, 1], "wspace": 0.34})
+fig, ax1 = plt.subplots(1, 1, figsize=(8.6, 3.8))
 
 models = ["Qwen 3.8 27B", "Qwen 4 27B"]
 x = np.arange(len(models))
 
-# Left Panel: Resolution Rate (%)
 base_pct = [BENCH_DATA["qwen38_without_pe_pct"], BENCH_DATA["qwen4_without_pe_pct"]]
 pe_pct = [BENCH_DATA["qwen38_with_pe_pct"], BENCH_DATA["qwen4_with_pe_pct"]]
+base_cnt = [BENCH_DATA["qwen38_without_pe_cnt"], BENCH_DATA["qwen4_without_pe_cnt"]]
+pe_cnt = [BENCH_DATA["qwen38_with_pe_cnt"], BENCH_DATA["qwen4_with_pe_cnt"]]
 
 style_line_ax(ax1)
 # Shaded Frontier Models band (70% - 87%)
 ax1.axhspan(70, 87, color="#0D9488", alpha=0.10, zorder=1, label="Frontier Models (70%–87%)")
-ax1.axhline(87, color="#0D9488", linestyle=":", linewidth=0.9, alpha=0.55, zorder=2)
-ax1.axhline(70, color="#0D9488", linestyle=":", linewidth=0.9, alpha=0.55, zorder=2)
-ax1.text(1.31, 78.5, "Frontier Models\n(70%–87%)", ha="right", va="center", fontsize=7.6, fontweight="bold", color="#0F766E", zorder=4)
+ax1.axhline(87, color="#0D9488", linestyle=":", linewidth=0.95, alpha=0.6, zorder=2)
+ax1.axhline(70, color="#0D9488", linestyle=":", linewidth=0.95, alpha=0.6, zorder=2)
+ax1.text(-0.26, 81.5, "Frontier Models (70%–87%)", ha="left", va="center", fontsize=8.4, fontweight="bold", color="#0F766E", zorder=4)
 
-ax1.plot(x, base_pct, color=LIGHT_GREY, linewidth=2.3, linestyle="--", marker="s", markersize=7.0, label="Without PE (Baseline)", zorder=3)
-ax1.plot(x, pe_pct, color=NAVY, linewidth=2.7, marker="o", markersize=7.5, label="With PE (+ PromptEnhancer)", zorder=5)
+ax1.plot(x, base_pct, color=LIGHT_GREY, linewidth=2.4, linestyle="--", marker="s", markersize=7.2, label="Without PE (Baseline)", zorder=3)
+ax1.plot(x, pe_pct, color=NAVY, linewidth=2.8, marker="o", markersize=7.8, label="With PE (+ PromptEnhancer)", zorder=5)
 ax1.fill_between(x, base_pct, pe_pct, color=NAVY, alpha=0.07, zorder=2)
 
 ax1.set_xticks(x)
-ax1.set_xticklabels(models, fontsize=9.2, fontweight="bold")
-ax1.set_ylim(0, 108)
+ax1.set_xticklabels(models, fontsize=9.8, fontweight="bold")
+ax1.set_ylim(0, 102)
 ax1.set_yticks([0, 25, 50, 75, 100])
-ax1.set_xlim(-0.35, 1.35)
-ax1.set_title("Resolution Rate (%)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
-add_spanning_arrow(ax1, direction="higher", side="left", offset=0.14, text_gap=0.032, color=NAVY)
+ax1.set_yticklabels(["0%", "25%", "50%", "75%", "100%"])
+ax1.set_xlim(-0.30, 1.30)
+ax1.set_title("Resolution Rate (%) & Tasks Passed (out of 89)", loc="left", fontsize=10.4, fontweight="bold", color=TEXT_MUTED, pad=10)
+add_spanning_arrow(ax1, direction="higher", side="left", offset=0.078, text_gap=0.018, color=NAVY)
 
-c1_base_xy = [(-8, -16), (0, -16)]
-c1_pe_xy = [(0, 10), (12, 9)]
+pe_xy = [(22, -14), (0, 9)]
 for i in range(len(x)):
-    diff = pe_pct[i] - base_pct[i]
-    ax1.annotate(f"{base_pct[i]:.0f}%", (x[i], base_pct[i]), textcoords="offset points", xytext=c1_base_xy[i],
-                 ha="center", va="bottom", fontsize=8.4, color=TEXT_MUTED)
-    ax1.annotate(f"{pe_pct[i]:.0f}% (+{diff:.0f} pp)", (x[i], pe_pct[i]), textcoords="offset points", xytext=c1_pe_xy[i],
-                 ha="center", va="bottom", fontsize=8.5, fontweight="bold", color=NAVY)
+    diff_pp = pe_pct[i] - base_pct[i]
+    ax1.annotate(f"{base_pct[i]:.0f}% ({base_cnt[i]}/89)", (x[i], base_pct[i]), textcoords="offset points", xytext=(0, -16),
+                 ha="center", va="bottom", fontsize=8.6, color=TEXT_MUTED)
+    ax1.annotate(f"{pe_pct[i]:.0f}% ({pe_cnt[i]}/89, +{diff_pp:.0f} pp)", (x[i], pe_pct[i]), textcoords="offset points", xytext=pe_xy[i],
+                 ha="center", va="bottom", fontsize=8.8, fontweight="bold", color=NAVY)
 
-ax1.legend(frameon=False, loc="lower left", ncol=1, fontsize=7.6)
+ax1.legend(frameon=False, loc="lower right", ncol=1, fontsize=8.2)
 
-# Right Panel: Tasks Passed (out of 89)
-base_cnt = [BENCH_DATA["qwen38_without_pe_cnt"], BENCH_DATA["qwen4_without_pe_cnt"]]
-pe_cnt = [BENCH_DATA["qwen38_with_pe_cnt"], BENCH_DATA["qwen4_with_pe_cnt"]]
+fig.suptitle("Terminal-Bench 2.1: Qwen 3.8 27B vs. Qwen 4 27B (With vs. Without PE)",
+             x=0.05, y=0.95, ha="left", fontsize=12.6, fontweight="bold", color=TEXT_DARK)
 
-style_line_ax(ax2)
-# Shaded Frontier Models band (70% - 87% of 89 = 62.3 - 77.4 tasks)
-ax2.axhspan(62.3, 77.4, color="#0D9488", alpha=0.10, zorder=1, label="Frontier Models (62–77 / 89)")
-ax2.axhline(77.4, color="#0D9488", linestyle=":", linewidth=0.9, alpha=0.55, zorder=2)
-ax2.axhline(62.3, color="#0D9488", linestyle=":", linewidth=0.9, alpha=0.55, zorder=2)
-ax2.text(1.31, 69.8, "Frontier Models\n(62–77 / 89)", ha="right", va="center", fontsize=7.6, fontweight="bold", color="#0F766E", zorder=4)
-
-ax2.plot(x, base_cnt, color=LIGHT_GREY, linewidth=2.3, linestyle="--", marker="s", markersize=7.0, label="Without PE (Baseline)", zorder=3)
-ax2.plot(x, pe_cnt, color=TEAL_SLATE, linewidth=2.7, marker="o", markersize=7.5, label="With PE (+ PromptEnhancer)", zorder=5)
-ax2.fill_between(x, base_cnt, pe_cnt, color=TEAL_SLATE, alpha=0.07, zorder=2)
-
-ax2.set_xticks(x)
-ax2.set_xticklabels(models, fontsize=9.2, fontweight="bold")
-ax2.set_ylim(0, 96)
-ax2.set_yticks([0, 20, 40, 60, 80])
-ax2.set_xlim(-0.35, 1.35)
-ax2.set_title("Tasks Passed (out of 89)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
-add_spanning_arrow(ax2, direction="higher", side="left", offset=0.14, text_gap=0.032, color=TEAL_SLATE)
-
-c2_base_xy = [(-10, -16), (0, -16)]
-c2_pe_xy = [(0, 10), (14, 9)]
-for i in range(len(x)):
-    diff_cnt = pe_cnt[i] - base_cnt[i]
-    ax2.annotate(f"{base_cnt[i]}/89 ({base_pct[i]:.0f}%)", (x[i], base_cnt[i]), textcoords="offset points", xytext=c2_base_xy[i],
-                 ha="center", va="bottom", fontsize=8.3, color=TEXT_MUTED)
-    ax2.annotate(f"{pe_cnt[i]}/89 (+{diff_cnt})", (x[i], pe_cnt[i]), textcoords="offset points", xytext=c2_pe_xy[i],
-                 ha="center", va="bottom", fontsize=8.5, fontweight="bold", color=TEAL_SLATE)
-
-ax2.legend(frameon=False, loc="lower left", ncol=1, fontsize=7.6)
-
-fig.suptitle("Qwen 3.8 27B vs. Qwen 4 27B: Resolution Rate & Tasks Passed (With vs. Without PE)",
-             x=0.04, y=0.95, ha="left", fontsize=12.6, fontweight="bold", color=TEXT_DARK)
-
-plt.subplots_adjust(left=0.09, right=0.97, top=0.80, bottom=0.16)
+plt.subplots_adjust(left=0.11, right=0.96, top=0.80, bottom=0.14)
 plt.savefig(os.path.join(OUT_DIR, "chart1_qwen4_tasks_passed.png"))
 plt.savefig(os.path.join(OUT_DIR, "qwen38_vs_qwen4_chart1.png"))
 plt.close(fig)
@@ -227,7 +190,7 @@ ax1.fill_between(x, base_tok, pe_tok, color=NAVY, alpha=0.07, zorder=2)
 
 ax1.set_xticks(x)
 ax1.set_xticklabels(models, fontsize=9.2, fontweight="bold")
-ax1.set_ylim(0, 145000)
+ax1.set_ylim(0, 140000)
 ax1.set_yticks([0, 35000, 70000, 105000, 140000])
 ax1.set_yticklabels(["0", "35k", "70k", "105k", "140k"])
 ax1.set_xlim(-0.35, 1.35)
@@ -241,7 +204,7 @@ for i in range(len(x)):
     ax1.annotate(f"{pe_tok[i]:,} (-{pct_sav:.1f}%)", (x[i], pe_tok[i]), textcoords="offset points", xytext=(0, -16),
                  ha="center", va="bottom", fontsize=8.5, fontweight="bold", color=NAVY)
 
-ax1.legend(frameon=False, loc="upper left", ncol=1, fontsize=8.0)
+ax1.legend(frameon=False, loc="upper right", ncol=1, fontsize=8.0)
 
 # Right Panel: Mean Wall-Clock Seconds per Task
 base_sec = [BENCH_DATA["qwen38_without_pe_sec"], BENCH_DATA["qwen4_without_pe_sec"]]
@@ -254,7 +217,7 @@ ax2.fill_between(x, base_sec, pe_sec, color=TEAL_SLATE, alpha=0.07, zorder=2)
 
 ax2.set_xticks(x)
 ax2.set_xticklabels(models, fontsize=9.2, fontweight="bold")
-ax2.set_ylim(0, 1320)
+ax2.set_ylim(0, 1250)
 ax2.set_yticks([0, 300, 600, 900, 1200])
 ax2.set_xlim(-0.35, 1.35)
 ax2.set_title("Mean Wall-Clock Time per Task (Seconds)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
@@ -267,9 +230,9 @@ for i in range(len(x)):
     ax2.annotate(f"{pe_sec[i]:.0f}s (-{sec_sav:.1f}%)", (x[i], pe_sec[i]), textcoords="offset points", xytext=(0, -16),
                  ha="center", va="bottom", fontsize=8.5, fontweight="bold", color=TEAL_SLATE)
 
-ax2.legend(frameon=False, loc="upper left", ncol=1, fontsize=8.0)
+ax2.legend(frameon=False, loc="upper right", ncol=1, fontsize=8.0)
 
-fig.suptitle("Qwen 3.8 27B vs. Qwen 4 27B: Token & Wall-Clock Savings (With vs. Without PE)",
+fig.suptitle("Terminal-Bench 2.1: Token & Wall-Clock Savings (Qwen 3.8 27B vs. Qwen 4 27B)",
              x=0.04, y=0.95, ha="left", fontsize=12.6, fontweight="bold", color=TEXT_DARK)
 
 plt.subplots_adjust(left=0.09, right=0.97, top=0.80, bottom=0.16)
