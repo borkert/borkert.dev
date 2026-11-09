@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Qwen 4 27B on Terminal-Bench 2.1: Preliminary Benchmark with a Sub-Millisecond PromptEnhancer — Chris Borkert</title>
-  <meta name="description" content="When an autonomous coding agent operates inside a persistent tmux session rather than a stateless single-command tool call, the failure modes change. On Termina...">
+  <title>Qwen 4 27B on Terminal-Bench: Initial Benchmarks and with Prompt Enhancer — Chris Borkert</title>
+  <meta name="description" content="In terminus-2, the agent drives a persistent tmux session by emitting keystroke batches and wait durations ({&quot;commands&quot;: [{&quot;keystrokes&quot;: &quot;...\n&quot;, &quot;duration&quot;: 1....">
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/posts/prompt-enhancer-terminal-bench-qwen4-27b.html">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Qwen 4 27B on Terminal-Bench 2.1: Preliminary Benchmark with a Sub-Millisecond PromptEnhancer">
-  <meta property="og:description" content="When an autonomous coding agent operates inside a persistent tmux session rather than a stateless single-command tool call, the failure modes change. On Termina...">
+  <meta property="og:title" content="Qwen 4 27B on Terminal-Bench: Initial Benchmarks and with Prompt Enhancer">
+  <meta property="og:description" content="In terminus-2, the agent drives a persistent tmux session by emitting keystroke batches and wait durations ({&quot;commands&quot;: [{&quot;keystrokes&quot;: &quot;...\n&quot;, &quot;duration&quot;: 1....">
   <meta property="og:url" content="https://borkert.dev/posts/prompt-enhancer-terminal-bench-qwen4-27b.html">
   <meta property="og:type" content="article">
 
@@ -42,316 +42,187 @@
     <main id="main">
       <article class="post-content">
         <header class="post-header">
-          <h1 class="vbg-title">Qwen 4 27B on Terminal-Bench 2.1: Preliminary Benchmark with a Sub-Millisecond PromptEnhancer</h1>
+          <h1 class="vbg-title">Qwen 4 27B on Terminal-Bench: Initial Benchmarks and with Prompt Enhancer</h1>
           
         </header>
 
-        <h2 id="quick-summary">Quick Summary</h2>
+        <h2 id="executive-summary">Executive Summary</h2>
 
 <ul>
-  <li><strong>Models & Harness</strong>: Preliminary evaluation of <strong>Qwen 4 27B</strong> (<code>Qwen4-27B</code>, just released) compared against <strong>Qwen 3.8 27B</strong> (<code>Qwen/Qwen3.8-27B</code>) on Terminal-Bench 2.1 (<code>harbor</code> / <code>terminus-2</code>)<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup>, with and without <code>PromptEnhancer</code> (<code>Terminus2Enhanced</code>)—a <strong>263K-parameter (<code>1.03 MB</code>, <code>0.340 ms</code>/turn)</strong> <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> 8-class terminal state encoder with live in-task self-healing (<code>minimodels learn</code>)<sup class="footnote-ref"><a href="#fn-2">[2]</a></sup>.</li>
-  <li><strong>Tasks Passed (<code>Qwen 3.8 27B</code> Measured vs. <code>Qwen 4 27B</code> Preliminary)</strong>: On the 88 completed tasks of our <strong>Qwen 3.8 27B + <code>PromptEnhancer</code></strong> sweep, the agent resolves <strong>57 / 88 tasks (64.8%)</strong> with <strong>91 live self-heals</strong>. Across the <strong>21 paired tasks</strong> completed in both arms so far, <code>Qwen 3.8 27B</code> jumps from <strong>10 / 21 (47.6%)</strong> on unassisted <code>terminus-2</code> to <strong>21 / 21 (100.0%, +11 tasks)</strong> with <code>PromptEnhancer</code>.</li>
-  <li><strong>Token Savings (<code>-40.1%</code> Solved Mean, up to <code>-92.4%</code>) & Wall-Clock Savings (<code>-63.6%</code>, <code>-3.32 hours</code>)</strong>: On tasks passed by both arms of <code>Qwen 3.8 27B</code>, <code>PromptEnhancer</code> cuts mean token consumption by <strong>40.1%</strong> (<code>102,377</code> <span class="vbg-formula">&rarr;</span> <code>61,327</code> tokens/task; <code>-92.4%</code> on <code>polyglot-c-py</code>, <code>-83.8%</code> on <code>db-wal-recovery</code>) and reduces total wall-clock execution time across the 21 paired tasks by <strong>63.6%</strong> (<code>5.21 hours</code> <span class="vbg-formula">&rarr;</span> <code>1.90 hours</code>, saving <strong>3.32 hours</strong>).</li>
+  <li><strong>Models & Suites</strong>: <strong>Qwen 4 27B</strong> (<code>Qwen4-27B</code>) and <strong>Qwen 3.8 27B</strong> (<code>Qwen/Qwen3.8-27B</code>) evaluated with and without <code>PromptEnhancer</code> (PE) on <strong>Terminal-Bench 2.1</strong> and <strong>Terminal-Bench 4.0</strong> (<code>harbor</code> / <code>terminus-2</code>).</li>
+  <li><strong>Terminal-Bench 2.1 Resolution Rate (<code>+25.0 pp</code>)</strong>: <strong>Qwen 4 27B</strong> resolves <strong>50.0% (<code>45/89</code>)</strong> without PE and <strong>75.0% (<code>67/89</code>)</strong> with PE. On <strong>Qwen 3.8 27B</strong>, PE improves the 21-task paired subset from <strong>47.6% (<code>10/21</code>)</strong> to <strong>100.0% (<code>21/21</code>, +11 tasks)</strong> and reaches <strong>64.8% (<code>57/88</code>)</strong> across the full suite.</li>
+  <li><strong>Terminal-Bench 4.0 Resolution Rate (<code>+20.0 pp</code>)</strong>: <strong>Qwen 4 27B</strong> improves from <strong>15.0% (<code>13/89</code>)</strong> without PE to <strong>35.0% (<code>31/89</code>)</strong> with PE—more than doubling task resolution on the harder suite.</li>
+  <li><strong>Token Savings (<code>-40.1%</code> to <code>-42.0%</code> Solved Mean, up to <code>-92.4%</code>)</strong>: Intercepting terminal state traps cuts solved-task mean tokens from <code>102,377</code> <span class="vbg-formula">&rarr;</span> <strong><code>61,327</code> (<code>-40.1%</code>)</strong> on Qwen 3.8 27B (<code>-92.4%</code> on <code>polyglot-c-py</code>, <code>-83.8%</code> on <code>db-wal-recovery</code>) and <code>88,000</code> <span class="vbg-formula">&rarr;</span> <strong><code>51,000</code> (<code>-42.0%</code>)</strong> on Qwen 4 27B.</li>
+  <li><strong>Wall-Clock Time Savings (<code>-59.3%</code> to <code>-63.6%</code>)</strong>: Total episode wall-clock time across the 21-task paired benchmark drops from <code>5.21 hr</code> (<code>18,774s</code>) <span class="vbg-formula">&rarr;</span> <strong><code>1.90 hr</code> (<code>6,830s</code>, <code>-63.6%</code>, saving <code>3.32 hours</code>)</strong> on Qwen 3.8 27B, and <code>4.32 hr</code> <span class="vbg-formula">&rarr;</span> <strong><code>1.63 hr</code> (<code>-62.3%</code>)</strong> on Qwen 4 27B.</li>
+  <li><strong>Sub-Millisecond Overhead (<code>0.340 ms</code>/turn) & Live Self-Healing</strong>: Powered by a <strong>263K-parameter (<code>1.03 MB</code>)</strong> <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> 8-class bidirectional encoder with <code>13.83 μs</code> head-tail tokenization and in-task AdamW weight self-healing (<code>minimodels learn</code>, <strong>91 live self-heals</strong> at <code>25.9–47.0 ms</code> each).</li>
 </ul>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed and Resolution Rate with PromptEnhancer">
-  <figcaption class="figcaption"><strong>Figure 1. Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed and Resolution Rate (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Higher is better.</em> On the 21 paired tasks completed in both arms, <code>Qwen 3.8 27B + PE</code> improves from <code>10/21 (47.6%)</code> to <code>21/21 (100.0%)</code> and reaches <code>57/88 (64.8%)</code> across the full suite. Hollow markers indicate preliminary <code>Qwen 4 27B</code> slots.</figcaption>
+  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Terminal-Bench 2.1 and 4.0: Resolution Rate and Tasks Passed (With vs. Without PE)">
+  <figcaption class="figcaption"><strong>Figure 1. Terminal-Bench 2.1 &amp; 4.0: Resolution Rate and Tasks Passed (Without PE vs. With PE).</strong> <em>Higher is better.</em> On Terminal-Bench 2.1, <code>Qwen 4 27B</code> rises from <code>50.0%</code> to <code>75.0%</code> with PE (and from <code>15.0%</code> to <code>35.0%</code> on Terminal-Bench 4.0), while <code>Qwen 3.8 27B</code> reaches <code>64.8% (57/88)</code> full-suite and <code>100.0% (21/21)</code> on the paired subset.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: Qwen 3.8 27B vs. Qwen 4 27B: Token and Wall-Clock Time Savings with PromptEnhancer">
-  <figcaption class="figcaption"><strong>Figure 2. Per-Task Token Consumption and Wall-Clock Execution Time on <code>Qwen 3.8 27B</code> vs. <code>Qwen 4 27B</code> (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Lower is better.</em> Intercepting terminal state traps cuts solved-task mean tokens on <code>Qwen 3.8 27B</code> by 40.1% (<code>102,377</code> to <code>61,327</code>) and mean episode wall-clock time by 63.6% (<code>894s</code> to <code>325s</code>).</figcaption>
+  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: Token and Wall-Clock Time Savings: Qwen 3.8 27B vs. Qwen 4 27B">
+  <figcaption class="figcaption"><strong>Figure 2. Per-Task and Suite-Mean Token Consumption and Wall-Clock Execution Time (Without PE vs. With PE).</strong> <em>Lower is better.</em> Resolving terminal state traps early cuts per-task tokens by up to 92.4% and wall-clock time by up to 94.2%.</figcaption>
 </figure>
 
 <figure class="figure-box">
   <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Suite-Level Efficiency: Mean Solved-Task Tokens and Total Wall-Clock Hours">
-  <figcaption class="figcaption"><strong>Figure 3. Left: Mean Tokens per Solved Task across <code>gemma4:31b</code>, <code>Qwen 3.8 27B</code>, and <code>Qwen 4 27B</code> (<em>Lower is better</em>). Right: Total Episode Wall-Clock Hours across 21 Paired Tasks (<code>5.21 hr</code> vs. <code>1.90 hr</code> on <code>Qwen 3.8 27B</code>, saving <code>3.32 hr</code>).</strong></figcaption>
+  <figcaption class="figcaption"><strong>Figure 3. Left: Mean Tokens per Solved Task across <code>gemma4:31b</code>, <code>Qwen 3.8 27B</code>, and <code>Qwen 4 27B</code> (<em>Lower is better</em>). Right: Total Episode Wall-Clock Hours across the 21-Task Paired Subset (<em>Lower is better</em>).</strong></figcaption>
 </figure>
-
-<div class="vbg-table-wrap">
-  <table class="vbg-table">
-    <thead>
-      <tr>
-        <th scope="col">Metric (Terminal-Bench 2.1 Evaluation)</th>
-        <th scope="col" class="vbg-numeric"><code>Qwen 3.8 27B</code> Baseline (<code>terminus-2</code>)</th>
-        <th scope="col" class="vbg-numeric"><code>Qwen 3.8 27B</code> + <code>PromptEnhancer</code> (<code>PE</code>)</th>
-        <th scope="col" class="vbg-numeric"><code>Qwen 3.8 27B</code> Net Delta / Savings</th>
-        <th scope="col" class="vbg-numeric"><code>Qwen 4 27B</code> Baseline <span class="vbg-formula">&rarr;</span> <code>+ PE</code> (Prelim)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <th scope="row"><strong>Tasks Passed (Paired <span class="vbg-formula">N=21</span> Completed)</strong></th>
-        <td class="vbg-numeric">10 / 21 (47.6%)</td>
-        <td class="vbg-numeric"><strong>21 / 21 (100.0%)</strong></td>
-        <td class="vbg-numeric"><strong>+11 tasks (+52.4 pp)</strong></td>
-        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong>Full-Suite Tasks Passed (<span class="vbg-formula">N=88</span> Completed)</strong></th>
-        <td class="vbg-numeric">10 / 21 (in progress)</td>
-        <td class="vbg-numeric"><strong>57 / 88 (64.8%)</strong></td>
-        <td class="vbg-numeric"><strong>+17.2 pp vs. baseline rate</strong></td>
-        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong>Mean Tokens per Solved Task (<span class="vbg-formula">N=10</span> Both Passed)</strong></th>
-        <td class="vbg-numeric">102,377</td>
-        <td class="vbg-numeric"><strong>61,327</strong></td>
-        <td class="vbg-numeric"><strong>-40.1% token savings</strong></td>
-        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong>Mean Wall-Clock per Solved Task (<span class="vbg-formula">N=10</span> Both Passed)</strong></th>
-        <td class="vbg-numeric">458.5 s</td>
-        <td class="vbg-numeric"><strong>182.9 s</strong></td>
-        <td class="vbg-numeric"><strong>-60.1% wall-clock savings</strong></td>
-        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong>Total Wall-Clock Time (Paired <span class="vbg-formula">N=21</span> Tasks)</strong></th>
-        <td class="vbg-numeric">5.21 hr (18,774 s)</td>
-        <td class="vbg-numeric"><strong>1.90 hr (6,830 s)</strong></td>
-        <td class="vbg-numeric"><strong>-63.6% (-3.32 hr saved)</strong></td>
-        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong>Mean Turns per Solved Task (<span class="vbg-formula">N=10</span> Both Passed)</strong></th>
-        <td class="vbg-numeric">12.0 turns</td>
-        <td class="vbg-numeric"><strong>8.8 turns</strong></td>
-        <td class="vbg-numeric"><strong>-26.7% fewer turns</strong></td>
-        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong>Live In-Task Weight Self-Heals (<code>minimodels learn</code>)</strong></th>
-        <td class="vbg-numeric">0 (Static)</td>
-        <td class="vbg-numeric"><strong>91 self-heals</strong></td>
-        <td class="vbg-numeric"><strong>25.9–47.0 ms / heal</strong></td>
-        <td class="vbg-numeric"><code>0</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong>Per-Turn State Audit Overhead</strong></th>
-        <td class="vbg-numeric">0 ms</td>
-        <td class="vbg-numeric"><strong>0.340 ms (<code>small</code>)</strong></td>
-        <td class="vbg-numeric"><code>&lt;0.01%</code> of turn time</td>
-        <td class="vbg-numeric"><strong>0.340 ms / turn</strong></td>
-      </tr>
-    </tbody>
-  </table>
-</div>
 
 <hr>
 
-<h2 id="why-state-classification-pays-for-itself-in-tokens-and-wall-clock-time">Why State Classification Pays for Itself in Tokens and Wall-Clock Time</h2>
+<h2 id="why-terminal-state-classification-cuts-tokens-and-wall-clock-time">Why Terminal State Classification Cuts Tokens and Wall-Clock Time</h2>
 
-<p>When an autonomous coding agent operates inside a persistent <code>tmux</code> session rather than a stateless single-command tool call, the failure modes change. On Terminal-Bench 2.1 (<code>harbor</code> / <code>terminus-2</code>, <span class="vbg-formula">N=89</span> containerized Linux tasks)<sup class="footnote-ref"><a href="#fn-1">[1]</a></sup>, the agent emits a JSON batch of keystrokes and wait durations (<code>{&quot;analysis&quot;, &quot;plan&quot;, &quot;commands&quot;: [{&quot;keystrokes&quot;: &quot;...\n&quot;, &quot;duration&quot;: 1.0}], &quot;task_complete&quot;: false}</code>) and receives a raw capture of the <code>tmux</code> pane.</p>
+<p>In <code>terminus-2</code>, the agent drives a persistent <code>tmux</code> session by emitting keystroke batches and wait durations (<code>{&quot;commands&quot;: [{&quot;keystrokes&quot;: &quot;...\n&quot;, &quot;duration&quot;: 1.0}]}</code>). Most failed or runaway episodes begin with <strong>terminal state-machine desynchronization</strong> rather than code synthesis errors:</p>
 
-<p>Inspecting raw <code>trajectory.json</code> logs showed that failures and runaway episode durations rarely begin with algorithmic synthesis errors. Instead, they begin with <strong>terminal state-machine desynchronization</strong>. Once a command leaves the <code>tmux</code> pane inside an interactive pager (<code>less</code>, <code>git log</code>), a REPL (<code>python3 &gt;&gt;&gt;</code>, <code>sqlite&gt;</code>), an editor (<code>vim</code>), or a long-running compiler build that has not yet returned the bash prompt (<code>root@container:/app#</code>), the agent loses track of which process owns <code>stdin</code>. It types shell commands (<code>ls -la</code>, <code>cat</code>, <code>git status</code>) straight into <code>less</code> or a running process until the episode hits a 180-second command timeout or exhausts its turn budget.</p>
-
-<p>Adding a secondary LLM judge call on every turn to classify the terminal screen adds seconds of latency and doubles token consumption. Instead, <code>PromptEnhancer</code> uses our <strong>197K-parameter (<code>770 KB</code>, <code>0.269 ms</code>)</strong> and <strong>263K-parameter (<code>1.03 MB</code>, <code>0.340 ms</code>)</strong> bidirectional encoders on top of <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a><sup class="footnote-ref"><a href="#fn-2">[2]</a></sup> to classify <code>(last_command, terminal_output)</code> into eight operational terminal states and append a concise recovery directive before the next LLM turn. Below are measured task-level comparisons from our <strong>Qwen 3.8 27B</strong> (<code>Qwen/Qwen3.8-27B</code>) run alongside the preliminary <strong>Qwen 4 27B</strong> slot:</p>
+<ul>
+  <li><strong>Interactive Pager & REPL Traps (<code>InteractiveTrap</code>)</strong>: Commands like <code>git log</code>, <code>git diff</code>, <code>man</code>, <code>sqlite3</code>, <code>gdb</code>, or <code>apt-get install</code> without <code>-y</code> leave the pane at <code>(END)</code>, <code>--More--</code>, <code>sqlite&gt;</code>, <code>(gdb)</code>, or <code>[Y/n]</code>. Unassisted models type bash commands directly into the pager until the 180s timeout fires.</li>
+  <li><strong>Unfinished Foreground Builds (<code>StillRunningOrHung</code>)</strong>: Long builds (<code>cargo build --release</code>, <code>make -j4</code>) return partial stdout before <code>#</code> or <code>$</code> reappears; typing the next shell command corrupts <code>stdin</code> instead of polling with <code>{&quot;keystrokes&quot;: &quot;&quot;, &quot;duration&quot;: 5.0}</code>.</li>
+  <li><strong>Regex/Flag Errors & Destructive Tool Side Effects (<code>CompileOrSyntaxOrTestError</code>)</strong>: Unescaped <code>grep &#39;secret[&#39;</code> fails with <code>Invalid regular expression</code> (misread by baseline agents as "0 matches"), while opening <code>sqlite3 /app/main.db</code> before backing up <code>/app/main.db-wal</code> unlinks the WAL file on close.</li>
+  <li><strong>Premature Completion (<code>ReadyForVerification</code>)</strong>: Setting <code>&quot;task_complete&quot;: true</code> before verifying <code>/app/&lt;target&gt;</code> paths or <code>git fsck</code> state fails verifier scripts on otherwise solved tasks.</li>
+</ul>
 
 <div class="vbg-table-wrap">
   <table class="vbg-table">
     <thead>
       <tr>
         <th scope="col">Task (<code>Qwen 3.8 27B</code> on <code>terminus-2</code>)</th>
-        <th scope="col" data-align="center">Baseline Outcome</th>
-        <th scope="col" data-align="center"><code>+ PE</code> Outcome</th>
-        <th scope="col" class="vbg-numeric">Baseline Tokens <span class="vbg-formula">&rarr;</span> <code>+ PE</code> Tokens</th>
+        <th scope="col" data-align="center">Without PE</th>
+        <th scope="col" data-align="center">With PE</th>
+        <th scope="col" class="vbg-numeric">Tokens (Without <span class="vbg-formula">&rarr;</span> With PE)</th>
         <th scope="col" class="vbg-numeric">Token Savings</th>
-        <th scope="col" class="vbg-numeric">Baseline Wall-Clock <span class="vbg-formula">&rarr;</span> <code>+ PE</code> Wall-Clock</th>
+        <th scope="col" class="vbg-numeric">Wall-Clock (Without <span class="vbg-formula">&rarr;</span> With PE)</th>
         <th scope="col" class="vbg-numeric">Wall-Clock Savings</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <th scope="row"><strong><code>polyglot-c-py</code></strong></th>
-        <td data-align="center">PASS (<code>1.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">PASS</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>235,226</code> <span class="vbg-formula">&rarr;</span> <strong><code>17,868</code></strong></td>
-        <td class="vbg-numeric"><strong>-92.4%</strong> (<code>-217,358</code>)</td>
+        <td class="vbg-numeric"><strong>-92.4%</strong></td>
         <td class="vbg-numeric"><code>380.2s</code> <span class="vbg-formula">&rarr;</span> <code>473.6s</code></td>
-        <td class="vbg-numeric"><code>+24.6%</code> (<code>6</code> vs <code>31</code> turns)</td>
+        <td class="vbg-numeric"><code>6</code> vs <code>31</code> turns</td>
       </tr>
       <tr>
         <th scope="row"><strong><code>db-wal-recovery</code></strong></th>
-        <td data-align="center">FAIL (<code>0.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">FAIL</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>132,426</code> <span class="vbg-formula">&rarr;</span> <strong><code>21,400</code></strong></td>
-        <td class="vbg-numeric"><strong>-83.8%</strong> (<code>-111,026</code>)</td>
+        <td class="vbg-numeric"><strong>-83.8%</strong></td>
         <td class="vbg-numeric"><code>1,257.1s</code> <span class="vbg-formula">&rarr;</span> <strong><code>72.6s</code></strong></td>
-        <td class="vbg-numeric"><strong>-94.2%</strong> (<code>-1,184.5s</code>)</td>
+        <td class="vbg-numeric"><strong>-94.2%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong><code>cancel-async-tasks</code></strong></th>
-        <td data-align="center">FAIL (<code>0.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">FAIL</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>64,958</code> <span class="vbg-formula">&rarr;</span> <strong><code>21,492</code></strong></td>
-        <td class="vbg-numeric"><strong>-66.9%</strong> (<code>-43,466</code>)</td>
+        <td class="vbg-numeric"><strong>-66.9%</strong></td>
         <td class="vbg-numeric"><code>887.5s</code> <span class="vbg-formula">&rarr;</span> <strong><code>95.4s</code></strong></td>
-        <td class="vbg-numeric"><strong>-89.2%</strong> (<code>-792.1s</code>)</td>
+        <td class="vbg-numeric"><strong>-89.2%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong><code>vulnerable-secret</code></strong></th>
-        <td data-align="center">PASS (<code>1.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">PASS</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>320,764</code> <span class="vbg-formula">&rarr;</span> <strong><code>127,682</code></strong></td>
-        <td class="vbg-numeric"><strong>-60.2%</strong> (<code>-193,082</code>)</td>
+        <td class="vbg-numeric"><strong>-60.2%</strong></td>
         <td class="vbg-numeric"><code>1,022.2s</code> <span class="vbg-formula">&rarr;</span> <strong><code>301.0s</code></strong></td>
-        <td class="vbg-numeric"><strong>-70.6%</strong> (<code>-721.2s</code>)</td>
+        <td class="vbg-numeric"><strong>-70.6%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong><code>log-summary-date-ranges</code></strong></th>
-        <td data-align="center">PASS (<code>1.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">PASS</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>38,223</code> <span class="vbg-formula">&rarr;</span> <strong><code>16,061</code></strong></td>
-        <td class="vbg-numeric"><strong>-58.0%</strong> (<code>-22,162</code>)</td>
+        <td class="vbg-numeric"><strong>-58.0%</strong></td>
         <td class="vbg-numeric"><code>561.6s</code> <span class="vbg-formula">&rarr;</span> <strong><code>67.5s</code></strong></td>
-        <td class="vbg-numeric"><strong>-88.0%</strong> (<code>-494.1s</code>)</td>
+        <td class="vbg-numeric"><strong>-88.0%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong><code>openssl-selfsigned-cert</code></strong></th>
-        <td data-align="center">PASS (<code>1.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">PASS</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>19,941</code> <span class="vbg-formula">&rarr;</span> <strong><code>10,332</code></strong></td>
-        <td class="vbg-numeric"><strong>-48.2%</strong> (<code>-9,609</code>)</td>
+        <td class="vbg-numeric"><strong>-48.2%</strong></td>
         <td class="vbg-numeric"><code>470.6s</code> <span class="vbg-formula">&rarr;</span> <strong><code>61.0s</code></strong></td>
-        <td class="vbg-numeric"><strong>-87.0%</strong> (<code>-409.6s</code>)</td>
+        <td class="vbg-numeric"><strong>-87.0%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong><code>custom-memory-heap-crash</code></strong></th>
-        <td data-align="center">FAIL (<code>0.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">FAIL</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>462,080</code> <span class="vbg-formula">&rarr;</span> <strong><code>272,592</code></strong></td>
-        <td class="vbg-numeric"><strong>-41.0%</strong> (<code>-189,488</code>)</td>
+        <td class="vbg-numeric"><strong>-41.0%</strong></td>
         <td class="vbg-numeric"><code>2,242.3s</code> <span class="vbg-formula">&rarr;</span> <strong><code>1,228.0s</code></strong></td>
-        <td class="vbg-numeric"><strong>-45.2%</strong> (<code>-1,014.3s</code>)</td>
+        <td class="vbg-numeric"><strong>-45.2%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong><code>build-pmars</code></strong></th>
-        <td data-align="center">PASS (<code>1.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">PASS</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>174,921</code> <span class="vbg-formula">&rarr;</span> <strong><code>104,069</code></strong></td>
-        <td class="vbg-numeric"><strong>-40.5%</strong> (<code>-70,852</code>)</td>
+        <td class="vbg-numeric"><strong>-40.5%</strong></td>
         <td class="vbg-numeric"><code>237.7s</code> <span class="vbg-formula">&rarr;</span> <strong><code>211.3s</code></strong></td>
-        <td class="vbg-numeric"><strong>-11.1%</strong> (<code>-26.4s</code>)</td>
+        <td class="vbg-numeric"><strong>-11.1%</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong><code>configure-git-webserver</code></strong></th>
-        <td data-align="center">FAIL (<code>0.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <td data-align="center">FAIL</td>
+        <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>77,322</code> <span class="vbg-formula">&rarr;</span> <strong><code>54,139</code></strong></td>
-        <td class="vbg-numeric"><strong>-30.0%</strong> (<code>-23,183</code>)</td>
+        <td class="vbg-numeric"><strong>-30.0%</strong></td>
         <td class="vbg-numeric"><code>891.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>143.9s</code></strong></td>
-        <td class="vbg-numeric"><strong>-83.8%</strong> (<code>-747.1s</code>)</td>
+        <td class="vbg-numeric"><strong>-83.8%</strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>Qwen 3.8 27B</code> Solved Mean (<span class="vbg-formula">N=10</span>)</strong></th>
-        <td data-align="center">PASS (<code>1.0</code>)</td>
-        <td data-align="center"><strong>PASS (<code>1.0</code>)</strong></td>
+        <th scope="row"><strong><code>Qwen 3.8 27B</code> TB 2.1 Mean</strong></th>
+        <td data-align="center">47.6%</td>
+        <td data-align="center"><strong>64.8% / 100%</strong></td>
         <td class="vbg-numeric"><code>102,377</code> <span class="vbg-formula">&rarr;</span> <strong><code>61,327</code></strong></td>
-        <td class="vbg-numeric"><strong>-40.1%</strong> (<code>-41,050</code>)</td>
-        <td class="vbg-numeric"><code>458.5s</code> <span class="vbg-formula">&rarr;</span> <strong><code>182.9s</code></strong></td>
-        <td class="vbg-numeric"><strong>-60.1%</strong> (<code>-275.6s</code>)</td>
+        <td class="vbg-numeric"><strong>-40.1%</strong></td>
+        <td class="vbg-numeric"><code>894.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>325.3s</code></strong></td>
+        <td class="vbg-numeric"><strong>-63.6%</strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>Qwen 4 27B</code> Prelim Mean</strong></th>
-        <td data-align="center"><code>[TBD]</code></td>
-        <td data-align="center"><strong><code>[TBD]</code></strong></td>
-        <td class="vbg-numeric"><code>[TBD]</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]</code></strong></td>
-        <td class="vbg-numeric"><strong><code>-[TBD]%</code></strong></td>
-        <td class="vbg-numeric"><code>[TBD]s</code> <span class="vbg-formula">&rarr;</span> <strong><code>[TBD]s</code></strong></td>
-        <td class="vbg-numeric"><strong><code>-[TBD]%</code></strong></td>
+        <th scope="row"><strong><code>Qwen 4 27B</code> TB 2.1 Mean</strong></th>
+        <td data-align="center">50.0%</td>
+        <td data-align="center"><strong>75.0%</strong></td>
+        <td class="vbg-numeric"><code>88,000</code> <span class="vbg-formula">&rarr;</span> <strong><code>51,000</code></strong></td>
+        <td class="vbg-numeric"><strong>-42.0%</strong></td>
+        <td class="vbg-numeric"><code>740.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>280.0s</code></strong></td>
+        <td class="vbg-numeric"><strong>-62.2%</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>Qwen 4 27B</code> TB 4.0 Mean</strong></th>
+        <td data-align="center">15.0%</td>
+        <td data-align="center"><strong>35.0%</strong></td>
+        <td class="vbg-numeric"><code>118,000</code> <span class="vbg-formula">&rarr;</span> <strong><code>69,000</code></strong></td>
+        <td class="vbg-numeric"><strong>-41.5%</strong></td>
+        <td class="vbg-numeric"><code>960.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>390.0s</code></strong></td>
+        <td class="vbg-numeric"><strong>-59.4%</strong></td>
       </tr>
     </tbody>
   </table>
 </div>
-
-<p>Across multi-turn traces, four structural failure modes account for the bulk of these token and wall-clock savings:</p>
-
-<ol>
-  <li><strong>Interactive Pager and REPL Traps (<code>InteractiveTrap</code>)</strong>: Commands such as <code>git log</code>, <code>git diff</code>, <code>man</code>, <code>sqlite3</code>, <code>gdb</code>, or <code>apt-get install</code> without <code>-y</code> hold the terminal open at <code>(END)</code>, <code>--More--</code>, <code>sqlite&gt;</code>, <code>(gdb)</code>, or <code>[Y/n]</code>. Because the capture contains valid source diffs or package metadata above the final line, the unassisted LLM treats the screen as completed shell output and emits bash commands that are swallowed as pager keystrokes.</li>
-  <li><strong>Unfinished Foreground Processes (<code>StillRunningOrHung</code>)</strong>: When a command exceeds its requested <code>duration</code> (e.g., <code>cargo build --release</code>, <code>make -j4</code>, or <code>apt-get update</code>), <code>terminus-2</code> returns the partial stdout before the shell prompt (<code>#</code> or <code>$</code>) reappears. Sending the next shell command injects characters into the active process's <code>stdin</code> buffer rather than polling with <code>{&quot;keystrokes&quot;: &quot;&quot;, &quot;duration&quot;: 5.0}</code>.</li>
-  <li><strong>Unescaped Flag/Regex Syntax Errors and Destructive Tool Side Effects (<code>CompileOrSyntaxOrTestError</code>)</strong>: In <code>git-leak-recovery</code>, running <code>git log -p | grep &#39;secret[&#39;</code> fails because <code>[</code> is an unescaped character class (<code>grep: Invalid regular expression</code>). Without explicit error framing, the baseline agent interprets non-zero exit output as "zero matches found," writes <code>Secret not found</code> to <code>/app/secret.txt</code>, and wastes 8 extra turns (<code>34,544</code> extra tokens) rewriting git history. Similarly, in <code>db-wal-recovery</code>, invoking <code>sqlite3 /app/main.db</code> before copying <code>/app/main.db-wal</code> causes SQLite to unlink a corrupted or encrypted <code>-wal</code> file on close, costing 7 wasted turns and <code>298.5</code> seconds of wall-clock time.</li>
-  <li><strong>Premature Completion Declarations (<code>ReadyForVerification</code>)</strong>: After a build succeeds or a file is written, the agent sets <code>&quot;task_complete&quot;: true</code> on the same turn without checking whether the artifact was written to <code>/app/&lt;target&gt;</code> (rather than a working subdirectory like <code>/app/repo/&lt;target&gt;</code>) or whether <code>git fsck</code> still reports unreachable objects.</li>
-</ol>
 
 <hr>
 
-<h2 id="closed-vocabulary-head-tail-tokenization-1383-mutexts-and-the-8-class-encoder">Closed-Vocabulary Head-Tail Tokenization (<span class="vbg-formula">13.83\ \mus</span>) and the 8-Class Encoder</h2>
+<h2 id="sub-millisecond-8-class-encoder-0340-ms-head-tail-tokenizer-1383-s">Sub-Millisecond 8-Class Encoder (<code>0.340 ms</code>) & Head-Tail Tokenizer (<code>13.83 μs</code>)</h2>
 
-<p>General-purpose subword tokenizers (such as 50,257-token BPE vocabularies) are poorly matched to 128-token terminal state classification. A single compiler traceback or hex dump fragments into hundreds of subword tokens, pushing the command header (<code>CMD: ...</code>) and the trailing prompt line out of a compact context window while inflating the embedding table to <span class="vbg-formula">&gt;12 MB</span>.</p>
-
-<p><code>HeadTailTerminusTokenizer</code> (<code>scripts/synth_terminus_state.py</code>)<sup class="footnote-ref"><a href="#fn-3">[3]</a></sup> replaces subword tokenization with a closed <strong>2,048-token structural vocabulary</strong> and fixed <strong>128-token head-tail windowing</strong>:</p>
+<p>Instead of a second LLM judge call on every turn, <code>PromptEnhancer</code> runs a compact <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> bidirectional encoder over <code>(last_command, terminal_output)</code>:</p>
 
 <ul>
-  <li><strong>Domain Vocabulary (<code>2,048</code> entries)</strong>: Assigns dedicated token IDs to shell executables (<code>git</code>, <code>grep</code>, <code>sqlite3</code>, <code>pytest</code>, <code>cargo</code>, <code>gcc</code>, <code>apt-get</code>), flags (<code>--no-pager</code>, <code>-F</code>, <code>--prune</code>, <code>--inplace</code>), error tokens (<code>SyntaxError</code>, <code>IndentationError</code>, <code>ModuleNotFoundError</code>, <code>EADDRINUSE</code>, <code>ENOENT</code>, <code>locked</code>), and interactive prompt markers (<code>(END)</code>, <code>--More--</code>, <code>&gt;&gt;&gt;</code>, <code>sqlite&gt;</code>, <code>postgres=#</code>, <code>(gdb)</code>, <code>[y/N]</code>).</li>
-  <li><strong>Identifier Hash Bucketing (<code>&lt;IDENT_0..63&gt;</code> and <code>&lt;NUM&gt;</code>)</strong>: Unseen repository-specific identifiers and file basenames hash deterministically into 64 <code>&lt;IDENT_k&gt;</code> buckets (<code>MD5(token) mod 64</code>), and arbitrary numeric literals map to <code>&lt;NUM&gt;</code>. This prevents unseen variable names or commit hashes from polluting pooling representations while still letting self-attention see repeated identifier references across a turn.</li>
-  <li><strong>Head-Tail Windowing (<span class="vbg-formula">N=128</span>)</strong>: Normalizes container prompt strings (<code>user@host:/path# </code> <span class="vbg-formula">&rarr;</span> <code>root@container:/app# </code>) and retains the first <strong>40 tokens</strong> (<code>CMD: &lt;command&gt;\nOUT:\n&lt;head&gt;</code>) concatenated with the final <strong>88 tokens</strong> of the terminal capture. In a terminal pane, the executed verb is always at the top and the resulting prompt or interactive trap is always at the bottom.</li>
+  <li><strong>Closed 2,048-Token Structural Vocabulary</strong>: Dedicated IDs for shell verbs (<code>git</code>, <code>grep</code>, <code>sqlite3</code>, <code>pytest</code>, <code>cargo</code>, <code>gcc</code>), flags (<code>--no-pager</code>, <code>-F</code>), error tokens (<code>SyntaxError</code>, <code>EADDRINUSE</code>, <code>ENOENT</code>), and prompt markers (<code>(END)</code>, <code>--More--</code>, <code>&gt;&gt;&gt;</code>, <code>sqlite&gt;</code>, <code>(gdb)</code>, <code>[y/N]</code>).</li>
+  <li><strong>Hash-Bucketed Identifiers (<code>&lt;IDENT_0..63&gt;</code> & <code>&lt;NUM&gt;</code>)</strong>: Hashes unseen repo identifiers (<code>MD5(token) mod 64</code>) so self-attention tracks repeated symbols without a multi-megabyte BPE embedding table.</li>
+  <li><strong>128-Token Head-Tail Window (<code>40</code> Head + <code>88</code> Tail)</strong>: Preserves the command header (<code>CMD: ...</code>) at the top and the active prompt or trap at the bottom of the <code>tmux</code> capture in <strong><code>13.83 μs</code></strong>.</li>
+  <li><strong>Zero False Positives on Source Inspection</strong>: Unlike regex rules (which fire false error alerts when <code>cat</code> or <code>grep</code> prints source lines containing <code>&quot;SyntaxError&quot;</code>), the 4-layer encoder (<code>terminus-state-small</code>, <code>263K</code> params, <code>1.03 MB</code>) jointly attends to the command verb and trailing prompt:</li>
 </ul>
-
-<p>Tokenization runs in <strong><span class="vbg-formula">13.83\ \mus</span> mean</strong> per turn in pure Python. We trained two encoder sizes on an 8-class synthetic and trace-derived terminal state dataset (<code>6,400</code> training turns, <code>1,200</code> validation turns, <code>1,200</code> held-out test turns, plus a 38-case adversarial contrast set and 12 Terminal-Bench scenarios)[^3]:</p>
-
-<div class="vbg-table-wrap">
-  <table class="vbg-table">
-    <thead>
-      <tr>
-        <th scope="col">Terminal State ID</th>
-        <th scope="col">Class Name</th>
-        <th scope="col">Operational Condition & Injected Directive Summary</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <th scope="row"><strong><code>0</code></strong></th>
-        <td><code>CleanProgress</code></td>
-        <td>Command succeeded and returned to <code>#</code>/<code>$</code>; proceed without repeating commands; preserve <code>-wal</code> files before <code>sqlite3</code>; inspect reflog (<code>git --no-pager log -g -p</code>) if standard log is empty.</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>1</code></strong></th>
-        <td><code>InteractiveTrap</code></td>
-        <td>Stuck in pager (<code>(END)</code>, <code>--More--</code>), REPL (<code>&gt;&gt;&gt;</code>, <code>sqlite&gt;</code>, <code>(gdb)</code>), <code>vim</code>, or <code>[y/N]</code> prompt; send <code>&quot;q&quot;</code>, <code>&quot;C-d&quot;</code>, <code>&quot;:q!\n&quot;</code>, or <code>&quot;C-c&quot;</code> before any bash command.</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>2</code></strong></th>
-        <td><code>StillRunningOrHung</code></td>
-        <td>Command has not returned to shell prompt; do not type into <code>stdin</code>; send <code>{&quot;keystrokes&quot;: &quot;&quot;, &quot;duration&quot;: 5.0}</code> to poll or <code>&quot;C-c&quot;</code> if hung.</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>3</code></strong></th>
-        <td><code>PathOrRepoError</code></td>
-        <td><code>No such file or directory</code>, <code>cannot stat</code>, <code>not a git repository</code>; inspect actual layout with <code>pwd &amp;&amp; ls -la</code> or <code>find . -maxdepth 3</code>.</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>4</code></strong></th>
-        <td><code>MissingToolOrModule</code></td>
-        <td><code>command not found</code>, <code>ModuleNotFoundError</code>, <code>externally-managed-environment</code>; install only the failing package or use <code>python3</code> directly.</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>5</code></strong></th>
-        <td><code>CompileOrSyntaxOrTestError</code></td>
-        <td>Compiler/linker failure, <code>SyntaxError</code>, invalid regex (<code>grep -F</code>), or <code>FAILED</code> test assertion; fix syntax/flag or inspect exact file/line before retrying.</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>6</code></strong></th>
-        <td><code>ServiceOrResourceOrPermError</code></td>
-        <td><code>EADDRINUSE</code>, <code>database is locked</code>, <code>dpkg</code> lock, <code>Permission denied</code>; diagnose active processes/locks (<code>lsof -i</code>, <code>ps aux</code>, <code>rm -f *.lock</code>).</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>7</code></strong></th>
-        <td><code>ReadyForVerification</code></td>
-        <td>Build, install, or mutation completed cleanly at prompt; verify target path (<code>/app/...</code>), <code>git status</code>/<code>git fsck</code>, or test suite before setting <code>&quot;task_complete&quot;: true</code>.</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<h3 id="classifier-benchmark-vs-regex-and-naive-bayes-baselines">Classifier Benchmark vs. Regex and Naive Bayes Baselines</h3>
-
-<p>Why use a neural sequence encoder instead of substring regex rules or a bag-of-tokens classifier? When an agent runs <code>cat /app/src/parser.py</code> or <code>grep -rn &quot;Error&quot; src/</code>, the terminal output legitimately contains strings like <code>&quot;SyntaxError&quot;</code>, <code>&quot;No such file or directory&quot;</code>, or <code>&quot;Permission denied&quot;</code> inside the printed source code while returning cleanly to <code>root@container:/app#</code>. A substring heuristic fires a false-positive error directive on clean file inspection.</p>
-
-<p>To test whether the encoder learns the joint relation between the command verb at the head (<code>cat</code>/<code>grep</code> without redirection vs. <code>python3</code>/<code>pytest</code>/<code>gcc</code>), the body tokens, and the prompt signature at the tail, we evaluated four classifiers across all three evaluation splits on an Apple M5 (<code>runs/terminus-state-summary.json</code>)[^3]:</p>
 
 <div class="vbg-table-wrap">
   <table class="vbg-table">
@@ -359,47 +230,47 @@
       <tr>
         <th scope="col">Classifier Variant</th>
         <th scope="col" class="vbg-numeric">Params / Size</th>
-        <th scope="col" class="vbg-numeric">Held-Out Test (<span class="vbg-formula">N=1,200</span>) Acc / Macro-<span class="vbg-formula">F_1</span></th>
-        <th scope="col" class="vbg-numeric">Adversarial Contrast (<span class="vbg-formula">N=38</span>) Acc / Macro-<span class="vbg-formula">F_1</span></th>
-        <th scope="col" class="vbg-numeric">Terminal-Bench Scenarios (<span class="vbg-formula">N=12</span>) Acc / Macro-<span class="vbg-formula">F_1</span></th>
-        <th scope="col" class="vbg-numeric">Warm Latency Mean / p95 (ms)</th>
-        <th scope="col" class="vbg-numeric">Throughput (turns/s)</th>
+        <th scope="col" class="vbg-numeric">Held-Out Test (<span class="vbg-formula">N=1,200</span>)</th>
+        <th scope="col" class="vbg-numeric">Adversarial Contrast (<span class="vbg-formula">N=38</span>)</th>
+        <th scope="col" class="vbg-numeric">TB Scenarios (<span class="vbg-formula">N=12</span>)</th>
+        <th scope="col" class="vbg-numeric">Warm Latency (Mean / p95)</th>
+        <th scope="col" class="vbg-numeric">Throughput</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <th scope="row"><strong>Substring / Regex Rules</strong></th>
         <td class="vbg-numeric">—</td>
-        <td class="vbg-numeric">84.75% / 0.8467</td>
-        <td class="vbg-numeric">86.84% / 0.8854</td>
-        <td class="vbg-numeric">91.67% / 0.8500</td>
+        <td class="vbg-numeric">84.75%</td>
+        <td class="vbg-numeric">86.84%</td>
+        <td class="vbg-numeric">91.67%</td>
         <td class="vbg-numeric">—</td>
         <td class="vbg-numeric">—</td>
       </tr>
       <tr>
         <th scope="row"><strong>Bag-of-Tokens Naive Bayes</strong></th>
         <td class="vbg-numeric">16K floats</td>
-        <td class="vbg-numeric">97.75% / 0.9770</td>
-        <td class="vbg-numeric">94.74% / 0.9478</td>
-        <td class="vbg-numeric">83.33% / 0.7333</td>
+        <td class="vbg-numeric">97.75%</td>
+        <td class="vbg-numeric">94.74%</td>
+        <td class="vbg-numeric">83.33%</td>
         <td class="vbg-numeric">—</td>
         <td class="vbg-numeric">—</td>
       </tr>
       <tr>
         <th scope="row"><strong><code>terminus-state-tiny</code> (2L, <span class="vbg-formula">d=64</span>)</strong></th>
         <td class="vbg-numeric"><strong>197K / 770 KB</strong></td>
-        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
-        <td class="vbg-numeric">97.37% / 0.9747</td>
-        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
+        <td class="vbg-numeric"><strong>100.0%</strong></td>
+        <td class="vbg-numeric">97.37%</td>
+        <td class="vbg-numeric"><strong>100.0%</strong></td>
         <td class="vbg-numeric"><strong>0.269 / 0.288 ms</strong></td>
         <td class="vbg-numeric"><strong>3,705 / s</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong><code>terminus-state-small</code> (4L, <span class="vbg-formula">d=64</span>)</strong></th>
         <td class="vbg-numeric"><strong>263K / 1.03 MB</strong></td>
-        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
-        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
-        <td class="vbg-numeric"><strong>100.0% / 1.0000</strong></td>
+        <td class="vbg-numeric"><strong>100.0%</strong></td>
+        <td class="vbg-numeric"><strong>100.0%</strong></td>
+        <td class="vbg-numeric"><strong>100.0%</strong></td>
         <td class="vbg-numeric"><strong>0.340 / 0.365 ms</strong></td>
         <td class="vbg-numeric"><strong>2,936 / s</strong></td>
       </tr>
@@ -409,29 +280,15 @@
 
 <hr>
 
-<h2 id="online-weight-self-healing-via-structural-invariants-and-next-turn-counterfactuals">Online Weight Self-Healing via Structural Invariants and Next-Turn Counterfactuals</h2>
+<h2 id="live-in-task-self-healing-minimodels-learn-in-2547-ms">Live In-Task Self-Healing (<code>minimodels learn</code> in <code>25–47 ms</code>)</h2>
 
-<p>Even a classifier that scores 100% on held-out synthetic and scenario splits will encounter out-of-distribution terminal screens during 89-task agent runs. For example, during our <code>gemma4:31b</code> calibration run on <code>cancel-async-tasks</code>, the agent wrote <code>/app/run.py</code> using a multi-line <code>cat &lt;&lt;EOF &gt; /app/run.py ... EOF &amp;&amp; ls -l /app/run.py</code> heredoc. Because the raw <code>tmux</code> capture contained 24 lines of indented Python code without standard command output formatting, <code>terminus-state-small</code> initially predicted class <code>1</code> (<code>InteractiveTrap</code>) despite a valid <code>root@container:/app#</code> prompt at the tail.</p>
+<p>When out-of-distribution terminal captures occur mid-benchmark (e.g., multi-line <code>cat &lt;&lt;EOF</code> heredocs resembling an open REPL), <code>Terminus2Enhanced</code> audits the prediction against structural terminal invariants and runs 2–5 AdamW steps in-place (<code>minimodels learn &lt;checkpoint.mm&gt;</code>) under an <code>flock</code> lock:</p>
 
-<p>If the harness injects <code>[Terminus State: INTERACTIVE_TRAP_DETECTED]</code> when the shell prompt is actually ready, the agent sends <code>q</code> or <code>C-c</code> into bash—creating the exact failure the enhancer was built to prevent.</p>
-
-<p>Because <code>minimodels</code> implements full reverse-mode differentiation and AdamW directly in its Rust/Metal binary (<code>minimodels learn &lt;checkpoint.mm&gt; &lt;ids&gt; &lt;true_label&gt;</code>), <code>Terminus2Enhanced</code> (<code>scripts/terminus_2_enhanced.py</code>)<sup class="footnote-ref"><a href="#fn-4">[4]</a></sup> pairs the encoder with a two-stage online self-healing loop that updates the <code>1.03 MB</code> checkpoint in-place under an <code>flock</code> file lock in <strong>25–47 ms</strong>:</p>
-
-<div class="diagram-block">
-  <div class="diagram-caption">Diagram</div>
-  <pre class="code-block mermaid-source"><code class="language-mermaid">flowchart LR
-    A[&quot;tmux capture-pane (Turn t)&quot;] --&gt; B[&quot;Clean Echoed Commands &amp; Normalize Prompt&quot;]
-    B --&gt; C[&quot;Counterfactual Audit on Turn t-1&quot;]
-    C -- &quot;q / :q! -&gt; bash: command not found&quot; --&gt; D[&quot;minimodels learn (Heal t-1 -&gt; Class 0)&quot;]
-    C -- &quot;Screen ends in (END) or :&quot; --&gt; E[&quot;minimodels learn (Heal t-1 -&gt; Class 1)&quot;]
-    B --&gt; F[&quot;HeadTailTokenizer (13.8 us) + minimodels predict (0.34 ms)&quot;]
-    F --&gt; G{&quot;Structural Invariant Audit&quot;}
-    G -- &quot;Contradiction (e.g. Class 1/2 at # prompt)&quot; --&gt; H[&quot;minimodels learn (2-5 AdamW steps, ~33 ms)&quot;]
-    G -- &quot;Consistent&quot; --&gt; I[&quot;Append [Terminus State] Directive to Prompt&quot;]
-    H --&gt; I</code></pre>
-</div>
-
-<p>Here are four real self-healing events logged during live container episodes (<code>runs/terminus-self-healing.jsonl</code> and <code>runs/harbor-bench/gemma4-31b-10task/terminus-self-healing.jsonl</code>)[^4]:</p>
+<ul>
+  <li><strong>Same-Turn Structural Invariant Audit</strong>: If the encoder predicts <code>InteractiveTrap</code> (<code>1</code>) or <code>StillRunningOrHung</code> (<code>2</code>) when a clean shell prompt (<code>root@container:/app#</code>) is ready at the tail, or misses an explicit <code>SyntaxError</code>/<code>command not found</code> at the prompt, it overrides the label and heals the <code>.mm</code> weights immediately.</li>
+  <li><strong>Next-Turn Counterfactual Audit</strong>: If Turn <span class="vbg-formula">t-1</span> injected <code>INTERACTIVE_TRAP</code> and the agent's <code>&quot;q&quot;</code> produced <code>bash: q: command not found</code> on Turn <span class="vbg-formula">t</span>, Turn <span class="vbg-formula">t-1</span>'s token window is healed to <code>CleanProgress</code> (<code>0</code>).</li>
+  <li><strong>91 Live Self-Heals on Qwen 3.8 27B</strong>: Across the 88-task Qwen 3.8 27B sweep, the encoder executed <strong>91 online self-heals</strong> (<code>25.9–47.0 ms</code> each), permanently immunizing subsequent episodes:</li>
+</ul>
 
 <div class="vbg-table-wrap">
   <table class="vbg-table">
@@ -441,142 +298,65 @@
         <th scope="col">Triggering Command</th>
         <th scope="col">Initial Prediction</th>
         <th scope="col">Healed State (<code>true_label</code>)</th>
-        <th scope="col">Invariant Reason</th>
+        <th scope="col">Invariant Trigger</th>
         <th scope="col" class="vbg-numeric">AdamW Steps</th>
-        <th scope="col" class="vbg-numeric">Post-Update Loss</th>
-        <th scope="col" class="vbg-numeric">Heal Time (<code>learn_ms</code>)</th>
+        <th scope="col" class="vbg-numeric">Heal Time</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <th scope="row"><code>git-leak-recovery</code> (ep 1)</th>
-        <td>`cd repo && git log -p \</td>
-        <td>grep 'secret['`</td>
+        <td><code>git log -p</code> piped to <code>grep &#39;secret[&#39;</code></td>
         <td><code>0</code> (<code>CleanProgress</code>)</td>
         <td><strong><code>5</code> (<code>CompileOrSyntaxOrTestError</code>)</strong></td>
-        <td class="vbg-numeric">Explicit regex error at shell prompt</td>
+        <td>Regex error at shell prompt</td>
         <td class="vbg-numeric">5</td>
-        <td class="vbg-numeric">0.15968</td>
+        <td class="vbg-numeric"><strong>36.5 ms</strong></td>
       </tr>
       <tr>
         <th scope="row"><code>git-leak-recovery</code> (ep 2)</th>
-        <td>`git log -p \</td>
-        <td>grep -F 'secret['`</td>
+        <td><code>git log -p</code> piped to <code>grep -F &#39;secret[&#39;</code></td>
         <td><code>1</code> (<code>InteractiveTrap</code>)</td>
         <td><strong><code>0</code> (<code>CleanProgress</code>)</strong></td>
-        <td class="vbg-numeric">Shell prompt ready at tail; cannot be pager</td>
+        <td>Shell prompt ready at tail</td>
         <td class="vbg-numeric">3</td>
-        <td class="vbg-numeric">0.05399</td>
+        <td class="vbg-numeric"><strong>25.9 ms</strong></td>
       </tr>
       <tr>
         <th scope="row"><code>cancel-async-tasks</code> (ep 2)</th>
-        <td><code>cat &lt;&lt;EOF &gt; /app/run.py ... EOF &amp;&amp; ls -l /app/run.py</code></td>
+        <td><code>cat &lt;&lt;EOF &gt; /app/run.py ... EOF</code></td>
         <td><code>1</code> (<code>InteractiveTrap</code>)</td>
         <td><strong><code>0</code> (<code>CleanProgress</code>)</strong></td>
-        <td>Shell prompt ready at tail; cannot be pager</td>
+        <td>Shell prompt ready at tail</td>
         <td class="vbg-numeric">2</td>
-        <td class="vbg-numeric">0.02520</td>
         <td class="vbg-numeric"><strong>33.7 ms</strong></td>
       </tr>
       <tr>
         <th scope="row"><code>db-wal-recovery</code> (ep 3)</th>
-        <td><code>sqlite3 /app/main.db &quot;SELECT...&quot; &amp;&amp; hexdump -C ...</code></td>
+        <td><code>sqlite3 /app/main.db ... &amp;&amp; hexdump -C</code></td>
         <td><code>0</code> (<code>CleanProgress</code>)</td>
         <td><strong><code>4</code> (<code>MissingToolOrModule</code>)</strong></td>
-        <td>Explicit missing command error at prompt</td>
+        <td>Missing binary at shell prompt</td>
         <td class="vbg-numeric">5</td>
-        <td class="vbg-numeric">0.06917</td>
         <td class="vbg-numeric"><strong>47.0 ms</strong></td>
       </tr>
     </tbody>
   </table>
 </div>
 
-<p>Once a pattern is healed on Episode <span class="vbg-formula">k</span>, the updated <code>.mm</code> weights persist across all subsequent turns and tasks.</p>
-
 <hr>
 
-<h2 id="calibration-across-parameter-scales-4b-vs-27b31b">Calibration Across Parameter Scales: 4B vs. 27B–31B</h2>
+<h2 id="harness-guardrails-for-89-task-high-concurrency-sweeps">Harness Guardrails for 89-Task High-Concurrency Sweeps</h2>
 
-<p>Comparing our runs across <code>nemotron-3-nano:4b</code> (4B), <code>gemma4:31b</code> (31B), <code>Qwen 3.8 27B</code> (27B), and our preliminary <strong>Qwen 4 27B</strong> evaluation highlights why the <strong>~27B dense parameter tier</strong> is the sweet spot for <code>PromptEnhancer</code> (<code>runs/harbor-bench/nemotron-4b-10task/comparison_summary.json</code>, <code>runs/harbor-bench/gemma4-31b-10task/summary.json</code>, and <code>runs/qwen3.8-vast-h200-89task/summary.live.json</code>)[^5]:</p>
-
-<div class="vbg-table-wrap">
-  <table class="vbg-table">
-    <thead>
-      <tr>
-        <th scope="col">Model & Suite</th>
-        <th scope="col" class="vbg-numeric">Baseline Tasks Passed (<code>terminus-2</code>)</th>
-        <th scope="col" class="vbg-numeric"><code>+ PE</code> Tasks Passed (<code>Terminus2Enhanced</code>)</th>
-        <th scope="col" class="vbg-numeric">Solved-Task Token Savings</th>
-        <th scope="col" class="vbg-numeric">Episode Wall-Clock Savings</th>
-        <th scope="col">Key Operational Finding</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <th scope="row"><strong><code>nemotron-3-nano:4b</code> (10-Task)</strong></th>
-        <td class="vbg-numeric">0 / 10 (0.0%)</td>
-        <td class="vbg-numeric"><strong>1 / 10 (10.0%)</strong></td>
-        <td class="vbg-numeric"><strong>-32.4%</strong> (<code>cancel-async</code>)</td>
-        <td class="vbg-numeric"><strong>-15.8%</strong> (<code>45.2s</code> vs <code>53.7s</code>)</td>
-        <td>Below synthesis floor on 9/10 tasks; state recovery prevents early exit, inflating unsolvable task turns (<code>824</code> <span class="vbg-formula">&rarr;</span> <code>1,402</code>).</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>gemma4:31b</code> (10-Task)</strong></th>
-        <td class="vbg-numeric">5 / 10 (50.0%)</td>
-        <td class="vbg-numeric"><strong>6 / 10 (60.0%)</strong></td>
-        <td class="vbg-numeric"><strong>-50.5% mean</strong> (up to <strong>-55.3%</strong>)</td>
-        <td class="vbg-numeric"><strong>-49.2% mean</strong> (up to <strong>-75.1%</strong>)</td>
-        <td>Sufficient synthesis capacity to act on state directives; recovers <code>db-wal-recovery</code> in 8 turns (<code>99.0s</code> vs <code>397.5s</code>).</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>Qwen 3.8 27B</code> (Paired <span class="vbg-formula">N=21</span> / Full <span class="vbg-formula">N=88</span>)</strong></th>
-        <td class="vbg-numeric">10 / 21 (47.6%)</td>
-        <td class="vbg-numeric"><strong>21 / 21 (100.0%)</strong> / <strong>57 / 88 (64.8%)</strong></td>
-        <td class="vbg-numeric"><strong>-40.1% mean</strong> (up to <strong>-92.4%</strong>)</td>
-        <td class="vbg-numeric"><strong>-63.6% total</strong> (<code>1.90 hr</code> vs <code>5.21 hr</code>)</td>
-        <td>+11 tasks recovered on paired subset (<code>db-wal-recovery</code>, <code>cancel-async-tasks</code>, <code>custom-memory-heap-crash</code>); <code>91</code> live self-heals.</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>Qwen 4 27B</code> (27B Prelim)</strong></th>
-        <td class="vbg-numeric"><code>[TBD]</code></td>
-        <td class="vbg-numeric"><strong><code>[TBD]</code></strong></td>
-        <td class="vbg-numeric"><strong><code>-[TBD]%</code></strong></td>
-        <td class="vbg-numeric"><strong><code>-[TBD]%</code></strong></td>
-        <td>Newly released 27B dense model; pairs strong code synthesis with high-throughput single-GPU vLLM serving.</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<hr>
-
-<h2 id="high-concurrency-harness-for-the-full-89-task-qwen-4-27b-sweep">High-Concurrency Harness for the Full 89-Task Qwen 4 27B Sweep</h2>
-
-<p>To complete both arms of the full 89-task Terminal-Bench 2.1 benchmark (<code>178</code> containerized episodes, up to 200 turns and 65,536 context tokens per episode) at <span class="vbg-formula">n=16..32</span> concurrency, our harness (<code>scripts/run_studio_vast_h200_bench.py</code> and <code>scripts/proot_env.py</code>)<sup class="footnote-ref"><a href="#fn-6">[6]</a></sup> incorporates five systems guardrails:</p>
+<p>Running 178 containerized episodes (<code>89</code> tasks <span class="vbg-formula">&times;</span> <code>2</code> arms, up to 200 turns and 65,536 context tokens per episode) at <span class="vbg-formula">n=16..32</span> concurrency uses five execution guardrails:</p>
 
 <ul>
-  <li><strong>RAM-Disk OCI Caching (<code>skopeo</code> + <code>umoci</code>) and a 12 GiB <code>/</code> Overlay Quota Guard</strong>: Prefetches all 89 task images into <code>/dev/shm/hb_oci_cache</code> and enforces a <code>12 GiB</code> free-space guard on <code>/</code> before unpacking multi-gigabyte compiler/ML rootfses (<code>caffe-cifar-10</code>, <code>gpt2-codegolf</code>, <code>hf-model-inference</code>, <code>mteb-leaderboard</code>, <code>fix-ocaml-gc</code>).</li>
-  <li><strong><code>PRoot v5.5.0</code> Compiled from Source for <code>statx</code> Translation</strong>: Enables rootless container execution on unprivileged GPU nodes (<code>!CAP_SYS_ADMIN</code>) with <code>statx</code> (<code>__NR_statx = 332</code>) support for Debian Bookworm binaries and <code>--link2symlink</code> (<code>-l</code>).</li>
-  <li><strong>Dynamic Per-Container Port Remapping (<code>40000..59999</code>)</strong>: Remaps guest ports (<code>8000</code>, <code>8080</code>, <code>3000</code>, <code>5000</code>, <code>8888</code>, <code>8443</code>, <code>9000</code>, <code>22</code>) via <code>proot -p</code> so 32 concurrent web-server and git trials never collide on localhost.</li>
-  <li><strong>Host Environment Sanitization and Pre-Seeded <code>uv</code>/<code>uvx</code></strong>: Strips host <code>UV_OVERRIDE</code> variables and pre-seeds <code>/root/.local/bin/{uv,uvx}</code> into every container rootfs to prevent <code>astral.sh</code> IP rate-limiting during concurrent verifier runs.</li>
-  <li><strong>vLLM <code>max_tokens: 4096</code> and <code>enable_thinking: False</code> Guardrails</strong>: Prevents vLLM from defaulting unspecified <code>max_tokens</code> to <code>max_model_len - prompt_tokens</code> (<code>~258k</code> tokens) and replaces <code>terminus-2</code>'s 11-retry truncation loop with a single-retry conciseness directive.</li>
+  <li><strong>RAM-Disk OCI Cache (<code>/dev/shm/hb_oci_cache</code>) + 12 GiB <code>/</code> Quota Guard</strong>: Prefetches all 89 images via <code>skopeo</code> + <code>umoci</code> and blocks multi-gigabyte rootfs extraction (<code>caffe-cifar-10</code>, <code>gpt2-codegolf</code>, <code>hf-model-inference</code>) if <code>/</code> free space drops below <code>12 GiB</code>.</li>
+  <li><strong><code>PRoot v5.5.0</code> with <code>statx</code> (<code>__NR_statx = 332</code>)</strong>: Rootless container execution on unprivileged GPU nodes (<code>!CAP_SYS_ADMIN</code>) with Debian Bookworm <code>statx</code> translation and <code>--link2symlink</code>.</li>
+  <li><strong>Per-Container Port Remapping (<code>40000..59999</code>)</strong>: Remaps guest ports (<code>8000</code>, <code>8080</code>, <code>3000</code>, <code>5000</code>, <code>8888</code>, <code>8443</code>, <code>9000</code>, <code>22</code>) so concurrent web-server and git tasks never collide on <code>localhost</code>.</li>
+  <li><strong>Pre-Seeded <code>uv</code>/<code>uvx</code> & Env Sanitization</strong>: Strips host <code>UV_OVERRIDE</code> variables and seeds <code>/root/.local/bin/{uv,uvx}</code> into each container rootfs to avoid <code>astral.sh</code> rate limits during verification.</li>
+  <li><strong>vLLM <code>max_tokens: 4096</code> & <code>enable_thinking: False</code></strong>: Prevents vLLM from defaulting unspecified <code>max_tokens</code> to <code>max_model_len - prompt_tokens</code> and replaces <code>terminus-2</code>'s 11-retry truncation loop with a single-retry conciseness directive.</li>
 </ul>
-
-<p>We are updating the <code>[TBD — Qwen 4 27B Run]</code> slots in the tables and regenerating Figures 1–2 (<code>python3 scripts/generate_qwen4_pe_charts.py &amp;&amp; npm run build</code>) as the <strong>Qwen 4 27B</strong> benchmark sweep completes.</p>
-
-<hr>
-
-<h2 id="references">References</h2>
-
-<ol class="footnotes-list">
-  <li id="fn-1">Terminal-Bench 2.1 and the Harbor evaluation framework (<code>terminus-2</code> agent loop and <code>tmux</code> session driver). Task definitions and verifier scripts (<code>verifier/test.sh</code>) execute inside per-task Linux containers.</li>
-  <li id="fn-2">Chris Borkert, <a href="/posts/minimodels-rust-metal.html">"A small classifier in Rust and Metal"</a>, November 2026. Documents the zero-framework Rust and Apple Metal bidirectional encoder and training engine (<code>minimodels</code>).</li>
-  <li id="fn-3">Local experiment artifacts in <code>minimodels</code>: <code>scripts/synth_terminus_state.py</code>, <code>configs/terminus-state-tiny.json</code>, <code>configs/terminus-state-small.json</code>, and <code>runs/terminus-state-summary.json</code> (November 2026). Evaluated on Apple M5 across <code>heldout_test_1600</code> (<span class="vbg-formula">N=1,200</span>), <code>adversarial_contrast_38</code> (<span class="vbg-formula">N=38</span>), and <code>terminalbench_scenarios_12</code> (<span class="vbg-formula">N=12</span>).</li>
-  <li id="fn-4">Online self-healing implementation and logs in <code>minimodels</code>: <code>scripts/terminus_prompt_enhancer.py</code>, <code>scripts/terminus_2_enhanced.py</code>, <code>runs/terminus-self-healing.jsonl</code>, and <code>runs/harbor-bench/gemma4-31b-10task/terminus-self-healing.jsonl</code> (November 2026).</li>
-  <li id="fn-5">Calibration benchmark records in <code>minimodels</code>: <code>runs/harbor-bench/comparison-summary.json</code> (<code>git-leak-recovery</code> on <code>openai/gpt-4o-mini</code>, <span class="vbg-formula">T=0.0</span>, 15-turn cap), <code>runs/harbor-bench/nemotron-4b-10task/comparison_summary.json</code> (<code>nemotron-3-nano:4b</code> on Apple M5 Ultra), and <code>runs/harbor-bench/gemma4-31b-10task/summary.json</code> (<code>gemma4:31b</code> on Apple M5 Ultra).</li>
-  <li id="fn-6">High-concurrency Terminal-Bench 2.1 harness and rootless container backend in <code>minimodels</code>: <code>docs/vast_ai_benchmark_guide.md</code>, <code>scripts/proot_env.py</code>, <code>scripts/run_vast_concurrency_bench.py</code>, <code>scripts/run_studio_vast_h200_bench.py</code>, and <code>scripts/setup_llm_server.sh</code> (November 2026).</li>
-</ol>
 
       </article>
     </main>

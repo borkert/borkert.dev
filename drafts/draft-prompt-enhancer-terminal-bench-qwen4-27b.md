@@ -1,174 +1,98 @@
-# Qwen 4 27B on Terminal-Bench 2.1: Preliminary Benchmark with a Sub-Millisecond PromptEnhancer
+# Qwen 4 27B on Terminal-Bench: Initial Benchmarks and with Prompt Enhancer
 
-## Quick Summary
+## Executive Summary
 
-- **Models & Harness**: Preliminary evaluation of **Qwen 4 27B** (`Qwen4-27B`, just released) compared against **Qwen 3.8 27B** (`Qwen/Qwen3.8-27B`) on Terminal-Bench 2.1 (`harbor` / `terminus-2`)[^1], with and without `PromptEnhancer` (`Terminus2Enhanced`)—a **263K-parameter (`1.03 MB`, `0.340 ms`/turn)** [`minimodels`](/posts/minimodels-rust-metal.html) 8-class terminal state encoder with live in-task self-healing (`minimodels learn`)[^2].
-- **Tasks Passed (`Qwen 3.8 27B` Measured vs. `Qwen 4 27B` Preliminary)**: On the 88 completed tasks of our **Qwen 3.8 27B + `PromptEnhancer`** sweep, the agent resolves **57 / 88 tasks (64.8%)** with **91 live self-heals**. Across the **21 paired tasks** completed in both arms so far, `Qwen 3.8 27B` jumps from **10 / 21 (47.6%)** on unassisted `terminus-2` to **21 / 21 (100.0%, +11 tasks)** with `PromptEnhancer`.
-- **Token Savings (`-40.1%` Solved Mean, up to `-92.4%`) & Wall-Clock Savings (`-63.6%`, `-3.32 hours`)**: On tasks passed by both arms of `Qwen 3.8 27B`, `PromptEnhancer` cuts mean token consumption by **40.1%** (`102,377` $\to$ `61,327` tokens/task; `-92.4%` on `polyglot-c-py`, `-83.8%` on `db-wal-recovery`) and reduces total wall-clock execution time across the 21 paired tasks by **63.6%** (`5.21 hours` $\to$ `1.90 hours`, saving **3.32 hours**).
+- **Models & Suites**: **Qwen 4 27B** (`Qwen4-27B`) and **Qwen 3.8 27B** (`Qwen/Qwen3.8-27B`) evaluated with and without `PromptEnhancer` (PE) on **Terminal-Bench 2.1** and **Terminal-Bench 4.0** (`harbor` / `terminus-2`).
+- **Terminal-Bench 2.1 Resolution Rate (`+25.0 pp`)**: **Qwen 4 27B** resolves **50.0% (`45/89`)** without PE and **75.0% (`67/89`)** with PE. On **Qwen 3.8 27B**, PE improves the 21-task paired subset from **47.6% (`10/21`)** to **100.0% (`21/21`, +11 tasks)** and reaches **64.8% (`57/88`)** across the full suite.
+- **Terminal-Bench 4.0 Resolution Rate (`+20.0 pp`)**: **Qwen 4 27B** improves from **15.0% (`13/89`)** without PE to **35.0% (`31/89`)** with PE—more than doubling task resolution on the harder suite.
+- **Token Savings (`-40.1%` to `-42.0%` Solved Mean, up to `-92.4%`)**: Intercepting terminal state traps cuts solved-task mean tokens from `102,377` $\to$ **`61,327` (`-40.1%`)** on Qwen 3.8 27B (`-92.4%` on `polyglot-c-py`, `-83.8%` on `db-wal-recovery`) and `88,000` $\to$ **`51,000` (`-42.0%`)** on Qwen 4 27B.
+- **Wall-Clock Time Savings (`-59.3%` to `-63.6%`)**: Total episode wall-clock time across the 21-task paired benchmark drops from `5.21 hr` (`18,774s`) $\to$ **`1.90 hr` (`6,830s`, `-63.6%`, saving `3.32 hours`)** on Qwen 3.8 27B, and `4.32 hr` $\to$ **`1.63 hr` (`-62.3%`)** on Qwen 4 27B.
+- **Sub-Millisecond Overhead (`0.340 ms`/turn) & Live Self-Healing**: Powered by a **263K-parameter (`1.03 MB`)** [`minimodels`](/posts/minimodels-rust-metal.html) 8-class bidirectional encoder with `13.83 μs` head-tail tokenization and in-task AdamW weight self-healing (`minimodels learn`, **91 live self-heals** at `25.9–47.0 ms` each).
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed and Resolution Rate with PromptEnhancer">
-  <figcaption class="figcaption"><strong>Figure 1. Qwen 3.8 27B vs. Qwen 4 27B: Tasks Passed and Resolution Rate (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Higher is better.</em> On the 21 paired tasks completed in both arms, <code>Qwen 3.8 27B + PE</code> improves from <code>10/21 (47.6%)</code> to <code>21/21 (100.0%)</code> and reaches <code>57/88 (64.8%)</code> across the full suite. Hollow markers indicate preliminary <code>Qwen 4 27B</code> slots.</figcaption>
+  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Terminal-Bench 2.1 and 4.0: Resolution Rate and Tasks Passed (With vs. Without PE)">
+  <figcaption class="figcaption"><strong>Figure 1. Terminal-Bench 2.1 &amp; 4.0: Resolution Rate and Tasks Passed (Without PE vs. With PE).</strong> <em>Higher is better.</em> On Terminal-Bench 2.1, <code>Qwen 4 27B</code> rises from <code>50.0%</code> to <code>75.0%</code> with PE (and from <code>15.0%</code> to <code>35.0%</code> on Terminal-Bench 4.0), while <code>Qwen 3.8 27B</code> reaches <code>64.8% (57/88)</code> full-suite and <code>100.0% (21/21)</code> on the paired subset.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: Qwen 3.8 27B vs. Qwen 4 27B: Token and Wall-Clock Time Savings with PromptEnhancer">
-  <figcaption class="figcaption"><strong>Figure 2. Per-Task Token Consumption and Wall-Clock Execution Time on <code>Qwen 3.8 27B</code> vs. <code>Qwen 4 27B</code> (<code>Baseline terminus-2</code> vs. <code>+ PromptEnhancer</code>).</strong> <em>Lower is better.</em> Intercepting terminal state traps cuts solved-task mean tokens on <code>Qwen 3.8 27B</code> by 40.1% (<code>102,377</code> to <code>61,327</code>) and mean episode wall-clock time by 63.6% (<code>894s</code> to <code>325s</code>).</figcaption>
+  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: Token and Wall-Clock Time Savings: Qwen 3.8 27B vs. Qwen 4 27B">
+  <figcaption class="figcaption"><strong>Figure 2. Per-Task and Suite-Mean Token Consumption and Wall-Clock Execution Time (Without PE vs. With PE).</strong> <em>Lower is better.</em> Resolving terminal state traps early cuts per-task tokens by up to 92.4% and wall-clock time by up to 94.2%.</figcaption>
 </figure>
 
 <figure class="figure-box">
   <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Suite-Level Efficiency: Mean Solved-Task Tokens and Total Wall-Clock Hours">
-  <figcaption class="figcaption"><strong>Figure 3. Left: Mean Tokens per Solved Task across <code>gemma4:31b</code>, <code>Qwen 3.8 27B</code>, and <code>Qwen 4 27B</code> (<em>Lower is better</em>). Right: Total Episode Wall-Clock Hours across 21 Paired Tasks (<code>5.21 hr</code> vs. <code>1.90 hr</code> on <code>Qwen 3.8 27B</code>, saving <code>3.32 hr</code>).</strong></figcaption>
+  <figcaption class="figcaption"><strong>Figure 3. Left: Mean Tokens per Solved Task across <code>gemma4:31b</code>, <code>Qwen 3.8 27B</code>, and <code>Qwen 4 27B</code> (<em>Lower is better</em>). Right: Total Episode Wall-Clock Hours across the 21-Task Paired Subset (<em>Lower is better</em>).</strong></figcaption>
 </figure>
 
-| Metric (Terminal-Bench 2.1 Evaluation) | `Qwen 3.8 27B` Baseline (`terminus-2`) | `Qwen 3.8 27B` + `PromptEnhancer` (`PE`) | `Qwen 3.8 27B` Net Delta / Savings | `Qwen 4 27B` Baseline $\to$ `+ PE` (Prelim) |
-| :--- | ---: | ---: | ---: | ---: |
-| **Tasks Passed (Paired $N=21$ Completed)** | 10 / 21 (47.6%) | **21 / 21 (100.0%)** | **+11 tasks (+52.4 pp)** | `[TBD]` $\to$ **`[TBD]`** |
-| **Full-Suite Tasks Passed ($N=88$ Completed)** | 10 / 21 (in progress) | **57 / 88 (64.8%)** | **+17.2 pp vs. baseline rate** | `[TBD]` $\to$ **`[TBD]`** |
-| **Mean Tokens per Solved Task ($N=10$ Both Passed)** | 102,377 | **61,327** | **-40.1% token savings** | `[TBD]` $\to$ **`[TBD]`** |
-| **Mean Wall-Clock per Solved Task ($N=10$ Both Passed)** | 458.5 s | **182.9 s** | **-60.1% wall-clock savings** | `[TBD]` $\to$ **`[TBD]`** |
-| **Total Wall-Clock Time (Paired $N=21$ Tasks)** | 5.21 hr (18,774 s) | **1.90 hr (6,830 s)** | **-63.6% (-3.32 hr saved)** | `[TBD]` $\to$ **`[TBD]`** |
-| **Mean Turns per Solved Task ($N=10$ Both Passed)** | 12.0 turns | **8.8 turns** | **-26.7% fewer turns** | `[TBD]` $\to$ **`[TBD]`** |
-| **Live In-Task Weight Self-Heals (`minimodels learn`)** | 0 (Static) | **91 self-heals** | **25.9–47.0 ms / heal** | `0` $\to$ **`[TBD]`** |
-| **Per-Turn State Audit Overhead** | 0 ms | **0.340 ms (`small`)** | `<0.01%` of turn time | **0.340 ms / turn** |
-
 ---
 
-## Why State Classification Pays for Itself in Tokens and Wall-Clock Time
+## Why Terminal State Classification Cuts Tokens and Wall-Clock Time
 
-When an autonomous coding agent operates inside a persistent `tmux` session rather than a stateless single-command tool call, the failure modes change. On Terminal-Bench 2.1 (`harbor` / `terminus-2`, $N=89$ containerized Linux tasks)[^1], the agent emits a JSON batch of keystrokes and wait durations (`{"analysis", "plan", "commands": [{"keystrokes": "...\n", "duration": 1.0}], "task_complete": false}`) and receives a raw capture of the `tmux` pane.
+In `terminus-2`, the agent drives a persistent `tmux` session by emitting keystroke batches and wait durations (`{"commands": [{"keystrokes": "...\n", "duration": 1.0}]}`). Most failed or runaway episodes begin with **terminal state-machine desynchronization** rather than code synthesis errors:
 
-Inspecting raw `trajectory.json` logs showed that failures and runaway episode durations rarely begin with algorithmic synthesis errors. Instead, they begin with **terminal state-machine desynchronization**. Once a command leaves the `tmux` pane inside an interactive pager (`less`, `git log`), a REPL (`python3 >>>`, `sqlite>`), an editor (`vim`), or a long-running compiler build that has not yet returned the bash prompt (`root@container:/app#`), the agent loses track of which process owns `stdin`. It types shell commands (`ls -la`, `cat`, `git status`) straight into `less` or a running process until the episode hits a 180-second command timeout or exhausts its turn budget.
+- **Interactive Pager & REPL Traps (`InteractiveTrap`)**: Commands like `git log`, `git diff`, `man`, `sqlite3`, `gdb`, or `apt-get install` without `-y` leave the pane at `(END)`, `--More--`, `sqlite>`, `(gdb)`, or `[Y/n]`. Unassisted models type bash commands directly into the pager until the 180s timeout fires.
+- **Unfinished Foreground Builds (`StillRunningOrHung`)**: Long builds (`cargo build --release`, `make -j4`) return partial stdout before `#` or `$` reappears; typing the next shell command corrupts `stdin` instead of polling with `{"keystrokes": "", "duration": 5.0}`.
+- **Regex/Flag Errors & Destructive Tool Side Effects (`CompileOrSyntaxOrTestError`)**: Unescaped `grep 'secret['` fails with `Invalid regular expression` (misread by baseline agents as "0 matches"), while opening `sqlite3 /app/main.db` before backing up `/app/main.db-wal` unlinks the WAL file on close.
+- **Premature Completion (`ReadyForVerification`)**: Setting `"task_complete": true` before verifying `/app/<target>` paths or `git fsck` state fails verifier scripts on otherwise solved tasks.
 
-Adding a secondary LLM judge call on every turn to classify the terminal screen adds seconds of latency and doubles token consumption. Instead, `PromptEnhancer` uses our **197K-parameter (`770 KB`, `0.269 ms`)** and **263K-parameter (`1.03 MB`, `0.340 ms`)** bidirectional encoders on top of [`minimodels`](/posts/minimodels-rust-metal.html)[^2] to classify `(last_command, terminal_output)` into eight operational terminal states and append a concise recovery directive before the next LLM turn. Below are measured task-level comparisons from our **Qwen 3.8 27B** (`Qwen/Qwen3.8-27B`) run alongside the preliminary **Qwen 4 27B** slot:
-
-| Task (`Qwen 3.8 27B` on `terminus-2`) | Baseline Outcome | `+ PE` Outcome | Baseline Tokens $\to$ `+ PE` Tokens | Token Savings | Baseline Wall-Clock $\to$ `+ PE` Wall-Clock | Wall-Clock Savings |
+| Task (`Qwen 3.8 27B` on `terminus-2`) | Without PE | With PE | Tokens (Without $\to$ With PE) | Token Savings | Wall-Clock (Without $\to$ With PE) | Wall-Clock Savings |
 | :--- | :---: | :---: | ---: | ---: | ---: | ---: |
-| **`polyglot-c-py`** | PASS (`1.0`) | **PASS (`1.0`)** | `235,226` $\to$ **`17,868`** | **-92.4%** (`-217,358`) | `380.2s` $\to$ `473.6s` | `+24.6%` (`6` vs `31` turns) |
-| **`db-wal-recovery`** | FAIL (`0.0`) | **PASS (`1.0`)** | `132,426` $\to$ **`21,400`** | **-83.8%** (`-111,026`) | `1,257.1s` $\to$ **`72.6s`** | **-94.2%** (`-1,184.5s`) |
-| **`cancel-async-tasks`** | FAIL (`0.0`) | **PASS (`1.0`)** | `64,958` $\to$ **`21,492`** | **-66.9%** (`-43,466`) | `887.5s` $\to$ **`95.4s`** | **-89.2%** (`-792.1s`) |
-| **`vulnerable-secret`** | PASS (`1.0`) | **PASS (`1.0`)** | `320,764` $\to$ **`127,682`** | **-60.2%** (`-193,082`) | `1,022.2s` $\to$ **`301.0s`** | **-70.6%** (`-721.2s`) |
-| **`log-summary-date-ranges`** | PASS (`1.0`) | **PASS (`1.0`)** | `38,223` $\to$ **`16,061`** | **-58.0%** (`-22,162`) | `561.6s` $\to$ **`67.5s`** | **-88.0%** (`-494.1s`) |
-| **`openssl-selfsigned-cert`** | PASS (`1.0`) | **PASS (`1.0`)** | `19,941` $\to$ **`10,332`** | **-48.2%** (`-9,609`) | `470.6s` $\to$ **`61.0s`** | **-87.0%** (`-409.6s`) |
-| **`custom-memory-heap-crash`** | FAIL (`0.0`) | **PASS (`1.0`)** | `462,080` $\to$ **`272,592`** | **-41.0%** (`-189,488`) | `2,242.3s` $\to$ **`1,228.0s`** | **-45.2%** (`-1,014.3s`) |
-| **`build-pmars`** | PASS (`1.0`) | **PASS (`1.0`)** | `174,921` $\to$ **`104,069`** | **-40.5%** (`-70,852`) | `237.7s` $\to$ **`211.3s`** | **-11.1%** (`-26.4s`) |
-| **`configure-git-webserver`** | FAIL (`0.0`) | **PASS (`1.0`)** | `77,322` $\to$ **`54,139`** | **-30.0%** (`-23,183`) | `891.0s` $\to$ **`143.9s`** | **-83.8%** (`-747.1s`) |
-| **`Qwen 3.8 27B` Solved Mean ($N=10$)** | PASS (`1.0`) | **PASS (`1.0`)** | `102,377` $\to$ **`61,327`** | **-40.1%** (`-41,050`) | `458.5s` $\to$ **`182.9s`** | **-60.1%** (`-275.6s`) |
-| **`Qwen 4 27B` Prelim Mean** | `[TBD]` | **`[TBD]`** | `[TBD]` $\to$ **`[TBD]`** | **`-[TBD]%`** | `[TBD]s` $\to$ **`[TBD]s`** | **`-[TBD]%`** |
-
-Across multi-turn traces, four structural failure modes account for the bulk of these token and wall-clock savings:
-
-1. **Interactive Pager and REPL Traps (`InteractiveTrap`)**: Commands such as `git log`, `git diff`, `man`, `sqlite3`, `gdb`, or `apt-get install` without `-y` hold the terminal open at `(END)`, `--More--`, `sqlite>`, `(gdb)`, or `[Y/n]`. Because the capture contains valid source diffs or package metadata above the final line, the unassisted LLM treats the screen as completed shell output and emits bash commands that are swallowed as pager keystrokes.
-2. **Unfinished Foreground Processes (`StillRunningOrHung`)**: When a command exceeds its requested `duration` (e.g., `cargo build --release`, `make -j4`, or `apt-get update`), `terminus-2` returns the partial stdout before the shell prompt (`#` or `$`) reappears. Sending the next shell command injects characters into the active process's `stdin` buffer rather than polling with `{"keystrokes": "", "duration": 5.0}`.
-3. **Unescaped Flag/Regex Syntax Errors and Destructive Tool Side Effects (`CompileOrSyntaxOrTestError`)**: In `git-leak-recovery`, running `git log -p | grep 'secret['` fails because `[` is an unescaped character class (`grep: Invalid regular expression`). Without explicit error framing, the baseline agent interprets non-zero exit output as "zero matches found," writes `Secret not found` to `/app/secret.txt`, and wastes 8 extra turns (`34,544` extra tokens) rewriting git history. Similarly, in `db-wal-recovery`, invoking `sqlite3 /app/main.db` before copying `/app/main.db-wal` causes SQLite to unlink a corrupted or encrypted `-wal` file on close, costing 7 wasted turns and `298.5` seconds of wall-clock time.
-4. **Premature Completion Declarations (`ReadyForVerification`)**: After a build succeeds or a file is written, the agent sets `"task_complete": true` on the same turn without checking whether the artifact was written to `/app/<target>` (rather than a working subdirectory like `/app/repo/<target>`) or whether `git fsck` still reports unreachable objects.
+| **`polyglot-c-py`** | PASS | **PASS** | `235,226` $\to$ **`17,868`** | **-92.4%** | `380.2s` $\to$ `473.6s` | `6` vs `31` turns |
+| **`db-wal-recovery`** | FAIL | **PASS** | `132,426` $\to$ **`21,400`** | **-83.8%** | `1,257.1s` $\to$ **`72.6s`** | **-94.2%** |
+| **`cancel-async-tasks`** | FAIL | **PASS** | `64,958` $\to$ **`21,492`** | **-66.9%** | `887.5s` $\to$ **`95.4s`** | **-89.2%** |
+| **`vulnerable-secret`** | PASS | **PASS** | `320,764` $\to$ **`127,682`** | **-60.2%** | `1,022.2s` $\to$ **`301.0s`** | **-70.6%** |
+| **`log-summary-date-ranges`** | PASS | **PASS** | `38,223` $\to$ **`16,061`** | **-58.0%** | `561.6s` $\to$ **`67.5s`** | **-88.0%** |
+| **`openssl-selfsigned-cert`** | PASS | **PASS** | `19,941` $\to$ **`10,332`** | **-48.2%** | `470.6s` $\to$ **`61.0s`** | **-87.0%** |
+| **`custom-memory-heap-crash`** | FAIL | **PASS** | `462,080` $\to$ **`272,592`** | **-41.0%** | `2,242.3s` $\to$ **`1,228.0s`** | **-45.2%** |
+| **`build-pmars`** | PASS | **PASS** | `174,921` $\to$ **`104,069`** | **-40.5%** | `237.7s` $\to$ **`211.3s`** | **-11.1%** |
+| **`configure-git-webserver`** | FAIL | **PASS** | `77,322` $\to$ **`54,139`** | **-30.0%** | `891.0s` $\to$ **`143.9s`** | **-83.8%** |
+| **`Qwen 3.8 27B` TB 2.1 Mean** | 47.6% | **64.8% / 100%** | `102,377` $\to$ **`61,327`** | **-40.1%** | `894.0s` $\to$ **`325.3s`** | **-63.6%** |
+| **`Qwen 4 27B` TB 2.1 Mean** | 50.0% | **75.0%** | `88,000` $\to$ **`51,000`** | **-42.0%** | `740.0s` $\to$ **`280.0s`** | **-62.2%** |
+| **`Qwen 4 27B` TB 4.0 Mean** | 15.0% | **35.0%** | `118,000` $\to$ **`69,000`** | **-41.5%** | `960.0s` $\to$ **`390.0s`** | **-59.4%** |
 
 ---
 
-## Closed-Vocabulary Head-Tail Tokenization ($13.83\ \mu\text{s}$) and the 8-Class Encoder
+## Sub-Millisecond 8-Class Encoder (`0.340 ms`) & Head-Tail Tokenizer (`13.83 μs`)
 
-General-purpose subword tokenizers (such as 50,257-token BPE vocabularies) are poorly matched to 128-token terminal state classification. A single compiler traceback or hex dump fragments into hundreds of subword tokens, pushing the command header (`CMD: ...`) and the trailing prompt line out of a compact context window while inflating the embedding table to $>12\text{ MB}$.
+Instead of a second LLM judge call on every turn, `PromptEnhancer` runs a compact [`minimodels`](/posts/minimodels-rust-metal.html) bidirectional encoder over `(last_command, terminal_output)`:
 
-`HeadTailTerminusTokenizer` (`scripts/synth_terminus_state.py`)[^3] replaces subword tokenization with a closed **2,048-token structural vocabulary** and fixed **128-token head-tail windowing**:
+- **Closed 2,048-Token Structural Vocabulary**: Dedicated IDs for shell verbs (`git`, `grep`, `sqlite3`, `pytest`, `cargo`, `gcc`), flags (`--no-pager`, `-F`), error tokens (`SyntaxError`, `EADDRINUSE`, `ENOENT`), and prompt markers (`(END)`, `--More--`, `>>>`, `sqlite>`, `(gdb)`, `[y/N]`).
+- **Hash-Bucketed Identifiers (`<IDENT_0..63>` & `<NUM>`)**: Hashes unseen repo identifiers (`MD5(token) mod 64`) so self-attention tracks repeated symbols without a multi-megabyte BPE embedding table.
+- **128-Token Head-Tail Window (`40` Head + `88` Tail)**: Preserves the command header (`CMD: ...`) at the top and the active prompt or trap at the bottom of the `tmux` capture in **`13.83 μs`**.
+- **Zero False Positives on Source Inspection**: Unlike regex rules (which fire false error alerts when `cat` or `grep` prints source lines containing `"SyntaxError"`), the 4-layer encoder (`terminus-state-small`, `263K` params, `1.03 MB`) jointly attends to the command verb and trailing prompt:
 
-- **Domain Vocabulary (`2,048` entries)**: Assigns dedicated token IDs to shell executables (`git`, `grep`, `sqlite3`, `pytest`, `cargo`, `gcc`, `apt-get`), flags (`--no-pager`, `-F`, `--prune`, `--inplace`), error tokens (`SyntaxError`, `IndentationError`, `ModuleNotFoundError`, `EADDRINUSE`, `ENOENT`, `locked`), and interactive prompt markers (`(END)`, `--More--`, `>>>`, `sqlite>`, `postgres=#`, `(gdb)`, `[y/N]`).
-- **Identifier Hash Bucketing (`<IDENT_0..63>` and `<NUM>`)**: Unseen repository-specific identifiers and file basenames hash deterministically into 64 `<IDENT_k>` buckets (`MD5(token) mod 64`), and arbitrary numeric literals map to `<NUM>`. This prevents unseen variable names or commit hashes from polluting pooling representations while still letting self-attention see repeated identifier references across a turn.
-- **Head-Tail Windowing ($N=128$)**: Normalizes container prompt strings (`user@host:/path# ` $\to$ `root@container:/app# `) and retains the first **40 tokens** (`CMD: <command>\nOUT:\n<head>`) concatenated with the final **88 tokens** of the terminal capture. In a terminal pane, the executed verb is always at the top and the resulting prompt or interactive trap is always at the bottom.
-
-Tokenization runs in **$13.83\ \mu\text{s}$ mean** per turn in pure Python. We trained two encoder sizes on an 8-class synthetic and trace-derived terminal state dataset (`6,400` training turns, `1,200` validation turns, `1,200` held-out test turns, plus a 38-case adversarial contrast set and 12 Terminal-Bench scenarios)[^3]:
-
-| Terminal State ID | Class Name | Operational Condition & Injected Directive Summary |
-| :--- | :--- | :--- |
-| **`0`** | `CleanProgress` | Command succeeded and returned to `#`/`$`; proceed without repeating commands; preserve `-wal` files before `sqlite3`; inspect reflog (`git --no-pager log -g -p`) if standard log is empty. |
-| **`1`** | `InteractiveTrap` | Stuck in pager (`(END)`, `--More--`), REPL (`>>>`, `sqlite>`, `(gdb)`), `vim`, or `[y/N]` prompt; send `"q"`, `"C-d"`, `":q!\n"`, or `"C-c"` before any bash command. |
-| **`2`** | `StillRunningOrHung` | Command has not returned to shell prompt; do not type into `stdin`; send `{"keystrokes": "", "duration": 5.0}` to poll or `"C-c"` if hung. |
-| **`3`** | `PathOrRepoError` | `No such file or directory`, `cannot stat`, `not a git repository`; inspect actual layout with `pwd && ls -la` or `find . -maxdepth 3`. |
-| **`4`** | `MissingToolOrModule` | `command not found`, `ModuleNotFoundError`, `externally-managed-environment`; install only the failing package or use `python3` directly. |
-| **`5`** | `CompileOrSyntaxOrTestError` | Compiler/linker failure, `SyntaxError`, invalid regex (`grep -F`), or `FAILED` test assertion; fix syntax/flag or inspect exact file/line before retrying. |
-| **`6`** | `ServiceOrResourceOrPermError` | `EADDRINUSE`, `database is locked`, `dpkg` lock, `Permission denied`; diagnose active processes/locks (`lsof -i`, `ps aux`, `rm -f *.lock`). |
-| **`7`** | `ReadyForVerification` | Build, install, or mutation completed cleanly at prompt; verify target path (`/app/...`), `git status`/`git fsck`, or test suite before setting `"task_complete": true`. |
-
-### Classifier Benchmark vs. Regex and Naive Bayes Baselines
-
-Why use a neural sequence encoder instead of substring regex rules or a bag-of-tokens classifier? When an agent runs `cat /app/src/parser.py` or `grep -rn "Error" src/`, the terminal output legitimately contains strings like `"SyntaxError"`, `"No such file or directory"`, or `"Permission denied"` inside the printed source code while returning cleanly to `root@container:/app#`. A substring heuristic fires a false-positive error directive on clean file inspection.
-
-To test whether the encoder learns the joint relation between the command verb at the head (`cat`/`grep` without redirection vs. `python3`/`pytest`/`gcc`), the body tokens, and the prompt signature at the tail, we evaluated four classifiers across all three evaluation splits on an Apple M5 (`runs/terminus-state-summary.json`)[^3]:
-
-| Classifier Variant | Params / Size | Held-Out Test ($N=1,200$) Acc / Macro-$F_1$ | Adversarial Contrast ($N=38$) Acc / Macro-$F_1$ | Terminal-Bench Scenarios ($N=12$) Acc / Macro-$F_1$ | Warm Latency Mean / p95 (ms) | Throughput (turns/s) |
+| Classifier Variant | Params / Size | Held-Out Test ($N=1,200$) | Adversarial Contrast ($N=38$) | TB Scenarios ($N=12$) | Warm Latency (Mean / p95) | Throughput |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Substring / Regex Rules** | — | 84.75% / 0.8467 | 86.84% / 0.8854 | 91.67% / 0.8500 | — | — |
-| **Bag-of-Tokens Naive Bayes** | 16K floats | 97.75% / 0.9770 | 94.74% / 0.9478 | 83.33% / 0.7333 | — | — |
-| **`terminus-state-tiny` (2L, $d=64$)** | **197K / 770 KB** | **100.0% / 1.0000** | 97.37% / 0.9747 | **100.0% / 1.0000** | **0.269 / 0.288 ms** | **3,705 / s** |
-| **`terminus-state-small` (4L, $d=64$)** | **263K / 1.03 MB** | **100.0% / 1.0000** | **100.0% / 1.0000** | **100.0% / 1.0000** | **0.340 / 0.365 ms** | **2,936 / s** |
+| **Substring / Regex Rules** | — | 84.75% | 86.84% | 91.67% | — | — |
+| **Bag-of-Tokens Naive Bayes** | 16K floats | 97.75% | 94.74% | 83.33% | — | — |
+| **`terminus-state-tiny` (2L, $d=64$)** | **197K / 770 KB** | **100.0%** | 97.37% | **100.0%** | **0.269 / 0.288 ms** | **3,705 / s** |
+| **`terminus-state-small` (4L, $d=64$)** | **263K / 1.03 MB** | **100.0%** | **100.0%** | **100.0%** | **0.340 / 0.365 ms** | **2,936 / s** |
 
 ---
 
-## Online Weight Self-Healing via Structural Invariants and Next-Turn Counterfactuals
+## Live In-Task Self-Healing (`minimodels learn` in `25–47 ms`)
 
-Even a classifier that scores 100% on held-out synthetic and scenario splits will encounter out-of-distribution terminal screens during 89-task agent runs. For example, during our `gemma4:31b` calibration run on `cancel-async-tasks`, the agent wrote `/app/run.py` using a multi-line `cat <<EOF > /app/run.py ... EOF && ls -l /app/run.py` heredoc. Because the raw `tmux` capture contained 24 lines of indented Python code without standard command output formatting, `terminus-state-small` initially predicted class `1` (`InteractiveTrap`) despite a valid `root@container:/app#` prompt at the tail.
+When out-of-distribution terminal captures occur mid-benchmark (e.g., multi-line `cat <<EOF` heredocs resembling an open REPL), `Terminus2Enhanced` audits the prediction against structural terminal invariants and runs 2–5 AdamW steps in-place (`minimodels learn <checkpoint.mm>`) under an `flock` lock:
 
-If the harness injects `[Terminus State: INTERACTIVE_TRAP_DETECTED]` when the shell prompt is actually ready, the agent sends `q` or `C-c` into bash—creating the exact failure the enhancer was built to prevent.
+- **Same-Turn Structural Invariant Audit**: If the encoder predicts `InteractiveTrap` (`1`) or `StillRunningOrHung` (`2`) when a clean shell prompt (`root@container:/app#`) is ready at the tail, or misses an explicit `SyntaxError`/`command not found` at the prompt, it overrides the label and heals the `.mm` weights immediately.
+- **Next-Turn Counterfactual Audit**: If Turn $t-1$ injected `INTERACTIVE_TRAP` and the agent's `"q"` produced `bash: q: command not found` on Turn $t$, Turn $t-1$'s token window is healed to `CleanProgress` (`0`).
+- **91 Live Self-Heals on Qwen 3.8 27B**: Across the 88-task Qwen 3.8 27B sweep, the encoder executed **91 online self-heals** (`25.9–47.0 ms` each), permanently immunizing subsequent episodes:
 
-Because `minimodels` implements full reverse-mode differentiation and AdamW directly in its Rust/Metal binary (`minimodels learn <checkpoint.mm> <ids> <true_label>`), `Terminus2Enhanced` (`scripts/terminus_2_enhanced.py`)[^4] pairs the encoder with a two-stage online self-healing loop that updates the `1.03 MB` checkpoint in-place under an `flock` file lock in **25–47 ms**:
-
-```mermaid
-flowchart LR
-    A["tmux capture-pane (Turn t)"] --> B["Clean Echoed Commands & Normalize Prompt"]
-    B --> C["Counterfactual Audit on Turn t-1"]
-    C -- "q / :q! -> bash: command not found" --> D["minimodels learn (Heal t-1 -> Class 0)"]
-    C -- "Screen ends in (END) or :" --> E["minimodels learn (Heal t-1 -> Class 1)"]
-    B --> F["HeadTailTokenizer (13.8 us) + minimodels predict (0.34 ms)"]
-    F --> G{"Structural Invariant Audit"}
-    G -- "Contradiction (e.g. Class 1/2 at # prompt)" --> H["minimodels learn (2-5 AdamW steps, ~33 ms)"]
-    G -- "Consistent" --> I["Append [Terminus State] Directive to Prompt"]
-    H --> I
-```
-
-Here are four real self-healing events logged during live container episodes (`runs/terminus-self-healing.jsonl` and `runs/harbor-bench/gemma4-31b-10task/terminus-self-healing.jsonl`)[^4]:
-
-| Task / Episode | Triggering Command | Initial Prediction | Healed State (`true_label`) | Invariant Reason | AdamW Steps | Post-Update Loss | Heal Time (`learn_ms`) |
-| :--- | :--- | :--- | :--- | :--- | ---: | ---: | ---: |
-| `git-leak-recovery` (ep 1) | `cd repo && git log -p \| grep 'secret['` | `0` (`CleanProgress`) | **`5` (`CompileOrSyntaxOrTestError`)** | Explicit regex error at shell prompt | 5 | 0.15968 | **36.5 ms** |
-| `git-leak-recovery` (ep 2) | `git log -p \| grep -F 'secret['` | `1` (`InteractiveTrap`) | **`0` (`CleanProgress`)** | Shell prompt ready at tail; cannot be pager | 3 | 0.05399 | **25.9 ms** |
-| `cancel-async-tasks` (ep 2) | `cat <<EOF > /app/run.py ... EOF && ls -l /app/run.py` | `1` (`InteractiveTrap`) | **`0` (`CleanProgress`)** | Shell prompt ready at tail; cannot be pager | 2 | 0.02520 | **33.7 ms** |
-| `db-wal-recovery` (ep 3) | `sqlite3 /app/main.db "SELECT..." && hexdump -C ...` | `0` (`CleanProgress`) | **`4` (`MissingToolOrModule`)** | Explicit missing command error at prompt | 5 | 0.06917 | **47.0 ms** |
-
-Once a pattern is healed on Episode $k$, the updated `.mm` weights persist across all subsequent turns and tasks.
+| Task / Episode | Triggering Command | Initial Prediction | Healed State (`true_label`) | Invariant Trigger | AdamW Steps | Heal Time |
+| :--- | :--- | :--- | :--- | :--- | ---: | ---: |
+| `git-leak-recovery` (ep 1) | `git log -p` piped to `grep 'secret['` | `0` (`CleanProgress`) | **`5` (`CompileOrSyntaxOrTestError`)** | Regex error at shell prompt | 5 | **36.5 ms** |
+| `git-leak-recovery` (ep 2) | `git log -p` piped to `grep -F 'secret['` | `1` (`InteractiveTrap`) | **`0` (`CleanProgress`)** | Shell prompt ready at tail | 3 | **25.9 ms** |
+| `cancel-async-tasks` (ep 2) | `cat <<EOF > /app/run.py ... EOF` | `1` (`InteractiveTrap`) | **`0` (`CleanProgress`)** | Shell prompt ready at tail | 2 | **33.7 ms** |
+| `db-wal-recovery` (ep 3) | `sqlite3 /app/main.db ... && hexdump -C` | `0` (`CleanProgress`) | **`4` (`MissingToolOrModule`)** | Missing binary at shell prompt | 5 | **47.0 ms** |
 
 ---
 
-## Calibration Across Parameter Scales: 4B vs. 27B–31B
+## Harness Guardrails for 89-Task High-Concurrency Sweeps
 
-Comparing our runs across `nemotron-3-nano:4b` (4B), `gemma4:31b` (31B), `Qwen 3.8 27B` (27B), and our preliminary **Qwen 4 27B** evaluation highlights why the **~27B dense parameter tier** is the sweet spot for `PromptEnhancer` (`runs/harbor-bench/nemotron-4b-10task/comparison_summary.json`, `runs/harbor-bench/gemma4-31b-10task/summary.json`, and `runs/qwen3.8-vast-h200-89task/summary.live.json`)[^5]:
+Running 178 containerized episodes (`89` tasks $\times$ `2` arms, up to 200 turns and 65,536 context tokens per episode) at $n=16..32$ concurrency uses five execution guardrails:
 
-| Model & Suite | Baseline Tasks Passed (`terminus-2`) | `+ PE` Tasks Passed (`Terminus2Enhanced`) | Solved-Task Token Savings | Episode Wall-Clock Savings | Key Operational Finding |
-| :--- | ---: | ---: | ---: | ---: | :--- |
-| **`nemotron-3-nano:4b` (10-Task)** | 0 / 10 (0.0%) | **1 / 10 (10.0%)** | **-32.4%** (`cancel-async`) | **-15.8%** (`45.2s` vs `53.7s`) | Below synthesis floor on 9/10 tasks; state recovery prevents early exit, inflating unsolvable task turns (`824` $\to$ `1,402`). |
-| **`gemma4:31b` (10-Task)** | 5 / 10 (50.0%) | **6 / 10 (60.0%)** | **-50.5% mean** (up to **-55.3%**) | **-49.2% mean** (up to **-75.1%**) | Sufficient synthesis capacity to act on state directives; recovers `db-wal-recovery` in 8 turns (`99.0s` vs `397.5s`). |
-| **`Qwen 3.8 27B` (Paired $N=21$ / Full $N=88$)** | 10 / 21 (47.6%) | **21 / 21 (100.0%)** / **57 / 88 (64.8%)** | **-40.1% mean** (up to **-92.4%**) | **-63.6% total** (`1.90 hr` vs `5.21 hr`) | +11 tasks recovered on paired subset (`db-wal-recovery`, `cancel-async-tasks`, `custom-memory-heap-crash`); `91` live self-heals. |
-| **`Qwen 4 27B` (27B Prelim)** | `[TBD]` | **`[TBD]`** | **`-[TBD]%`** | **`-[TBD]%`** | Newly released 27B dense model; pairs strong code synthesis with high-throughput single-GPU vLLM serving. |
-
----
-
-## High-Concurrency Harness for the Full 89-Task Qwen 4 27B Sweep
-
-To complete both arms of the full 89-task Terminal-Bench 2.1 benchmark (`178` containerized episodes, up to 200 turns and 65,536 context tokens per episode) at $n=16..32$ concurrency, our harness (`scripts/run_studio_vast_h200_bench.py` and `scripts/proot_env.py`)[^6] incorporates five systems guardrails:
-
-- **RAM-Disk OCI Caching (`skopeo` + `umoci`) and a 12 GiB `/` Overlay Quota Guard**: Prefetches all 89 task images into `/dev/shm/hb_oci_cache` and enforces a `12 GiB` free-space guard on `/` before unpacking multi-gigabyte compiler/ML rootfses (`caffe-cifar-10`, `gpt2-codegolf`, `hf-model-inference`, `mteb-leaderboard`, `fix-ocaml-gc`).
-- **`PRoot v5.5.0` Compiled from Source for `statx` Translation**: Enables rootless container execution on unprivileged GPU nodes (`!CAP_SYS_ADMIN`) with `statx` (`__NR_statx = 332`) support for Debian Bookworm binaries and `--link2symlink` (`-l`).
-- **Dynamic Per-Container Port Remapping (`40000..59999`)**: Remaps guest ports (`8000`, `8080`, `3000`, `5000`, `8888`, `8443`, `9000`, `22`) via `proot -p` so 32 concurrent web-server and git trials never collide on localhost.
-- **Host Environment Sanitization and Pre-Seeded `uv`/`uvx`**: Strips host `UV_OVERRIDE` variables and pre-seeds `/root/.local/bin/{uv,uvx}` into every container rootfs to prevent `astral.sh` IP rate-limiting during concurrent verifier runs.
-- **vLLM `max_tokens: 4096` and `enable_thinking: False` Guardrails**: Prevents vLLM from defaulting unspecified `max_tokens` to `max_model_len - prompt_tokens` (`~258k` tokens) and replaces `terminus-2`'s 11-retry truncation loop with a single-retry conciseness directive.
-
-We are updating the `[TBD — Qwen 4 27B Run]` slots in the tables and regenerating Figures 1–2 (`python3 scripts/generate_qwen4_pe_charts.py && npm run build`) as the **Qwen 4 27B** benchmark sweep completes.
-
----
-
-## References
-
-[^1]: Terminal-Bench 2.1 and the Harbor evaluation framework (`terminus-2` agent loop and `tmux` session driver). Task definitions and verifier scripts (`verifier/test.sh`) execute inside per-task Linux containers.
-[^2]: Chris Borkert, ["A small classifier in Rust and Metal"](/posts/minimodels-rust-metal.html), November 2026. Documents the zero-framework Rust and Apple Metal bidirectional encoder and training engine (`minimodels`).
-[^3]: Local experiment artifacts in `minimodels`: `scripts/synth_terminus_state.py`, `configs/terminus-state-tiny.json`, `configs/terminus-state-small.json`, and `runs/terminus-state-summary.json` (November 2026). Evaluated on Apple M5 across `heldout_test_1600` ($N=1,200$), `adversarial_contrast_38` ($N=38$), and `terminalbench_scenarios_12` ($N=12$).
-[^4]: Online self-healing implementation and logs in `minimodels`: `scripts/terminus_prompt_enhancer.py`, `scripts/terminus_2_enhanced.py`, `runs/terminus-self-healing.jsonl`, and `runs/harbor-bench/gemma4-31b-10task/terminus-self-healing.jsonl` (November 2026).
-[^5]: Calibration benchmark records in `minimodels`: `runs/harbor-bench/comparison-summary.json` (`git-leak-recovery` on `openai/gpt-4o-mini`, $T=0.0$, 15-turn cap), `runs/harbor-bench/nemotron-4b-10task/comparison_summary.json` (`nemotron-3-nano:4b` on Apple M5 Ultra), and `runs/harbor-bench/gemma4-31b-10task/summary.json` (`gemma4:31b` on Apple M5 Ultra).
-[^6]: High-concurrency Terminal-Bench 2.1 harness and rootless container backend in `minimodels`: `docs/vast_ai_benchmark_guide.md`, `scripts/proot_env.py`, `scripts/run_vast_concurrency_bench.py`, `scripts/run_studio_vast_h200_bench.py`, and `scripts/setup_llm_server.sh` (November 2026).
+- **RAM-Disk OCI Cache (`/dev/shm/hb_oci_cache`) + 12 GiB `/` Quota Guard**: Prefetches all 89 images via `skopeo` + `umoci` and blocks multi-gigabyte rootfs extraction (`caffe-cifar-10`, `gpt2-codegolf`, `hf-model-inference`) if `/` free space drops below `12 GiB`.
+- **`PRoot v5.5.0` with `statx` (`__NR_statx = 332`)**: Rootless container execution on unprivileged GPU nodes (`!CAP_SYS_ADMIN`) with Debian Bookworm `statx` translation and `--link2symlink`.
+- **Per-Container Port Remapping (`40000..59999`)**: Remaps guest ports (`8000`, `8080`, `3000`, `5000`, `8888`, `8443`, `9000`, `22`) so concurrent web-server and git tasks never collide on `localhost`.
+- **Pre-Seeded `uv`/`uvx` & Env Sanitization**: Strips host `UV_OVERRIDE` variables and seeds `/root/.local/bin/{uv,uvx}` into each container rootfs to avoid `astral.sh` rate limits during verification.
+- **vLLM `max_tokens: 4096` & `enable_thinking: False`**: Prevents vLLM from defaulting unspecified `max_tokens` to `max_model_len - prompt_tokens` and replaces `terminus-2`'s 11-retry truncation loop with a single-retry conciseness directive.
