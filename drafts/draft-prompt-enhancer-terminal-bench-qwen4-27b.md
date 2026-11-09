@@ -1,7 +1,5 @@
 # Qwen 4 27B on Terminal-Bench 2.1: Preliminary Benchmark with a Sub-Millisecond PromptEnhancer
 
-*By Chris Borkert · November 2026*
-
 ## Quick Summary
 
 - **Model & Harness**: **Qwen 4 27B** (`Qwen4-27B`, just released) evaluated on Terminal-Bench 2.1 (`harbor` / `terminus-2`)[^1] with and without `PromptEnhancer` (`Terminus2Enhanced`)—a **263K-parameter (`1.03 MB`, `0.340 ms`/turn)** [`minimodels`](/posts/minimodels-rust-metal.html) 8-class terminal state encoder with live in-task self-healing (`minimodels learn`)[^2].
