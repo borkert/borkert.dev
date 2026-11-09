@@ -140,20 +140,26 @@ base_pct = [BENCH_DATA["qwen38_without_pe_pct"], BENCH_DATA["qwen4_without_pe_pc
 pe_pct = [BENCH_DATA["qwen38_with_pe_pct"], BENCH_DATA["qwen4_with_pe_pct"]]
 
 style_line_ax(ax1)
+# Shaded Frontier Models band (70% - 87%)
+ax1.axhspan(70, 87, color="#0D9488", alpha=0.10, zorder=1, label="Frontier Models (70%–87%)")
+ax1.axhline(87, color="#0D9488", linestyle=":", linewidth=0.9, alpha=0.55, zorder=2)
+ax1.axhline(70, color="#0D9488", linestyle=":", linewidth=0.9, alpha=0.55, zorder=2)
+ax1.text(1.31, 78.5, "Frontier Models\n(70%–87%)", ha="right", va="center", fontsize=7.6, fontweight="bold", color="#0F766E", zorder=4)
+
 ax1.plot(x, base_pct, color=LIGHT_GREY, linewidth=2.3, linestyle="--", marker="s", markersize=7.0, label="Without PE (Baseline)", zorder=3)
 ax1.plot(x, pe_pct, color=NAVY, linewidth=2.7, marker="o", markersize=7.5, label="With PE (+ PromptEnhancer)", zorder=5)
 ax1.fill_between(x, base_pct, pe_pct, color=NAVY, alpha=0.07, zorder=2)
 
 ax1.set_xticks(x)
 ax1.set_xticklabels(models, fontsize=9.2, fontweight="bold")
-ax1.set_ylim(0, 100)
+ax1.set_ylim(0, 108)
 ax1.set_yticks([0, 25, 50, 75, 100])
 ax1.set_xlim(-0.35, 1.35)
 ax1.set_title("Resolution Rate (%)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
 add_spanning_arrow(ax1, direction="higher", side="left", offset=0.14, text_gap=0.032, color=NAVY)
 
 c1_base_xy = [(-8, -16), (0, -16)]
-c1_pe_xy = [(0, 9), (12, 9)]
+c1_pe_xy = [(0, 10), (12, 9)]
 for i in range(len(x)):
     diff = pe_pct[i] - base_pct[i]
     ax1.annotate(f"{base_pct[i]:.0f}%", (x[i], base_pct[i]), textcoords="offset points", xytext=c1_base_xy[i],
@@ -161,27 +167,33 @@ for i in range(len(x)):
     ax1.annotate(f"{pe_pct[i]:.0f}% (+{diff:.0f} pp)", (x[i], pe_pct[i]), textcoords="offset points", xytext=c1_pe_xy[i],
                  ha="center", va="bottom", fontsize=8.5, fontweight="bold", color=NAVY)
 
-ax1.legend(frameon=False, loc="upper right", ncol=1, fontsize=8.0)
+ax1.legend(frameon=False, loc="lower left", ncol=1, fontsize=7.6)
 
 # Right Panel: Tasks Passed (out of 89)
 base_cnt = [BENCH_DATA["qwen38_without_pe_cnt"], BENCH_DATA["qwen4_without_pe_cnt"]]
 pe_cnt = [BENCH_DATA["qwen38_with_pe_cnt"], BENCH_DATA["qwen4_with_pe_cnt"]]
 
 style_line_ax(ax2)
+# Shaded Frontier Models band (70% - 87% of 89 = 62.3 - 77.4 tasks)
+ax2.axhspan(62.3, 77.4, color="#0D9488", alpha=0.10, zorder=1, label="Frontier Models (62–77 / 89)")
+ax2.axhline(77.4, color="#0D9488", linestyle=":", linewidth=0.9, alpha=0.55, zorder=2)
+ax2.axhline(62.3, color="#0D9488", linestyle=":", linewidth=0.9, alpha=0.55, zorder=2)
+ax2.text(1.31, 69.8, "Frontier Models\n(62–77 / 89)", ha="right", va="center", fontsize=7.6, fontweight="bold", color="#0F766E", zorder=4)
+
 ax2.plot(x, base_cnt, color=LIGHT_GREY, linewidth=2.3, linestyle="--", marker="s", markersize=7.0, label="Without PE (Baseline)", zorder=3)
 ax2.plot(x, pe_cnt, color=TEAL_SLATE, linewidth=2.7, marker="o", markersize=7.5, label="With PE (+ PromptEnhancer)", zorder=5)
 ax2.fill_between(x, base_cnt, pe_cnt, color=TEAL_SLATE, alpha=0.07, zorder=2)
 
 ax2.set_xticks(x)
 ax2.set_xticklabels(models, fontsize=9.2, fontweight="bold")
-ax2.set_ylim(0, 89)
+ax2.set_ylim(0, 96)
 ax2.set_yticks([0, 20, 40, 60, 80])
 ax2.set_xlim(-0.35, 1.35)
 ax2.set_title("Tasks Passed (out of 89)", loc="left", fontsize=10.2, fontweight="bold", color=TEXT_MUTED, pad=10)
 add_spanning_arrow(ax2, direction="higher", side="left", offset=0.14, text_gap=0.032, color=TEAL_SLATE)
 
 c2_base_xy = [(-10, -16), (0, -16)]
-c2_pe_xy = [(0, 9), (14, 9)]
+c2_pe_xy = [(0, 10), (14, 9)]
 for i in range(len(x)):
     diff_cnt = pe_cnt[i] - base_cnt[i]
     ax2.annotate(f"{base_cnt[i]}/89 ({base_pct[i]:.0f}%)", (x[i], base_cnt[i]), textcoords="offset points", xytext=c2_base_xy[i],
@@ -189,7 +201,7 @@ for i in range(len(x)):
     ax2.annotate(f"{pe_cnt[i]}/89 (+{diff_cnt})", (x[i], pe_cnt[i]), textcoords="offset points", xytext=c2_pe_xy[i],
                  ha="center", va="bottom", fontsize=8.5, fontweight="bold", color=TEAL_SLATE)
 
-ax2.legend(frameon=False, loc="upper right", ncol=1, fontsize=8.0)
+ax2.legend(frameon=False, loc="lower left", ncol=1, fontsize=7.6)
 
 fig.suptitle("Qwen 3.8 27B vs. Qwen 4 27B: Resolution Rate & Tasks Passed (With vs. Without PE)",
              x=0.04, y=0.95, ha="left", fontsize=12.6, fontweight="bold", color=TEXT_DARK)

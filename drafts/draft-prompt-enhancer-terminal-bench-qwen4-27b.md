@@ -1,24 +1,24 @@
 # Qwen 4 27B on Terminal Bench: First Benchmarks with and without Minimodel's Prompt Enhancer (PE)
 
 <figure class="figure-box">
-  <img src="/assets/charts/qwen38_vs_qwen4_chart1.png?v=5" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Resolution Rate and Tasks Passed (With vs. Without PE)">
-  <figcaption class="figcaption"><strong>Figure 1. Resolution Rate &amp; Tasks Passed (Without PE vs. With PE).</strong> <code>Qwen 3.8 27B</code>: <code>50%</code> (<code>45/89</code>) Without PE &rarr; <code>75%</code> (<code>67/89</code>) With PE. <code>Qwen 4 27B</code>: <code>15%</code> (<code>13/89</code>) Without PE &rarr; <code>35%</code> (<code>31/89</code>) With PE.</figcaption>
+  <img src="/assets/charts/qwen38_vs_qwen4_chart1.png?v=6" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Resolution Rate and Tasks Passed (With vs. Without PE)">
+  <figcaption class="figcaption"><strong>Figure 1. Resolution Rate &amp; Tasks Passed (Without PE vs. With PE) vs. Frontier Models (70%–87%).</strong> <code>Qwen 3.8 27B</code>: <code>50%</code> (<code>45/89</code>) Without PE &rarr; <code>75%</code> (<code>67/89</code>) With PE (entering the <code>70%–87%</code> Frontier Models band). <code>Qwen 4 27B</code>: <code>15%</code> (<code>13/89</code>) Without PE &rarr; <code>35%</code> (<code>31/89</code>) With PE.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/qwen38_vs_qwen4_chart2.png?v=5" alt="Figure 2: Qwen 3.8 27B vs. Qwen 4 27B: Token and Wall-Clock Savings (With vs. Without PE)">
+  <img src="/assets/charts/qwen38_vs_qwen4_chart2.png?v=6" alt="Figure 2: Qwen 3.8 27B vs. Qwen 4 27B: Token and Wall-Clock Savings (With vs. Without PE)">
   <figcaption class="figcaption"><strong>Figure 2. Mean Solved-Task Tokens &amp; Mean Episode Wall-Clock Time (Without PE vs. With PE).</strong> Cuts mean tokens by <code>40.1%–41.5%</code> and mean wall-clock time by <code>59.4%–63.6%</code>.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/qwen38_vs_qwen4_chart3.png?v=5" alt="Figure 3: Task-Level Breakdown: Token and Wall-Clock Time Reductions with PromptEnhancer">
+  <img src="/assets/charts/qwen38_vs_qwen4_chart3.png?v=6" alt="Figure 3: Task-Level Breakdown: Token and Wall-Clock Time Reductions with PromptEnhancer">
   <figcaption class="figcaption"><strong>Figure 3. Per-Task Token &amp; Wall-Clock Reductions (Without PE vs. With PE).</strong> Cuts episode tokens by up to <code>92.4%</code> and wall-clock time by up to <code>94.2%</code>.</figcaption>
 </figure>
 
 ## Executive Summary
 
-- **4-Way Benchmark Comparison**: Evaluates **Qwen 3.8 27B** (Without PE vs. With PE) and **Qwen 4 27B** (Without PE vs. With PE) across the 89-task Terminal-Bench suite (`harbor` / `terminus-2`).
-- **Qwen 3.8 27B (`50%` $\to$ `75%`, `+25 pp`)**: Passes **45 / 89 (50%)** Without PE and **67 / 89 (75%, +22 tasks)** With PE.
+- **4-Way Benchmark Comparison**: Evaluates **Qwen 3.8 27B** (Without PE vs. With PE) and **Qwen 4 27B** (Without PE vs. With PE) across the 89-task Terminal-Bench suite (`harbor` / `terminus-2`), compared against the **70%–87% Frontier Models** range.
+- **Qwen 3.8 27B (`50%` $\to$ `75%`, `+25 pp`)**: Passes **45 / 89 (50%)** Without PE and **67 / 89 (75%, +22 tasks)** With PE—reaching the **70%–87% Frontier Models** tier.
 - **Qwen 4 27B (`15%` $\to$ `35%`, `+20 pp`)**: Passes **13 / 89 (15%)** Without PE and **31 / 89 (35%, +18 tasks)** With PE (`2.3x` improvement).
 - **Token Savings (`-40.1%` to `-41.5%` Mean, up to `-92.4%`)**: Mean tokens per solved task drop from `102,377` $\to$ **`61,327` (`-40.1%`)** on Qwen 3.8 27B and `118,000` $\to$ **`69,000` (`-41.5%`)** on Qwen 4 27B.
 - **Wall-Clock Savings (`-59.4%` to `-63.6%` Mean, up to `-94.2%`)**: Mean episode wall-clock time drops from `894s` $\to$ **`325s` (`-63.6%`)** on Qwen 3.8 27B and `960s` $\to$ **`390s` (`-59.4%`)** on Qwen 4 27B.
