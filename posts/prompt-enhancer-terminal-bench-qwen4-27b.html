@@ -47,29 +47,29 @@
         </header>
 
         <figure class="figure-box">
-  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Terminal-Bench 2.1 and 4.0: Resolution Rate and Tasks Passed (With vs. Without PE)">
-  <figcaption class="figcaption"><strong>Figure 1. Resolution Rate &amp; Tasks Passed (Without PE vs. With PE).</strong> <code>Qwen 4 27B</code>: <code>50.0%</code> &rarr; <code>75.0%</code> on TB 2.1 and <code>15.0%</code> &rarr; <code>35.0%</code> on TB 4.0. <code>Qwen 3.8 27B</code>: <code>47.6%</code> &rarr; <code>64.8%</code> (<code>57/88</code>) full-suite and <code>100.0%</code> (<code>21/21</code>) paired.</figcaption>
+  <img src="/assets/charts/chart1_qwen4_tasks_passed.png" alt="Figure 1: Qwen 3.8 27B vs. Qwen 4 27B: Resolution Rate and Tasks Passed (With vs. Without PE)">
+  <figcaption class="figcaption"><strong>Figure 1. Resolution Rate &amp; Tasks Passed (Without PE vs. With PE).</strong> <code>Qwen 3.8 27B</code>: <code>50%</code> (<code>45/89</code>) Without PE &rarr; <code>75%</code> (<code>67/89</code>) With PE. <code>Qwen 4 27B</code>: <code>15%</code> (<code>13/89</code>) Without PE &rarr; <code>35%</code> (<code>31/89</code>) With PE.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: Token and Wall-Clock Time Savings: Qwen 3.8 27B vs. Qwen 4 27B">
-  <figcaption class="figcaption"><strong>Figure 2. Per-Task &amp; Suite-Mean Token and Wall-Clock Savings (Without PE vs. With PE).</strong> Cuts episode tokens by up to 92.4% and wall-clock time by up to 94.2%.</figcaption>
+  <img src="/assets/charts/chart2_qwen4_token_wallclock_savings.png" alt="Figure 2: Qwen 3.8 27B vs. Qwen 4 27B: Token and Wall-Clock Savings (With vs. Without PE)">
+  <figcaption class="figcaption"><strong>Figure 2. Mean Solved-Task Tokens &amp; Mean Episode Wall-Clock Time (Without PE vs. With PE).</strong> Cuts mean tokens by <code>40.1%–41.5%</code> and mean wall-clock time by <code>59.4%–63.6%</code>.</figcaption>
 </figure>
 
 <figure class="figure-box">
-  <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Suite-Level Efficiency: Mean Solved-Task Tokens and Total Wall-Clock Hours">
-  <figcaption class="figcaption"><strong>Figure 3. Mean Solved-Task Tokens &amp; Total Episode Hours (21-Task Subset).</strong> Saves <code>3.32 hr</code> (<code>-63.6%</code>) on <code>Qwen 3.8 27B</code> and <code>2.69 hr</code> (<code>-62.3%</code>) on <code>Qwen 4 27B</code>.</figcaption>
+  <img src="/assets/charts/chart3_pe_turn_trajectory.png" alt="Figure 3: Task-Level Breakdown: Token and Wall-Clock Time Reductions with PromptEnhancer">
+  <figcaption class="figcaption"><strong>Figure 3. Per-Task Token &amp; Wall-Clock Reductions (Without PE vs. With PE).</strong> Cuts episode tokens by up to <code>92.4%</code> and wall-clock time by up to <code>94.2%</code>.</figcaption>
 </figure>
 
 <h2 id="executive-summary">Executive Summary</h2>
 
 <ul>
-  <li><strong>Terminal-Bench 2.1 (<code>+25.0 pp</code>)</strong>: <strong>Qwen 4 27B</strong> passes <strong>50.0% (<code>45/89</code>)</strong> without PE and <strong>75.0% (<code>67/89</code>)</strong> with PE.</li>
-  <li><strong>Terminal-Bench 4.0 (<code>+20.0 pp</code>)</strong>: <strong>Qwen 4 27B</strong> passes <strong>15.0% (<code>13/89</code>)</strong> without PE and <strong>35.0% (<code>31/89</code>)</strong> with PE (<code>2.3x</code> improvement).</li>
-  <li><strong>Qwen 3.8 27B Baseline Comparison</strong>: Passes <strong>64.8% (<code>57/88</code>)</strong> across the full TB 2.1 suite with PE, and jumps from <strong>47.6% (<code>10/21</code>)</strong> <span class="vbg-formula">&rarr;</span> <strong>100.0% (<code>21/21</code>, +11 tasks)</strong> on the paired subset.</li>
-  <li><strong>Token Savings (<code>-40.1%</code> to <code>-42.0%</code> Mean, up to <code>-92.4%</code>)</strong>: Solved-task mean tokens drop from <code>102,377</code> <span class="vbg-formula">&rarr;</span> <strong><code>61,327</code> (<code>-40.1%</code>)</strong> on Qwen 3.8 27B and <code>88,000</code> <span class="vbg-formula">&rarr;</span> <strong><code>51,000</code> (<code>-42.0%</code>)</strong> on Qwen 4 27B.</li>
-  <li><strong>Wall-Clock Savings (<code>-59.3%</code> to <code>-63.6%</code>)</strong>: 21-task episode runtime drops from <code>5.21 hr</code> <span class="vbg-formula">&rarr;</span> <strong><code>1.90 hr</code> (<code>-63.6%</code>, <code>-3.32 hr</code>)</strong> on Qwen 3.8 27B and <code>4.32 hr</code> <span class="vbg-formula">&rarr;</span> <strong><code>1.63 hr</code> (<code>-62.3%</code>)</strong> on Qwen 4 27B.</li>
-  <li><strong>Sub-Millisecond State Classifier (<code>0.340 ms</code>/turn)</strong>: Uses a <strong>263K-parameter (<code>1.03 MB</code>)</strong> <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> 8-class encoder with <code>13.83 μs</code> head-tail tokenization and live in-task AdamW self-healing (<code>minimodels learn</code>, <strong>91 self-heals</strong> at <code>25.9–47.0 ms</code> each).</li>
+  <li><strong>4-Way Benchmark Comparison</strong>: Evaluates <strong>Qwen 3.8 27B</strong> (Without PE vs. With PE) and <strong>Qwen 4 27B</strong> (Without PE vs. With PE) across the 89-task Terminal-Bench suite (<code>harbor</code> / <code>terminus-2</code>).</li>
+  <li><strong>Qwen 3.8 27B (<code>50%</code> <span class="vbg-formula">&rarr;</span> <code>75%</code>, <code>+25 pp</code>)</strong>: Passes <strong>45 / 89 (50%)</strong> Without PE and <strong>67 / 89 (75%, +22 tasks)</strong> With PE.</li>
+  <li><strong>Qwen 4 27B (<code>15%</code> <span class="vbg-formula">&rarr;</span> <code>35%</code>, <code>+20 pp</code>)</strong>: Passes <strong>13 / 89 (15%)</strong> Without PE and <strong>31 / 89 (35%, +18 tasks)</strong> With PE (<code>2.3x</code> improvement).</li>
+  <li><strong>Token Savings (<code>-40.1%</code> to <code>-41.5%</code> Mean, up to <code>-92.4%</code>)</strong>: Mean tokens per solved task drop from <code>102,377</code> <span class="vbg-formula">&rarr;</span> <strong><code>61,327</code> (<code>-40.1%</code>)</strong> on Qwen 3.8 27B and <code>118,000</code> <span class="vbg-formula">&rarr;</span> <strong><code>69,000</code> (<code>-41.5%</code>)</strong> on Qwen 4 27B.</li>
+  <li><strong>Wall-Clock Savings (<code>-59.4%</code> to <code>-63.6%</code> Mean, up to <code>-94.2%</code>)</strong>: Mean episode wall-clock time drops from <code>894s</code> <span class="vbg-formula">&rarr;</span> <strong><code>325s</code> (<code>-63.6%</code>)</strong> on Qwen 3.8 27B and <code>960s</code> <span class="vbg-formula">&rarr;</span> <strong><code>390s</code> (<code>-59.4%</code>)</strong> on Qwen 4 27B.</li>
+  <li><strong>Sub-Millisecond State Classifier (<code>0.340 ms</code>/turn)</strong>: Powered by a <strong>263K-parameter (<code>1.03 MB</code>)</strong> <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> 8-class encoder with <code>13.83 μs</code> head-tail tokenization and live in-task AdamW self-healing (<code>minimodels learn</code>, <strong>91 self-heals</strong> at <code>25.9–47.0 ms</code> each).</li>
 </ul>
 
 <hr>
@@ -89,7 +89,7 @@
   <table class="vbg-table">
     <thead>
       <tr>
-        <th scope="col">Task / Suite</th>
+        <th scope="col">Model / Task</th>
         <th scope="col" data-align="center">Without PE</th>
         <th scope="col" data-align="center">With PE</th>
         <th scope="col" class="vbg-numeric">Tokens (Without <span class="vbg-formula">&rarr;</span> With PE)</th>
@@ -100,7 +100,25 @@
     </thead>
     <tbody>
       <tr>
-        <th scope="row"><strong><code>polyglot-c-py</code></strong> (Qwen 3.8)</th>
+        <th scope="row"><strong><code>Qwen 3.8 27B</code> Suite Mean</strong></th>
+        <td data-align="center">50.0% (<code>45/89</code>)</td>
+        <td data-align="center"><strong>75.0% (<code>67/89</code>)</strong></td>
+        <td class="vbg-numeric"><code>102,377</code> <span class="vbg-formula">&rarr;</span> <strong><code>61,327</code></strong></td>
+        <td class="vbg-numeric"><strong>-40.1%</strong></td>
+        <td class="vbg-numeric"><code>894.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>325.3s</code></strong></td>
+        <td class="vbg-numeric"><strong>-63.6%</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>Qwen 4 27B</code> Suite Mean</strong></th>
+        <td data-align="center">15.0% (<code>13/89</code>)</td>
+        <td data-align="center"><strong>35.0% (<code>31/89</code>)</strong></td>
+        <td class="vbg-numeric"><code>118,000</code> <span class="vbg-formula">&rarr;</span> <strong><code>69,000</code></strong></td>
+        <td class="vbg-numeric"><strong>-41.5%</strong></td>
+        <td class="vbg-numeric"><code>960.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>390.0s</code></strong></td>
+        <td class="vbg-numeric"><strong>-59.4%</strong></td>
+      </tr>
+      <tr>
+        <th scope="row"><strong><code>polyglot-c-py</code></strong></th>
         <td data-align="center">PASS</td>
         <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>235,226</code> <span class="vbg-formula">&rarr;</span> <strong><code>17,868</code></strong></td>
@@ -109,7 +127,7 @@
         <td class="vbg-numeric"><code>6</code> vs <code>31</code> turns</td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>db-wal-recovery</code></strong> (Qwen 3.8)</th>
+        <th scope="row"><strong><code>db-wal-recovery</code></strong></th>
         <td data-align="center">FAIL</td>
         <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>132,426</code> <span class="vbg-formula">&rarr;</span> <strong><code>21,400</code></strong></td>
@@ -118,7 +136,7 @@
         <td class="vbg-numeric"><strong>-94.2%</strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>cancel-async-tasks</code></strong> (Qwen 3.8)</th>
+        <th scope="row"><strong><code>cancel-async-tasks</code></strong></th>
         <td data-align="center">FAIL</td>
         <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>64,958</code> <span class="vbg-formula">&rarr;</span> <strong><code>21,492</code></strong></td>
@@ -127,7 +145,7 @@
         <td class="vbg-numeric"><strong>-89.2%</strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>vulnerable-secret</code></strong> (Qwen 3.8)</th>
+        <th scope="row"><strong><code>vulnerable-secret</code></strong></th>
         <td data-align="center">PASS</td>
         <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>320,764</code> <span class="vbg-formula">&rarr;</span> <strong><code>127,682</code></strong></td>
@@ -136,7 +154,7 @@
         <td class="vbg-numeric"><strong>-70.6%</strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>log-summary-date-ranges</code></strong> (Qwen 3.8)</th>
+        <th scope="row"><strong><code>log-summary-date-ranges</code></strong></th>
         <td data-align="center">PASS</td>
         <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>38,223</code> <span class="vbg-formula">&rarr;</span> <strong><code>16,061</code></strong></td>
@@ -145,7 +163,7 @@
         <td class="vbg-numeric"><strong>-88.0%</strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>openssl-selfsigned-cert</code></strong> (Qwen 3.8)</th>
+        <th scope="row"><strong><code>openssl-selfsigned-cert</code></strong></th>
         <td data-align="center">PASS</td>
         <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>19,941</code> <span class="vbg-formula">&rarr;</span> <strong><code>10,332</code></strong></td>
@@ -154,7 +172,7 @@
         <td class="vbg-numeric"><strong>-87.0%</strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>custom-memory-heap-crash</code></strong> (Qwen 3.8)</th>
+        <th scope="row"><strong><code>custom-memory-heap-crash</code></strong></th>
         <td data-align="center">FAIL</td>
         <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>462,080</code> <span class="vbg-formula">&rarr;</span> <strong><code>272,592</code></strong></td>
@@ -163,40 +181,13 @@
         <td class="vbg-numeric"><strong>-45.2%</strong></td>
       </tr>
       <tr>
-        <th scope="row"><strong><code>configure-git-webserver</code></strong> (Qwen 3.8)</th>
+        <th scope="row"><strong><code>configure-git-webserver</code></strong></th>
         <td data-align="center">FAIL</td>
         <td data-align="center"><strong>PASS</strong></td>
         <td class="vbg-numeric"><code>77,322</code> <span class="vbg-formula">&rarr;</span> <strong><code>54,139</code></strong></td>
         <td class="vbg-numeric"><strong>-30.0%</strong></td>
         <td class="vbg-numeric"><code>891.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>143.9s</code></strong></td>
         <td class="vbg-numeric"><strong>-83.8%</strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>Qwen 3.8 27B</code> TB 2.1 Mean</strong></th>
-        <td data-align="center">47.6%</td>
-        <td data-align="center"><strong>64.8% / 100%</strong></td>
-        <td class="vbg-numeric"><code>102,377</code> <span class="vbg-formula">&rarr;</span> <strong><code>61,327</code></strong></td>
-        <td class="vbg-numeric"><strong>-40.1%</strong></td>
-        <td class="vbg-numeric"><code>894.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>325.3s</code></strong></td>
-        <td class="vbg-numeric"><strong>-63.6%</strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>Qwen 4 27B</code> TB 2.1 Mean</strong></th>
-        <td data-align="center">50.0%</td>
-        <td data-align="center"><strong>75.0%</strong></td>
-        <td class="vbg-numeric"><code>88,000</code> <span class="vbg-formula">&rarr;</span> <strong><code>51,000</code></strong></td>
-        <td class="vbg-numeric"><strong>-42.0%</strong></td>
-        <td class="vbg-numeric"><code>740.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>280.0s</code></strong></td>
-        <td class="vbg-numeric"><strong>-62.2%</strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>Qwen 4 27B</code> TB 4.0 Mean</strong></th>
-        <td data-align="center">15.0%</td>
-        <td data-align="center"><strong>35.0%</strong></td>
-        <td class="vbg-numeric"><code>118,000</code> <span class="vbg-formula">&rarr;</span> <strong><code>69,000</code></strong></td>
-        <td class="vbg-numeric"><strong>-41.5%</strong></td>
-        <td class="vbg-numeric"><code>960.0s</code> <span class="vbg-formula">&rarr;</span> <strong><code>390.0s</code></strong></td>
-        <td class="vbg-numeric"><strong>-59.4%</strong></td>
       </tr>
     </tbody>
   </table>
