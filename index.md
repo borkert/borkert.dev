@@ -2,7 +2,7 @@
 
 [GitHub](https://github.com/digplan) · [Email](mailto:chris@borkert.dev)
 
-- [Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon using Neural Log Filtering](/posts/l2-cache-neural-log-filter-agy-gemini-4-carbon.html)
+- [Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon using Neural Log Filtering](/posts/google-antigravity-gemini-4-carbon-neural-log-filtering.html)
 - [Qwen 4 27B on Terminal Bench: First Benchmarks with and without Minimodels' Prompt Enhancer (PE)](/posts/prompt-enhancer-terminal-bench-qwen4-27b.html)
 - [A small classifier in Rust and Metal](/posts/minimodels-rust-metal.html)
 - [Sub-100ms Push-to-Talk: Driving Local Agents with Apple Silicon and MLX Whisper](/posts/push-to-talk-voice-command-mlx-whisper.html)
