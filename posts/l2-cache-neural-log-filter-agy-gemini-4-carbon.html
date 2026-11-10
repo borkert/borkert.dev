@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CPU L2-Cache Neural Log Filtering for Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon — Chris Borkert</title>
-  <meta name="description" content="Pinning 4-bit neural log filters and execution-state models inside Apple Silicon&#39;s 16 MiB P-core L2 cache cuts Gemini 4 Carbon billed tokens by 26%–58% and context size by 35% at 0.68 ms hook overhead.">
+  <title>Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon using Neural Log Filtering — Chris Borkert</title>
+  <meta name="description" content="A lightweight Antigravity (agy) plugin powered by two tiny CPU L2-cache neural models cuts Gemini 4 Carbon billed tokens by 26%–58% and context size by 35% with sub-millisecond hook overhead.">
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/posts/l2-cache-neural-log-filter-agy-gemini-4-carbon.html">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="CPU L2-Cache Neural Log Filtering for Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon">
-  <meta property="og:description" content="Pinning 4-bit neural log filters and execution-state models inside Apple Silicon&#39;s 16 MiB P-core L2 cache cuts Gemini 4 Carbon billed tokens by 26%–58% and context size by 35% at 0.68 ms hook overhead.">
+  <meta property="og:title" content="Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon using Neural Log Filtering">
+  <meta property="og:description" content="A lightweight Antigravity (agy) plugin powered by two tiny CPU L2-cache neural models cuts Gemini 4 Carbon billed tokens by 26%–58% and context size by 35% with sub-millisecond hook overhead.">
   <meta property="og:url" content="https://borkert.dev/posts/l2-cache-neural-log-filter-agy-gemini-4-carbon.html">
   <meta property="og:type" content="article">
 
@@ -42,21 +42,21 @@
     <main id="main">
       <article class="post-content">
         <header class="post-header">
-          <h1 class="vbg-title">CPU L2-Cache Neural Log Filtering for Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon</h1>
+          <h1 class="vbg-title">Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon using Neural Log Filtering</h1>
           
         </header>
 
         <p><em>November 2026</em></p>
 
-<p>Coding agents burn a huge share of their context window and token budget reading machine-generated boilerplate. Run a multi-module C build, a verbose <code>pytest</code> suite, a database migration, or a compressed microservice log dump, and thousands of routine status lines enter the conversation history. Because that history only grows, every compiler status line or health-check log printed on turn 1 gets re-read on every turn after it. Worse, a single bare <code>python3</code>, <code>sqlite3</code>, <code>vim</code>, or paged <code>git log</code> command stalls an automated shell session until timeout, sending the agent into multi-turn recovery loops.</p>
+<p>Coding agents waste a huge share of their token budget reading hundreds of repetitive build, test, and server log lines after every shell command—and re-reading that noise on every turn that follows. Worse, accidentally opening an interactive prompt (<code>python3</code>, <code>sqlite3</code>, <code>vim</code>, or a git pager) stalls automated runs and sends the agent into recovery loops.</p>
 
-<p>Simple <code>head</code> or <code>tail</code> truncation loses the actual compiler error or stack trace buried at line 412 of a 1,200-line log. Sending noisy logs to a second LLM call adds hundreds of milliseconds to seconds of latency and wastes the tokens we were trying to save.</p>
+<p>To solve both without calling a second LLM or touching the GPU, I built <code>minimodels-pe</code>, a lightweight plugin for Google Antigravity (<code>agy</code>) powered by two tiny <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> neural networks compressed to <code>~2–7 MB</code>. Because they are that small, both models stay permanently inside the Mac's fast <code>16 MiB</code> CPU L2 cache—meaning zero GPU usage and <strong><code>0.68 ms</code> median hook latency</strong> via tiny compiled C wrappers (<code>~50 µs</code> passthrough on short outputs).</p>
 
-<p>Over the past week I built <code>minimodels-pe</code>, a native plugin for Antigravity (<code>agy</code>) that solves both problems inside the <strong>CPU's L2 cache</strong> before noisy output ever reaches the agent's transcript.</p>
+<p>Before command output ever reaches <strong>Gemini 4 Carbon</strong>, the first model strips routine log boilerplate while keeping every error, warning, stack trace, and distinct log pattern intact. When a command fails or gets stuck, the second model adds a one-line recovery hint—and updates its own weights in <code>32–59 ms</code> whenever exit codes disagree with its prediction.</p>
 
-<p>Using 4-bit model compression and ARM integer vector math, two small <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> neural networks stay pinned inside Apple Silicon's <strong><code>16.0 MiB</code> shared P-core L2 cache</strong> (<code>~5 ns</code> latency, zero GPU contention), fronted by two tiny compiled C wrappers (<code>0.68 ms</code> median hook latency; <code>~50 µs</code> passthrough on short outputs).</p>
+<hr>
 
-<p>Evaluated head-to-head on the <code>agy</code> CLI with <strong>Gemini 4 Carbon</strong> (<code>gemini-4-carbon-low</code>) across four end-to-end debugging and incident-triage tasks, <code>minimodels-pe</code> passed <strong>4 / 4 (100%)</strong> verified benchmarks while cutting <strong>billed tokens by 26.4%</strong> overall (<strong>up to 57.8%</strong> on 1,200-line <code>.log.gz</code> triage), <strong>effective prompt context by 35.4%</strong>, <strong>planner turns by 20.8%</strong>, and <strong>stored tool-output text by 68.5%</strong>.</p>
+<h2 id="live-benchmark-on-gemini-4-carbon-gemini-4-carbon-low">Live Benchmark on Gemini 4 Carbon (<code>gemini-4-carbon-low</code>)</h2>
 
 <figure class="figure-box">
   <img src="/assets/charts/agy_l2_pe_tokens_context.png?v=2" alt="Figure 1: Antigravity (agy) + Gemini 4 Carbon Head-to-Head Token and Context Reductions">
@@ -65,128 +65,10 @@
 
 <figure class="figure-box">
   <img src="/assets/charts/agy_l2_cache_footprint.png?v=2" alt="Figure 2: Fitting Neural Salience and Execution-State Models Inside Apple Silicon CPU L2 Cache">
-  <figcaption class="figcaption"><strong>Figure 2. Apple Silicon <code>16.0 MiB</code> P-Core L2 Cache Residency &amp; Hook Latency.</strong> 4-bit compression shrinks checkpoints by <code>7&times;</code> with zero accuracy loss—fitting both the <code>12.03M</code>-parameter <code>summarizer-l2-pro</code> (<code>6.52 MiB</code>) and CLI-only <code>3.50M</code> <code>summarizer-cli-l2</code> (<code>1.90 MiB</code>, under <code>12%</code> of L2) alongside the <code>1.00 MB</code> 8-class state model, while native C wrappers keep median hook overhead at <code>0.68 ms</code>.</figcaption>
+  <figcaption class="figcaption"><strong>Figure 2. CPU L2 Cache Footprint &amp; Per-Call Latency.</strong> 4-bit compression shrinks checkpoints by <code>7&times;</code> with zero accuracy loss—fitting both the <code>6.52 MiB</code> general+CLI filter and a <code>1.90 MiB</code> CLI-only filter (under <code>12%</code> of Apple Silicon's <code>16 MiB</code> L2 cache) alongside the <code>1.00 MB</code> state model.</figcaption>
 </figure>
 
-<hr>
-
-<h2 id="1-fitting-neural-encoders-inside-apple-silicons-16-mib-p-core-l2-cache">1. Fitting Neural Encoders Inside Apple Silicon's 16 MiB P-Core L2 Cache</h2>
-
-<p>On Apple Silicon (both M5 laptops and M5 Ultra workstations), the performance-core cluster shares a <strong><code>16.0 MiB</code> L2 cache</strong> (<code>sysctl hw.perflevel0.l2cachesize = 16777216</code>), while each P-core holds a private <code>128 KiB</code> L1 data cache. As long as a neural network's weights stay comfortably below <code>16 MiB</code>, all P-cores in the cluster can score log lines in parallel from that shared L2 cache at <code>~5 ns</code> latency—without touching main memory and without competing with the GPU.</p>
-
-<p>In standard 32-bit or 16-bit floating point, a capable multi-layer transformer encoder blows past that limit. Our <code>12.03M</code>-parameter log-salience model (<code>summarizer-l2-pro</code>, <code>4</code> layers, <code>width=192</code>, <code>heads=6</code>, <code>ff=384</code>, distilled from <code>ModernBERT-base</code>) takes <strong><code>45.91 MiB</code> in FP32</strong> and <strong><code>22.96 MiB</code> in FP16</strong>. Both spill out of L2 into main memory.</p>
-
-<h3 id="7-compression-via-spectra-4-bit-weights-sparse-16-bit-outliers">7× Compression via SPECTRA 4-Bit Weights + Sparse 16-Bit Outliers</h3>
-
-<p>To fit our <code>.mm</code> checkpoints inside L2 without losing accuracy, we built a small C inference library (<code>minimodel_pe_l2.c</code>) that combines <strong>SPECTRA mixed-precision 4-bit compression</strong> with ARM hardware integer dot products across CPU cores:</p>
-
-<ol>
-  <li><strong>Keeping Top Outliers in 16-Bit Float</strong>: Transformer weight rows often contain one or two unusually large weights; scaling the whole row around them ruins precision for the remaining 99.5%. At load time, we pull out the top two largest weights per row into small 16-bit float arrays (<code>outlier_idx</code> + <code>outlier_val</code>) before quantizing the rest.</li>
-  <li><strong>4-Bit Block Quantization (<code>Q4</code>)</strong>: The remaining weights are packed as 4-bit signed integers (<code>[-8, 7]</code>, two weights per byte) with one 16-bit scale factor per 32 weights (<code>~4.51 bits/weight</code> effective).</li>
-  <li><strong>Hardware Integer Dot Products</strong>: Input activations are quantized per 32-element group into fast L1 buffers. Each inner loop unpacks 32 weights in CPU registers, runs two 16-way integer dot-product instructions, and adds back the exact 16-bit outlier products:</li>
-</ol>
-
-<pre class="code-block"><code class="language-c">float acc = xm[o_idx0] * o_val0 + xm[o_idx1] * o_val1;
-for (size_t g = 0; g &lt; n_groups; g++) {
-    uint8x16_t packed = vld1q_u8(w_row + g * 16);
-    int8x16_t w_lo = vsubq_s8(vreinterpretq_s8_u8(vandq_u8(packed, vmask)), vzero);
-    int8x16_t w_hi = vsubq_s8(vreinterpretq_s8_u8(vshrq_n_u8(packed, 4)), vzero);
-    const int8_t *xg = xq + g * 32;
-    int32x4_t isum = vdupq_n_s32(0);
-    isum = vdotq_s32(isum, w_lo, vld1q_s8(xg));
-    isum = vdotq_s32(isum, w_hi, vld1q_s8(xg + 16));
-    acc += (float)vaddvq_s32(isum) * ((float)s_row[g] * xs[g]);
-}</code></pre>
-
-<p>This shrinks checkpoints by <strong><code>7.04×</code></strong> with <strong>0.0% accuracy loss</strong> and <strong><code>2.06×</code> to <code>5.0×</code> faster CPU execution</strong>.</p>
-
-<h3 id="specialization-generalcli-652-mib-vs-pure-cli-190-mib">Specialization: General+CLI (<code>6.52 MiB</code>) vs. Pure-CLI (<code>1.90 MiB</code>)</h3>
-
-<p>Next, we tested how much model size we could save by narrowing the training distribution. Every log line is scored into four classes (<code>Noise/Boilerplate</code> to drop, <code>Background/Context</code>, <code>KeyFact/Decision</code> to keep, and <code>CriticalAction/Blocker</code> to prioritize):</p>
-
-<ul>
-  <li><strong><code>summarizer-l2-pro.mm</code> (<code>12.03M</code> params, General + CLI)</strong>: Trained on both general documents (email threads, postmortems, legal/financial text) and CLI logs. Shrinks from <code>45.91 MiB</code> FP32 &rarr; <strong><code>6.52 MiB</code> Q4</strong> (<code>41%</code> of L2), hitting <strong><code>99.75%</code> CLI log accuracy</strong>, <strong><code>100.0%</code> critical-error recall</strong>, and <strong><code>99.0%</code> unseen-domain accuracy</strong> at <code>15,097 lines/s</code>.</li>
-  <li><strong><code>summarizer-cli-l2.mm</code> (<code>3.50M</code> params, <code>3L, w=64, ff=192</code>, Pure CLI/DevOps)</strong>: Coding agents do not need corporate email greetings or Slack prose in their weight budget. Training purely on compiler output, test runners, database logs, package managers, and microservice traces lets a <code>3.50M</code>-parameter model shrink from <code>13.33 MiB</code> FP32 &rarr; <strong><code>1.90 MiB</code> Q4</strong>—using <strong>under <code>12%</code> of the <code>16 MiB</code> L2 cache</strong> while reaching <strong><code>100.0%</code> validation accuracy</strong>, <strong><code>99.75%</code> held-out log accuracy</strong>, and <strong><code>100.0%</code> critical-error recall</strong> at <strong><code>~126,000 lines/s</code></strong>.</li>
-</ul>
-
-<div class="vbg-table-wrap">
-  <table class="vbg-table">
-    <thead>
-      <tr>
-        <th scope="col">Checkpoint Variant</th>
-        <th scope="col">Architecture</th>
-        <th scope="col" class="vbg-numeric">FP32 Size</th>
-        <th scope="col" class="vbg-numeric">4-Bit L2 Size</th>
-        <th scope="col" class="vbg-numeric">Share of <code>16 MiB</code> L2</th>
-        <th scope="col" class="vbg-numeric">Validation Acc</th>
-        <th scope="col" class="vbg-numeric">Held-Out CLI Log Acc</th>
-        <th scope="col" class="vbg-numeric">Critical-Error Recall</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <th scope="row"><strong><code>summarizer-l2-pro</code></strong> <em>(General + CLI)</em></th>
-        <td><code>4L, w=192, ff=384</code> (<code>12.03M</code>)</td>
-        <td class="vbg-numeric"><code>45.91 MiB</code> <em>(spills)</em></td>
-        <td class="vbg-numeric"><strong><code>6.52 MiB</code></strong></td>
-        <td class="vbg-numeric"><code>40.8%</code></td>
-        <td class="vbg-numeric"><code>100.0%</code></td>
-        <td class="vbg-numeric"><strong><code>99.75%</code></strong></td>
-        <td class="vbg-numeric"><strong><code>100.0%</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>summarizer-cli-l2</code></strong> <em>(Pure CLI/DevOps)</em></th>
-        <td><code>3L, w=64, ff=192</code> (<code>3.50M</code>)</td>
-        <td class="vbg-numeric"><code>13.33 MiB</code></td>
-        <td class="vbg-numeric"><strong><code>1.90 MiB</code></strong></td>
-        <td class="vbg-numeric"><strong><code>11.9%</code></strong></td>
-        <td class="vbg-numeric"><strong><code>100.0%</code></strong></td>
-        <td class="vbg-numeric"><strong><code>99.75%</code></strong></td>
-        <td class="vbg-numeric"><strong><code>100.0%</code></strong></td>
-      </tr>
-      <tr>
-        <th scope="row"><strong><code>pe-state-encoder</code></strong> <em>(8-Class State)</em></th>
-        <td><code>4L, w=64</code> (<code>263K</code>)</td>
-        <td class="vbg-numeric"><strong><code>1.00 MB</code></strong></td>
-        <td class="vbg-numeric"><code>~0.15 MiB</code></td>
-        <td class="vbg-numeric"><code>6.0%</code> <em>(FP32)</em></td>
-        <td class="vbg-numeric"><code>100.0%</code></td>
-        <td class="vbg-numeric"><strong><code>100.0%</code></strong></td>
-        <td class="vbg-numeric"><strong><code>100.0%</code></strong></td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<h3 id="paired-8-class-execution-state-model-live-self-healing-3259-ms">Paired 8-Class Execution State Model + Live Self-Healing (<code>32–59 ms</code>)</h3>
-
-<p>Paired alongside the log filter in L2 is <code>pe-state-encoder.mm</code> (<code>263K</code> parameters, <code>1.00 MB</code>), which reads the command and head/tail output of each shell step and classifies execution state in <strong><code>4.27 ms</code> mean</strong> across 8 outcomes—such as <code>CLEAN_PROGRESS</code>, <code>INTERACTIVE_TRAP</code>, <code>BUILD_OR_TEST_FAILURE</code>, <code>RESOURCE_LOCK_OR_PERMISSION_ERROR</code>, and <code>READY_FOR_VERIFICATION</code>.</p>
-
-<p>Because its <code>1.00 MB</code> weights stay directly editable in memory, the model can <strong>self-heal live</strong> when ground truth contradicts a prediction. For example, if a test script exits <code>0</code> with <code>ALL TELEMETRY TESTS PASSED</code> while the model predicts <code>BUILD_OR_TEST_FAILURE</code>, <code>minimodels learn</code> runs 3–8 quick gradient steps in <strong><code>32–59 ms</code></strong> and reloads the updated weights on the spot. Across our 4-scenario <code>agy</code> benchmark, it self-healed 4 times in the first three runs and needed <strong>zero</strong> updates by Scenario 4.</p>
-
-<hr>
-
-<h2 id="2-hooking-into-agy-under-1-millisecond">2. Hooking Into <code>agy</code> Under 1 Millisecond</h2>
-
-<p>Antigravity plugins run hooks as external shell commands around each tool call and model turn. Two simple choices keep <code>minimodels-pe</code> fast and unobtrusive:</p>
-
-<ul>
-  <li><strong>Tiny C wrappers instead of cold-starting Python (<code>0.68 ms</code> median)</strong>: Spawning a Python process on every hook adds <code>30–60 ms</code> of startup lag. Instead, two small C binaries (<code>agy-pe-hook</code> and <code>agy-pe-filter</code>) talk over a local Unix socket to a persistent background process that keeps both models hot in L2 cache. Short command outputs (<code>&lt; 36</code> lines) pass straight through in C in <strong><code>~50 µs</code></strong> without even touching the socket.</li>
-  <li><strong>Filter once before saving, nudge only when needed</strong>: Because <code>agy</code>'s post-command hook is read-only, the pre-command hook blocks interactive hangs (<code>vim</code>, <code>less</code>, bare <code>python3</code> or <code>sqlite3</code> prompts), turns off git pagers, and pipes noisy build/test/log commands through <code>agy-pe-filter</code> (preserving the original command's exit code). Deduplication and L2 neural scoring strip routine log chatter <em>before</em> <code>agy</code> saves the step to the session transcript—keeping 100% of errors, tracebacks, and assertions intact. Before the next model call, the 8-class state model checks the outcome and injects a one-line <code>[Prompt Enhancer — State: ...]</code> hint <strong>only</strong> when action is needed, adding <strong>zero</strong> tokens on clean progress turns.</li>
-</ul>
-
-<hr>
-
-<h2 id="3-live-benchmark-on-gemini-4-carbon-gemini-4-carbon-low">3. Live Benchmark on Gemini 4 Carbon (<code>gemini-4-carbon-low</code>)</h2>
-
-<p>We ran eight automated <code>agy</code> sessions in isolated sandboxes comparing stock <code>agy</code> (<code>baseline</code>) against <code>agy</code> + <code>minimodels-pe</code> (<code>pe-hook</code>) on <strong>Gemini 4 Carbon</strong> (<code>gemini-4-carbon-low</code>), graded by deterministic exit-code and output checks:</p>
-
-<ol>
-  <li><strong><code>noisy-c-build-fix</code></strong>: Fix two C bugs hidden inside a noisy 14-module, 380-line compiler and unit-test build log.</li>
-  <li><strong><code>sqlite-lock-wal-recovery</code></strong>: Recover a settlement script blocked by a stale <code>.lock</code> file and read-only SQLite permissions, then fix a refund sign bug.</li>
-  <li><strong><code>noisy-microservice-log-triage</code></strong>: Triage a 1,200-line (<code>140 KB</code>) compressed <code>.log.gz</code> incident dump across <code>auth</code>, <code>worker</code>, and <code>gateway</code> services into <code>incident_report.json</code>.</li>
-  <li><strong><code>python-pipeline-env-and-bug</code></strong>: Replace a missing CLI tool using Python's standard library <code>gzip</code> module and fix an empty-bucket division-by-zero bug.</li>
-</ol>
+<p>We ran eight automated <code>agy</code> sessions in isolated sandboxes comparing stock <code>agy</code> (<code>baseline</code>) against <code>agy</code> + <code>minimodels-pe</code> (<code>pe-hook</code>) across four realistic debugging and triage tasks (<code>noisy-c-build-fix</code>, <code>sqlite-lock-wal-recovery</code>, <code>noisy-microservice-log-triage</code>, and <code>python-pipeline-env-and-bug</code>), each graded by deterministic exit-code and output checks:</p>
 
 <h3 id="suite-summary-4-4-verified-pass">Suite Summary (<code>4 / 4</code> Verified Pass)</h3>
 
@@ -352,57 +234,20 @@ for (size_t g = 0; g &lt; n_groups; g++) {
 </div>
 
 <ul>
-  <li><strong>Scenario 3 (<code>-57.8%</code> billed tokens)</strong>: Stripping <code>138,403</code> characters of routine log lines in <code>11.9 ms</code> left a crisp <code>2,715</code>-character digest with all three root-cause IDs, cutting billed tokens from <code>19,937</code> to <strong><code>8,407</code></strong>.</li>
-  <li><strong>Scenario 1 (<code>-32.0%</code> wall-clock time)</strong>: Highlighting the exact C build and test failures helped the agent read the right files in parallel, patch both bugs at once, and finish in <code>6</code> turns instead of <code>8</code> (<strong><code>60.21s</code> vs. <code>88.55s</code></strong>).</li>
-  <li><strong>Scenario 2 (<code>50%</code> fewer shell calls)</strong>: A single <code>RESOURCE_LOCK_OR_PERMISSION_ERROR</code> nudge prompted the agent to clear the stale lockfile and <code>chmod u+w</code> the database in one command instead of six separate shell probes (<code>-28.7%</code> billed tokens, <code>-43.1%</code> context).</li>
+  <li><strong>57.8% fewer billed tokens on 1,200-line log triage (Scenario 3)</strong>: Filtering <code>138,403</code> characters of compressed <code>.log.gz</code> output in <code>11.9 ms</code> left a <code>2,715</code>-character summary with all three root-cause IDs (<code>19,937</code> &rarr; <strong><code>8,407</code> tokens</strong>).</li>
+  <li><strong>32.0% faster C build debugging (Scenario 1)</strong>: Surfacing the exact compiler and unit-test failures helped the agent patch both C bugs in one pass, finishing in <code>6</code> turns instead of <code>8</code> (<strong><code>60.21s</code> vs. <code>88.55s</code></strong>).</li>
+  <li><strong>Half as many shell calls on SQLite recovery (Scenario 2)</strong>: A single lock-and-permission hint prompted the agent to clear the stale <code>.lock</code> file and fix read-only database permissions in one command instead of six (<code>-28.7%</code> tokens, <code>-43.1%</code> context).</li>
 </ul>
 
 <hr>
 
-<h2 id="4-cloud-prefix-caching-vs-local-gpu-prefill">4. Cloud Prefix Caching vs. Local GPU Prefill</h2>
+<h2 id="takeaways">Takeaways</h2>
 
-<p>All C hooks and L2 model passes combined took just <strong><code>0.40s</code> across the entire 4-task suite</strong>. Why, then, does L2 filtering save <code>26%–58%</code> of tokens on Cloud APIs while wall-clock speedups show up mainly when turns drop (Scenario 1's <code>-32%</code>), whereas on a local GPU server the exact same filter cuts <em>both</em> tokens and wall-clock time on every noisy task?</p>
-
-<ol>
-  <li><strong>Filtering on ingestion protects cloud prefix caching (<code>67.2%</code> hit rate)</strong>: Cloud APIs like Gemini 4 Carbon serve earlier conversation turns from prefix cache—but only if past turns never change. If a plugin goes back and edits older turns on every step, it invalidates the prefix cache and forces expensive re-processing. Filtering noisy command output <em>once before it is saved</em> keeps history append-only, preserving <strong><code>67.2%</code> cached context hits</strong> overall and lifting Scenario 3's cache hit rate from <code>64.0%</code> to <strong><code>74.1%</code></strong>.</li>
-  <li><strong>Cloud TPU prefill is ~free in time; local GPU prefill is expensive</strong>:</li>
-</ol>
-
-<div class="vbg-table-wrap">
-  <table class="vbg-table">
-    <thead>
-      <tr>
-        <th scope="col">Backend</th>
-        <th scope="col">How Prompt History Is Processed</th>
-        <th scope="col">What L2 Filtering Saves</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <th scope="row"><strong>Cloud TPU API</strong> (<code>agy</code> + <code>gemini-4-carbon-low</code>)</th>
-        <td>Prior turns hit prefix cache; <code>5k–15k</code> new tokens prefill across TPU pods in <code>~100 ms</code>, while each network/decode turn takes <code>9–15s</code></td>
-        <td><strong>Immediate <code>-26%</code> to <code>-58%</code> token savings</strong> and <strong><code>-35%</code> smaller context</strong>; wall-clock wins (<code>-32%</code>) come from saving model round-trips</td>
-      </tr>
-      <tr>
-        <th scope="row"><strong>Local GPU</strong> (<code>Qwen3.8-27B</code> via <code>vllm-mlx</code> on Mac Studio)</th>
-        <td>Local unified memory re-processes long prompt history at <code>~400–600 tok/s</code> (<code>25–35s</code> per noisy turn)</td>
-        <td><strong>Saves both tokens (up to <code>-68.1%</code>, <code>434k</code> &rarr; <code>139k</code>) and wall-clock time (<code>-31%</code> to <code>-40%</code>)</strong> in <code>~150 ms</code> of CPU L2 work</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<div class="vbg-callout" data-variant="important"><h4>IMPORTANT</h4><p><strong>Rule of Thumb for Cloud Coding Agents</strong>: Strip tool noise <em>once on the way in</em> so earlier turns stay untouched and prefix-cached. Save history rewriting for rare <code>/compact</code> checkpoints near context limits.</p></div>
-
-<hr>
-
-<h2 id="5-takeaways">5. Takeaways</h2>
-
-<ol>
-  <li><strong>Apple Silicon's <code>16 MiB</code> L2 cache can run capable neural filters with zero GPU cost.</strong> With 4-bit compression, a <code>12.03M</code>-parameter log filter fits in <code>6.52 MiB</code> and a CLI-only <code>3.50M</code> filter fits in <strong><code>1.90 MiB</code></strong> (<code>&lt; 12%</code> of L2) at <code>99.75%</code> accuracy and <code>100%</code> critical-error recall.</li>
-  <li><strong>Compiled C shims keep synchronous CLI hooks under a millisecond.</strong> Two tiny C wrappers around a warm background model process keep hook latency at <strong><code>0.68 ms</code> median</strong> and short-output passthrough at <strong><code>~50 µs</code></strong>, avoiding <code>30–60 ms</code> Python cold starts.</li>
-  <li><strong>Append-only filtering works with cloud prefix caches instead of breaking them.</strong> Cleaning command output before it enters history cuts Gemini 4 Carbon billed tokens by <strong><code>26.4%</code>–<code>57.8%</code></strong> and context size by <strong><code>35.4%</code></strong> while keeping <strong><code>67.2%</code>–<code>74.1%</code></strong> of prompt tokens served from cache.</li>
-</ol>
+<ul>
+  <li><strong>Filter once on the way in to keep cloud prefix caches intact</strong>: Stripping log noise <em>before</em> command output is saved leaves earlier turns untouched, preserving Gemini 4 Carbon's cloud prefix cache (<code>67.2%</code>–<code>74.1%</code> cache hit rate) instead of invalidating cached history on every step.</li>
+  <li><strong>Cloud TPUs vs. local GPUs</strong>: On Cloud TPUs, prompt prefill takes ~<code>100 ms</code> so filtering immediately cuts token spend (<code>26%–58%</code>) while saved turns cut runtime (<code>-32%</code>); on a local Mac Studio GPU (<code>Qwen3.8-27B</code> via <code>vllm-mlx</code>), where reading long logs is slow, the exact same CPU L2 filter cuts both tokens (<code>-68.1%</code>) and wall-clock time (<code>-31%</code> to <code>-40%</code>).</li>
+  <li><strong>Small enough to live in CPU L2</strong>: Training specifically on CLI and DevOps output shrinks the log filter to <strong><code>1.90 MiB</code></strong> (under <code>12%</code> of Apple Silicon's <code>16 MiB</code> P-core L2 cache) at <code>99.75%</code> log accuracy and <code>100%</code> critical-error recall.</li>
+</ul>
 
       </article>
     </main>
