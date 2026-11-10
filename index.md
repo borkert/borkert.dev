@@ -23,4 +23,4 @@
 - [vanilla-light](https://github.com/digplan/vanilla-light)
 - [gateway-agent](https://github.com/digplan/gateway-agent)
 
-[LLM index](/llms.txt)
+[LLM index](/llms.txt) · [Full LLM context](/llms-full.txt) · [Agent instructions](/agent-instructions.md) · [Sitemap](/sitemap.xml)
