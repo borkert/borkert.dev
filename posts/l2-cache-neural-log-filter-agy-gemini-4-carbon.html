@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon using Neural Log Filtering — Chris Borkert</title>
-  <meta name="description" content="A lightweight Antigravity (agy) plugin powered by two tiny CPU L2-cache neural models cuts Gemini 4 Carbon billed tokens by 26%–58% and context size by 35% with sub-millisecond hook overhead.">
+  <title>Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon using Neural Log Filtering · Chris Borkert</title>
+  <meta name="description" content="A lightweight Antigravity (agy) plugin powered by two tiny CPU L2-cache neural models cuts Gemini 4 Carbon billed tokens by 26%–58% and context size by 35% on Terminal-Bench 2.1-modeled tasks while preserving 100% of passing tasks with zero regressions.">
   <meta name="author" content="Chris Borkert">
   <link rel="canonical" href="https://borkert.dev/posts/l2-cache-neural-log-filter-agy-gemini-4-carbon.html">
 
   <!-- Open Graph -->
   <meta property="og:title" content="Google Antigravity: 26%–58% Token Savings on Gemini 4 Carbon using Neural Log Filtering">
-  <meta property="og:description" content="A lightweight Antigravity (agy) plugin powered by two tiny CPU L2-cache neural models cuts Gemini 4 Carbon billed tokens by 26%–58% and context size by 35% with sub-millisecond hook overhead.">
+  <meta property="og:description" content="A lightweight Antigravity (agy) plugin powered by two tiny CPU L2-cache neural models cuts Gemini 4 Carbon billed tokens by 26%–58% and context size by 35% on Terminal-Bench 2.1-modeled tasks while preserving 100% of passing tasks with zero regressions.">
   <meta property="og:url" content="https://borkert.dev/posts/l2-cache-neural-log-filter-agy-gemini-4-carbon.html">
   <meta property="og:type" content="article">
 
@@ -48,11 +48,11 @@
 
         <p><em>November 2026</em></p>
 
-<p>Coding agents waste a huge share of their token budget reading hundreds of repetitive build, test, and server log lines after every shell command—and re-reading that noise on every turn that follows. Worse, accidentally opening an interactive prompt (<code>python3</code>, <code>sqlite3</code>, <code>vim</code>, or a git pager) stalls automated runs and sends the agent into recovery loops.</p>
+<p>Coding agents waste a huge share of their token budget reading hundreds of repetitive build, test, and server log lines after every shell command, and then re-reading that noise on every turn that follows. Worse, accidentally opening an interactive prompt (<code>python3</code>, <code>sqlite3</code>, <code>vim</code>, or a git pager) stalls automated runs and sends the agent into recovery loops.</p>
 
-<p>To solve both without calling a second LLM or touching the GPU, I built <code>minimodels-pe</code>, a lightweight plugin for Google Antigravity (<code>agy</code>) powered by two tiny <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> neural networks compressed to <code>~2–7 MB</code>. Because they are that small, both models stay permanently inside the Mac's fast <code>16 MiB</code> CPU L2 cache—meaning zero GPU usage and <strong><code>0.68 ms</code> median hook latency</strong> via tiny compiled C wrappers (<code>~50 µs</code> passthrough on short outputs).</p>
+<p>To solve both without calling a second LLM or touching the GPU, I built <code>minimodels-pe</code>, a lightweight plugin for Google Antigravity (<code>agy</code>) powered by two tiny <a href="/posts/minimodels-rust-metal.html"><code>minimodels</code></a> neural networks compressed to <code>~2–7 MB</code>. Because they are that small, both models stay permanently inside the Mac's fast <code>16 MiB</code> CPU L2 cache, with zero GPU usage and <strong><code>0.68 ms</code> median hook latency</strong> via tiny compiled C wrappers (<code>~50 µs</code> passthrough on short outputs).</p>
 
-<p>Before command output ever reaches <strong>Gemini 4 Carbon</strong>, the first model strips routine log boilerplate while keeping every error, warning, stack trace, and distinct log pattern intact. When a command fails or gets stuck, the second model adds a one-line recovery hint—and updates its own weights in <code>32–59 ms</code> whenever exit codes disagree with its prediction.</p>
+<p>Before command output ever reaches <strong>Gemini 4 Carbon</strong>, the first model strips routine log boilerplate while keeping every error, warning, stack trace, and distinct log pattern intact, so <strong>passed tasks keep their passing status (<code>0</code> regressions)</strong>. When a command fails or gets stuck, the second model adds a one-line recovery hint and updates its own weights in <code>32–59 ms</code> whenever exit codes disagree with its prediction.</p>
 
 <hr>
 
@@ -60,17 +60,19 @@
 
 <figure class="figure-box">
   <img src="/assets/charts/agy_l2_pe_tokens_context.png?v=2" alt="Figure 1: Antigravity (agy) + Gemini 4 Carbon Head-to-Head Token and Context Reductions">
-  <figcaption class="figcaption"><strong>Figure 1. Live Head-to-Head Benchmark on Antigravity (<code>agy</code>) with Gemini 4 Carbon (<code>gemini-4-carbon-low</code>).</strong> Across 4 verified engineering scenarios (<code>4/4</code> pass rate), <code>minimodels-pe</code> cuts billed tokens by <code>26.4%</code> (<code>103,545</code> &rarr; <code>76,254</code>, up to <code>-57.8%</code> on incident log triage) and shrinks cumulative prompt context by <code>35.4%</code> (<code>345,001</code> &rarr; <code>222,908</code>).</figcaption>
+  <figcaption class="figcaption"><strong>Figure 1. Live Head-to-Head Benchmark on Antigravity (<code>agy</code>) with Gemini 4 Carbon (<code>gemini-4-carbon-low</code>).</strong> Across 4 engineering scenarios modeled on <strong>Terminal-Bench 2.1</strong> (<code>4/4</code> pass rate preserved, <code>0</code> regressions), <code>minimodels-pe</code> cuts billed tokens by <code>26.4%</code> (<code>103,545</code> &rarr; <code>76,254</code>, up to <code>-57.8%</code> on incident log triage) and shrinks cumulative prompt context by <code>35.4%</code> (<code>345,001</code> &rarr; <code>222,908</code>).</figcaption>
 </figure>
 
 <figure class="figure-box">
   <img src="/assets/charts/agy_l2_cache_footprint.png?v=2" alt="Figure 2: Fitting Neural Salience and Execution-State Models Inside Apple Silicon CPU L2 Cache">
-  <figcaption class="figcaption"><strong>Figure 2. CPU L2 Cache Footprint &amp; Per-Call Latency.</strong> 4-bit compression shrinks checkpoints by <code>7&times;</code> with zero accuracy loss—fitting both the <code>6.52 MiB</code> general+CLI filter and a <code>1.90 MiB</code> CLI-only filter (under <code>12%</code> of Apple Silicon's <code>16 MiB</code> L2 cache) alongside the <code>1.00 MB</code> state model.</figcaption>
+  <figcaption class="figcaption"><strong>Figure 2. CPU L2 Cache Footprint &amp; Per-Call Latency.</strong> 4-bit compression shrinks checkpoints by <code>7&times;</code> with zero accuracy loss, fitting both the <code>6.52 MiB</code> general+CLI filter and a <code>1.90 MiB</code> CLI-only filter (under <code>12%</code> of Apple Silicon's <code>16 MiB</code> L2 cache) alongside the <code>1.00 MB</code> state model.</figcaption>
 </figure>
 
-<p>We ran eight automated <code>agy</code> sessions in isolated sandboxes comparing stock <code>agy</code> (<code>baseline</code>) against <code>agy</code> + <code>minimodels-pe</code> (<code>pe-hook</code>) across four realistic debugging and triage tasks (<code>noisy-c-build-fix</code>, <code>sqlite-lock-wal-recovery</code>, <code>noisy-microservice-log-triage</code>, and <code>python-pipeline-env-and-bug</code>), each graded by deterministic exit-code and output checks:</p>
+<p>We ran eight automated <code>agy</code> sessions in isolated sandboxes comparing stock <code>agy</code> (<code>baseline</code>) against <code>agy</code> + <code>minimodels-pe</code> (<code>pe-hook</code>) across four realistic debugging and triage tasks modeled on <strong>Terminal-Bench 2.1</strong> (<code>noisy-c-build-fix</code>, <code>sqlite-lock-wal-recovery</code>, <code>noisy-microservice-log-triage</code>, and <code>python-pipeline-env-and-bug</code>), each graded by deterministic exit-code and output checks.</p>
 
-<h3 id="suite-summary-4-4-verified-pass">Suite Summary (<code>4 / 4</code> Verified Pass)</h3>
+<p>Every passing task kept its passing status (<strong><code>4 / 4</code> = <code>100%</code> pass rate preserved, zero regressions from filtering</strong>), even with up to <strong><code>76.1%</code></strong> of tool output text stripped. On full Docker <strong>Terminal-Bench 2.1</strong> tasks (<code>db-wal-recovery</code>, <code>sanitize-git-repo</code>, and <code>fix-code-vulnerability</code>), the same CPU L2 filter likewise preserved passing status on every solved task while cutting token usage by <strong><code>43%–68%</code></strong>.</p>
+
+<h3 id="suite-summary-4-4-verified-pass-preserved">Suite Summary (<code>4 / 4</code> Verified Pass Preserved)</h3>
 
 <div class="vbg-table-wrap">
   <table class="vbg-table">
@@ -87,7 +89,7 @@
         <th scope="row"><strong>Verified Task Pass Rate</strong></th>
         <td class="vbg-numeric"><strong>4 / 4 (100%)</strong></td>
         <td class="vbg-numeric"><strong>4 / 4 (100%)</strong></td>
-        <td class="vbg-numeric"><strong>0 regressions</strong></td>
+        <td class="vbg-numeric"><strong>0 regressions (all passed tasks stay PASS)</strong></td>
       </tr>
       <tr>
         <th scope="row"><strong>Billed Total Tokens</strong></th>
@@ -115,7 +117,7 @@
       </tr>
       <tr>
         <th scope="row"><strong>Median Hook Overhead / Total Plugin Time</strong></th>
-        <td class="vbg-numeric">—</td>
+        <td class="vbg-numeric">N/A</td>
         <td class="vbg-numeric"><strong><code>0.68 ms</code> / <code>0.40 s</code> total</strong></td>
         <td class="vbg-numeric"><code>&lt; 0.2%</code> of total runtime</td>
       </tr>
@@ -244,9 +246,10 @@
 <h2 id="takeaways">Takeaways</h2>
 
 <ul>
-  <li><strong>Filter once on the way in to keep cloud prefix caches intact</strong>: Stripping log noise <em>before</em> command output is saved leaves earlier turns untouched, preserving Gemini 4 Carbon's cloud prefix cache (<code>67.2%</code>–<code>74.1%</code> cache hit rate) instead of invalidating cached history on every step.</li>
-  <li><strong>Cloud TPUs vs. local GPUs</strong>: On Cloud TPUs, prompt prefill takes ~<code>100 ms</code> so filtering immediately cuts token spend (<code>26%–58%</code>) while saved turns cut runtime (<code>-32%</code>); on a local Mac Studio GPU (<code>Qwen3.8-27B</code> via <code>vllm-mlx</code>), where reading long logs is slow, the exact same CPU L2 filter cuts both tokens (<code>-68.1%</code>) and wall-clock time (<code>-31%</code> to <code>-40%</code>).</li>
-  <li><strong>Small enough to live in CPU L2</strong>: Training specifically on CLI and DevOps output shrinks the log filter to <strong><code>1.90 MiB</code></strong> (under <code>12%</code> of Apple Silicon's <code>16 MiB</code> P-core L2 cache) at <code>99.75%</code> log accuracy and <code>100%</code> critical-error recall.</li>
+  <li><strong>Passed tasks stay passed (<code>0</code> regressions)</strong>: Because the filter achieves <code>100%</code> critical-error recall (<code>99.75%</code> log accuracy) and always keeps errors, stack traces, and command head/tail lines, stripping <code>60%–76%</code> of noisy output preserved <code>100%</code> of passing runs across both our <code>agy</code> suite (<code>4/4</code>) and full Docker <strong>Terminal-Bench 2.1</strong> tasks.</li>
+  <li><strong>Filter once on the way in to keep cloud prefix caches intact</strong>: Stripping log noise before command output is saved leaves earlier turns untouched, preserving Gemini 4 Carbon's cloud prefix cache (<code>67.2%</code>–<code>74.1%</code> cache hit rate) instead of invalidating cached history on every step.</li>
+  <li><strong>Cloud TPUs vs. local GPUs</strong>: On Cloud TPUs, prompt prefill takes ~<code>100 ms</code> so filtering immediately cuts token spend (<code>26%–58%</code>) while saved turns cut runtime (<code>-32%</code>); on a local Mac Studio GPU (<code>Qwen3.8-27B</code> via <code>vllm-mlx</code>) running Docker <strong>Terminal-Bench 2.1</strong>, the exact same CPU L2 filter cuts both tokens (<code>43%–68%</code>) and wall-clock time (<code>31%–40%</code>).</li>
+  <li><strong>Small enough to live in CPU L2</strong>: Training specifically on CLI and DevOps output shrinks the log filter to <strong><code>1.90 MiB</code></strong> (under <code>12%</code> of Apple Silicon's <code>16 MiB</code> P-core L2 cache).</li>
 </ul>
 
       </article>
